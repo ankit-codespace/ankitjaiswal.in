@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0A0C10" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#EDEAE4" media="(prefers-color-scheme: light)" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!--
+      Defaults below are for the HOME page only and act as a fallback for
+      non-JS crawlers (e.g. social-share previewers like Slack/Twitter on the
+      raw HTML). Every route's <Seo> component overrides these client-side
+      via react-helmet-async, so JS-aware crawlers (incl. Googlebot) see the
+      correct per-route title, description, canonical and OG tags.
+      We deliberately do NOT hardcode a <link rel="canonical"> here — that
+      would override every route for non-rendering crawlers and incorrectly
+      consolidate signals to the home URL.
+    -->
+    <title>Ankit Jaiswal — SEO Engineer & Web Tools</title>
+    <meta name="description" content="Personal portfolio of Ankit Jaiswal — SEO engineer and creator of free, privacy-first browser tools including an online notepad, PDF utilities and a text editor." />
+
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=Sora:wght@700;800;900&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=Sora:wght@700;800;900&display=swap" rel="stylesheet" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ankit Jaiswal" />
+    <meta property="og:url" content="https://ankitjaiswal.in/" />
+    <meta property="og:title" content="Ankit Jaiswal — SEO Engineer & Web Tools" />
+    <meta property="og:description" content="Personal portfolio of Ankit Jaiswal — SEO engineer and creator of free, privacy-first browser tools." />
+    <meta property="og:image" content="https://ankitjaiswal.in/opengraph.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ankit Jaiswal — SEO Engineer & Web Tools" />
+    <meta name="twitter:description" content="Personal portfolio of Ankit Jaiswal — SEO engineer and creator of free, privacy-first browser tools." />
+    <meta name="twitter:image" content="https://ankitjaiswal.in/opengraph.jpg" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Ankit Jaiswal",
+        "url": "https://ankitjaiswal.in/",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://ankitjaiswal.in/tools?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Ankit Jaiswal",
+        "url": "https://ankitjaiswal.in/",
+        "jobTitle": "SEO & Web Engineer",
+        "sameAs": ["https://twitter.com/ankittjaiswal"]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

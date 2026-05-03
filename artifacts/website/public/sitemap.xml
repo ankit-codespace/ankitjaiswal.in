@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!--
+    Sitemap policy: list canonical URLs only.
+    Alias / vanity-SEO routes (e.g. /notepad, /text-to-pdf, /tools/png-to-webp,
+    /tools/yt-video-summary, top-level /paste-to-image, etc.) all set the
+    canonical link to the URL listed here, so they are intentionally omitted to
+    avoid duplicate-index dilution.
+  -->
+
+  <!-- Site -->
+  <url>
+    <loc>https://ankitjaiswal.in/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/work</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Tools directory -->
+  <url>
+    <loc>https://ankitjaiswal.in/tools</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Tools (canonicals) -->
+  <url>
+    <loc>https://ankitjaiswal.in/online-notepad</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/tools/youtube-summary</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/tools/clipboard-history</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/tools/paste-to-image</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/tools/webp-converter</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/tools/yt-thumbnail-downloader</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/tools/domain-age-checker</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ankitjaiswal.in/tools/pomodoro</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>

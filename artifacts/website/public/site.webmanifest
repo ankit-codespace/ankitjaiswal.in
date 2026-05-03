@@ -1,0 +1,13 @@
+{
+  "name": "Ankit Jaiswal — Online Notepad & Web Tools",
+  "short_name": "AJ Notepad",
+  "description": "Free online notepad with rich text, image paste, autosave, and PDF export. Privacy-first browser tools.",
+  "start_url": "/online-notepad",
+  "display": "standalone",
+  "background_color": "#0A0C10",
+  "theme_color": "#0A0C10",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

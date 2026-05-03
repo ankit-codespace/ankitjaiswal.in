@@ -1,0 +1,850 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary-border: var(--secondary-border);
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-border: var(--muted-border);
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-border: var(--accent-border);
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-border: var(--destructive-border);
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-primary-border: var(--sidebar-primary-border);
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-accent-border: var(--sidebar-accent-border);
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'DM Serif Display', serif;
+  --font-mono: Menlo, monospace;
+  --font-display: 'Sora', sans-serif;
+  --font-label: 'Inter', sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .08);
+
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Sora', sans-serif;
+  --font-label: 'Inter', sans-serif;
+  --font-serif: 'DM Serif Display', serif;
+
+  --background: 40 14% 91%;
+  --foreground: 218 28% 7%;
+  --card: 0 0% 100%;
+  --card-foreground: 218 28% 7%;
+  --card-border: 40 10% 84%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 218 28% 7%;
+  --popover-border: 40 10% 84%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 25% 95%;
+  --secondary-foreground: 218 28% 7%;
+  --muted: 40 25% 95%;
+  --muted-foreground: 217 14% 34%;
+  --accent: 40 25% 95%;
+  --accent-foreground: 218 28% 7%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 10% 84%;
+  --input: 40 10% 84%;
+  --ring: 217 91% 60%;
+  --radius: 0.75rem;
+  --chart-1: 217 91% 60%;
+  --chart-2: 160 60% 45%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
+
+  --sidebar: 40 14% 91%;
+  --sidebar-foreground: 218 28% 7%;
+  --sidebar-border: 40 10% 84%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 40 25% 95%;
+  --sidebar-accent-foreground: 218 28% 7%;
+  --sidebar-ring: 217 91% 60%;
+
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+
+  --shadow-2xs: 0px 2px 0px 0px transparent;
+  --shadow-xs: 0px 2px 0px 0px transparent;
+  --shadow-sm: 0px 2px 0px 0px transparent, 0px 1px 2px -1px transparent;
+  --shadow: 0px 2px 0px 0px transparent, 0px 1px 2px -1px transparent;
+  --shadow-md: 0px 2px 0px 0px transparent, 0px 2px 4px -1px transparent;
+  --shadow-lg: 0px 2px 0px 0px transparent, 0px 4px 6px -1px transparent;
+  --shadow-xl: 0px 2px 0px 0px transparent, 0px 8px 10px -1px transparent;
+  --shadow-2xl: 0px 2px 0px 0px transparent;
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    background-color: #EDEAE4;
+    color: #4B5563;
+    line-height: 1.65;
+    font-weight: 500;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', sans-serif;
+    font-weight: 900;
+    color: #0D1117;
+    letter-spacing: -0.025em;
+  }
+  p, a, button, input, textarea, li, label {
+    font-family: var(--font-sans);
+    line-height: 1.65;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .font-label {
+    font-family: var(--font-label) !important;
+  }
+
+  .font-serif {
+    font-family: var(--font-serif) !important;
+  }
+
+  .font-display {
+    font-family: var(--font-display) !important;
+  }
+
+  .eyebrow-label {
+    font-family: var(--font-label);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #2563EB;
+  }
+
+  .glass-card {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 16px;
+  }
+
+  .glass-panel {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .interactive {
+    transition: all 0.2s ease;
+  }
+
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  .no-default-hover-elevate {}
+  .no-default-active-elevate {}
+
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: -1;
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: 999;
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after {
+    inset: -1px;
+  }
+}
+
+.magnetic-btn {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  position: relative;
+  isolation: isolate;
+  will-change: transform;
+  transition: box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.magnetic-btn-primary {
+  background: #2563EB;
+  color: #ffffff;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 32px;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+}
+
+.magnetic-btn-primary .magnetic-btn-fill {
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563EB 50%, #3b82f6 100%);
+  clip-path: circle(0% at var(--mouse-x) var(--mouse-y));
+  transition: clip-path 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 0;
+}
+
+.magnetic-btn-primary[data-hover="true"] .magnetic-btn-fill {
+  clip-path: circle(150% at var(--mouse-x) var(--mouse-y));
+}
+
+.magnetic-btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(37, 99, 235, 0.45);
+}
+
+.magnetic-btn-secondary {
+  background: transparent;
+  color: #0D1117;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  border-radius: 50px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 32px;
+}
+
+.magnetic-btn-secondary .magnetic-btn-fill {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: rgba(0, 0, 0, 0.04);
+  clip-path: circle(0% at var(--mouse-x) var(--mouse-y));
+  transition: clip-path 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 0;
+}
+
+.magnetic-btn-secondary[data-hover="true"] .magnetic-btn-fill {
+  clip-path: circle(150% at var(--mouse-x) var(--mouse-y));
+}
+
+.magnetic-btn-secondary:hover {
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+.magnetic-btn-text {
+  will-change: transform;
+}
+
+.stat-number {
+  position: relative;
+}
+
+.cred-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 28px;
+  margin-top: 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #374151;
+}
+.cred-strip span {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Liquid button — cursor-aware radial fill via ::after + CSS custom props ─── *
+ *  JS sets --lx / --ly on mouseenter (3 lines). ::after scales from 0→1         *
+ *  with transform-origin at the cursor entry point. Auto-reverses on hover-end. *
+ *  No DOM injection. No stuck states. Text always above fill (paint order).      */
+.btn-liquid {
+  position: relative;
+  /* isolation: isolate creates a self-contained stacking context.
+     Paint order inside: background → z:-1 (::after fill) → inline text/SVG.
+     This is the ONLY way to layer fill above background but below text nodes. */
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 20px;
+  border-radius: 100px;
+  background: #1D53D9;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: box-shadow 0.4s ease;
+  -webkit-font-smoothing: antialiased;
+}
+/* Emerald fill — z:-1 inside isolated context = above background, below all content */
+.btn-liquid::after {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  left: var(--lx, 50%);
+  top: var(--ly, 50%);
+  background: #10B981;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: -1;
+}
+.btn-liquid:hover::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+.btn-liquid:hover {
+  box-shadow: 0 4px 28px rgba(16, 185, 129, 0.25);
+  color: #fff;
+}
+.btn-liquid:disabled {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.25);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-liquid:disabled::after {
+  display: none;
+}
+
+/* ── Ambient orb float animations — compositor-only (transform), zero JS cost ── */
+@keyframes orb-float-0 {
+  0%,  100% { transform: translate(-50%, -50%) translate(0px,    0px)   scale(1);    }
+  33%       { transform: translate(-50%, -50%) translate(30px,  -25px)  scale(1.08); }
+  66%       { transform: translate(-50%, -50%) translate(-20px,  15px)  scale(0.96); }
+}
+@keyframes orb-float-1 {
+  0%,  100% { transform: translate(-50%, -50%) translate(0px,    0px)   scale(1);    }
+  40%       { transform: translate(-50%, -50%) translate(-28px,  22px)  scale(1.06); }
+  70%       { transform: translate(-50%, -50%) translate(18px,  -12px)  scale(0.97); }
+}
+@keyframes orb-float-2 {
+  0%,  100% { transform: translate(-50%, -50%) translate(0px,    0px)   scale(1);    }
+  30%       { transform: translate(-50%, -50%) translate(22px,   18px)  scale(1.05); }
+  65%       { transform: translate(-50%, -50%) translate(-14px, -22px)  scale(0.95); }
+}
+
+/* ── Notepad toolbar — hide scrollbar, keep scroll ── */
+.notepad-toolbar { scrollbar-width: none; -ms-overflow-style: none; }
+.notepad-toolbar::-webkit-scrollbar { display: none; }
+
+/* ── Notepad editor (TipTap) ── */
+.notepad-editor {
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  font-size: var(--np-fs, 18px);
+  /* line-height is NOT set here — it inherits from the parent inner div which
+     has lineHeight:settings.lineHeight as a direct inline style. Using a CSS
+     variable for this was unreliable (React passes numbers to setProperty and
+     browsers may reject non-string custom property values, silently falling back
+     to the var() default). Direct inline style → CSS inheritance is guaranteed. */
+  color: inherit;
+  min-height: 60vh;
+  caret-color: var(--np-accent, #10B981);
+}
+.notepad-editor p { margin: 0; }
+
+/* CRITICAL: the global base layer sets `p, li, a, label { line-height: 1.65 }`
+   on every element site-wide. That EXPLICIT rule on the child wins over the
+   inherited line-height from .notepad-editor (its parent), regardless of
+   specificity — explicit beats inheritance. We must restore inheritance for
+   text children of the editor so that the user's Compact/Normal/Relaxed
+   line-height setting (set via inline style on .notepad-editor) actually
+   propagates to the <p>, <li>, etc. that hold the visible text. */
+.notepad-editor p,
+.notepad-editor li,
+.notepad-editor a,
+.notepad-editor label,
+.notepad-editor div {
+  line-height: inherit;
+}
+
+/* !important overrides Tailwind preflight which resets heading size/weight to inherit */
+.notepad-editor h1 { font-family: 'Sora', sans-serif !important; font-size: 2em !important; font-weight: 700 !important; line-height: 1.2 !important; letter-spacing: -0.025em; margin: 1.4em 0 0.4em; color: inherit; }
+.notepad-editor h2 { font-family: 'Sora', sans-serif !important; font-size: 1.45em !important; font-weight: 600 !important; line-height: 1.3 !important; letter-spacing: -0.015em; margin: 1.2em 0 0.35em; color: inherit; }
+.notepad-editor h3 { font-family: 'Sora', sans-serif !important; font-size: 1.18em !important; font-weight: 600 !important; line-height: 1.4 !important; margin: 1em 0 0.3em; color: inherit; }
+.notepad-editor h1:first-child, .notepad-editor h2:first-child, .notepad-editor h3:first-child { margin-top: 0; }
+
+.notepad-editor strong { font-weight: 700; }
+.notepad-editor em { font-style: italic; }
+.notepad-editor u { text-decoration: underline; text-underline-offset: 3px; }
+.notepad-editor s { text-decoration: line-through; }
+.notepad-editor mark {
+  background: #FDE047;
+  color: #111318 !important;
+  padding: 0.06em 0.22em;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.notepad-editor a { color: var(--np-accent, #10B981); text-decoration: underline; text-underline-offset: 3px; }
+
+.notepad-editor ul { list-style-type: disc !important; padding-left: 1.6em; margin: 0.5em 0; }
+.notepad-editor ol { list-style-type: decimal !important; padding-left: 1.6em; margin: 0.5em 0; }
+.notepad-editor ul ul { list-style-type: circle !important; }
+.notepad-editor ul ul ul { list-style-type: square !important; }
+.notepad-editor li { margin: 0.2em 0; }
+.notepad-editor li p { margin: 0; }
+.notepad-editor li::marker { color: rgba(255,255,255,0.55); }
+.surface-light .notepad-editor li::marker { color: rgba(0,0,0,0.45); }
+
+/* Task list (checklist) — override the disc !important above */
+.notepad-editor ul[data-type="taskList"] { list-style: none !important; padding-left: 0 !important; }
+.notepad-editor ul[data-type="taskList"] > li { display: flex; align-items: flex-start; gap: 8px; }
+.notepad-editor ul[data-type="taskList"] > li > label {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  /* Center the 16px checkbox within the first text line.
+     margin-top = (lineHeight - checkboxHeight) / 2
+     Uses the CSS vars set on the editor wrapper. */
+  margin-top: calc((var(--np-lh, 1.78) * var(--np-fs, 18px) - 16px) / 2);
+}
+.notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #10B981; cursor: pointer; }
+.notepad-editor ul[data-type="taskList"] > li[data-checked="true"] > div { opacity: 0.5; text-decoration: line-through; }
+.notepad-editor ul[data-type="taskList"] > li > div { flex: 1; }
+
+/* Blockquote */
+.notepad-editor blockquote {
+  border-left: 3px solid rgba(255,255,255,0.14);
+  margin: 1em 0;
+  padding: 0.25em 0 0.25em 1.1em;
+  color: rgba(237,234,228,0.5);
+  font-style: italic;
+}
+.surface-light .notepad-editor blockquote {
+  border-left-color: rgba(0,0,0,0.14);
+  color: rgba(26,26,26,0.52);
+}
+
+/* Code */
+.notepad-editor code {
+  font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+  background: rgba(255,255,255,0.08);
+  padding: 0.12em 0.35em;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+.surface-light .notepad-editor code { background: rgba(0,0,0,0.07); }
+.notepad-editor pre {
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 1em 1.25em;
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+.surface-light .notepad-editor pre { background: rgba(0,0,0,0.04); }
+.notepad-editor pre code { background: none; padding: 0; }
+
+/* Horizontal rule */
+.notepad-editor hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin: 1.5em 0;
+}
+.surface-light .notepad-editor hr { border-top-color: rgba(0,0,0,0.1); }
+
+/* Images — sized via data-size attribute set by ResizableImage extension.
+   Defaults to medium (~45% of editor width). Click an image to reveal the
+   floating size toolbar; double-click to open the fullscreen lightbox. */
+.notepad-editor img {
+  height: auto;
+  border-radius: 8px;
+  margin: 1.6em 0 1em 0;
+  display: block;
+  cursor: zoom-in;
+  transition: max-width 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Optional soft hairline border around inline images. Toggled via the
+   "Image border" setting. Uses an inset box-shadow so it sits inside the
+   image's rounded corners without affecting layout (no extra pixels added).
+   Much subtler than the green selection outline so it reads as a frame, not
+   a state indicator. */
+.notepad-img-border .notepad-editor img {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.surface-light .notepad-img-border .notepad-editor img {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+/* Selected image still wins — keep the green outline crisp over the frame. */
+.notepad-img-border .notepad-editor img.ProseMirror-selectednode {
+  box-shadow: none;
+}
+.notepad-editor hr + p img,
+.notepad-editor hr + img,
+.notepad-editor hr + div img {
+  margin-top: 2em;
+}
+.notepad-editor img[data-size="small"]  { max-width: 25%; }
+.notepad-editor img[data-size="medium"] { max-width: 45%; }
+.notepad-editor img[data-size="large"]  { max-width: 75%; }
+.notepad-editor img[data-size="full"]   { max-width: 100%; }
+.notepad-editor img:not([data-size])    { max-width: 45%; }
+.notepad-editor img.ProseMirror-selectednode {
+  outline: 2px solid #10B981;
+  outline-offset: 3px;
+}
+
+/* Placeholder */
+.notepad-editor .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: rgba(237,234,228,0.2);
+  pointer-events: none;
+  float: left;
+  height: 0;
+  font-style: italic;
+}
+.surface-light .notepad-editor .is-editor-empty:first-child::before { color: rgba(0,0,0,0.2); }
+
+/* Selection */
+/* Selection: tinted with the active theme's accent. We can't directly use
+   var() inside rgba() for an arbitrary hex, so a CSS color-mix gives us a
+   reliable accent-tinted selection that works for all themes. */
+.notepad-editor ::selection {
+  background: color-mix(in srgb, var(--np-accent, #10B981) 28%, transparent);
+}
+
+/* ── Paper-grain texture overlay ─────────────────────────────────────────────
+   Subtle SVG-noise overlay that gives the canvas a paper-like physicality.
+   Active when the user enables "Paper grain" in settings. Tuned per-surface:
+   light themes get a finer fiber feel, dark themes get a slate grain.
+   Sits behind the text (z-index < 1) and is pointer-events: none so it
+   never interferes with clicks/selection. */
+.notepad-grain { position: relative; }
+.notepad-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}
+.surface-light.notepad-grain::before { opacity: 0.07; mix-blend-mode: multiply; }
+.notepad-grain > * { position: relative; z-index: 1; }
+
+/* Settings panel — thin, subtle scrollbar (Firefox uses scrollbarWidth:thin
+   + scrollbarColor inline; WebKit needs the rules below). Visible enough to
+   indicate scrollability without dominating the panel. */
+.notepad-settings-panel::-webkit-scrollbar { width: 6px; }
+.notepad-settings-panel::-webkit-scrollbar-track { background: transparent; }
+.notepad-settings-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+}
+.notepad-settings-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* Hide native number-input spinners (settings font-size stepper uses custom +/− buttons) */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* Hide horizontal scrollbar on the toolbar (it still scrolls via swipe / wheel) */
+.notepad-toolbar { scrollbar-width: none; -ms-overflow-style: none; }
+.notepad-toolbar::-webkit-scrollbar { display: none; height: 0; }
+
+/* Mobile (<= 640px): hide doc-title input and "Back" link to free up
+   horizontal space; collapse Export button to icon-only. The doc title can
+   still be edited via the documents menu. */
+@media (max-width: 640px) {
+  .notepad-doc-title { display: none !important; }
+  .notepad-back-link { display: none !important; }
+  .notepad-export-label { display: none !important; }
+  .notepad-export-btn { padding: 0 8px !important; }
+  /* Settings panel: full-width sheet pinned to right edge with safe insets */
+  .notepad-settings-panel { right: 6px !important; left: 6px !important; width: auto !important; max-width: none !important; }
+  /* Hide keyboard-shortcuts button on touch devices — no physical keyboard */
+  .notepad-shortcuts-btn { display: none !important; }
+}
+
+/* ── Global mobile safety: prevent any rogue child from causing horizontal scroll ──
+   Using `overflow-x: clip` instead of `hidden` so we don't break position: sticky
+   on the desktop hero (sticky requires no scroll-container ancestor). */
+html, body { overflow-x: clip; max-width: 100%; }
+
+/* ── StatsStrip: responsive layout overrides for hardcoded inline styles ──────── */
+.stats-strip-section { min-height: 100svh; }
+.stats-strip-grid {
+  display: flex;
+  align-items: center;
+  gap: 80px;
+  padding: 80px;
+}
+.stats-strip-copy { flex: 0 0 40%; }
+.stats-strip-numbers { flex: 0 0 60%; }
+@media (max-width: 900px) {
+  .stats-strip-grid {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 40px;
+    padding: 64px 24px;
+  }
+  .stats-strip-copy,
+  .stats-strip-numbers { flex: 1 1 auto; width: 100%; }
+}
+@media (max-width: 480px) {
+  .stats-strip-grid { gap: 32px; padding: 48px 20px; }
+  .stats-strip-cell { padding: 20px !important; }
+}
+
+/* Loader spin for status bar */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Ruled lines overlay ─────────────────────────────────────────────────────── */
+/*
+  APPROACH: Instead of a CSS gradient (which fires at a mathematically fixed
+  position that can never match the browser's actual text layout), we use
+  border-bottom on every block element inside the editor. The border fires at
+  the browser's exact computed line boundary — zero offset math, always aligned.
+
+  Margins are zeroed so paragraphs stack flush; the ::after of each block
+  is the rule line. Line-height is whatever the user picks — no forced minimum.
+*/
+
+/* ── Ruled lines — full-width, one per block / list item ─────────────────────
+   Strategy: instead of border-bottom (which stops at the element width), each
+   block element gets a ::after pseudo-element positioned with width:100vw and
+   left:50%/translateX(-50%). Because the text column is horizontally centered,
+   50% of the element == 50% of the viewport, so the 100vw stripe always runs
+   edge-to-edge. The outer wrapper has overflow-x:clip (set in JS) so no
+   horizontal scrollbar appears.
+──────────────────────────────────────────────────────────────────────────── */
+
+/* Base: position context + zero margins for every direct block child */
+.notepad-ruled .notepad-editor > *:not(img) {
+  position: relative;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Images in ruled mode: top breathing room only. The rule line that should
+   appear UNDER the image cannot be drawn on the image itself (img is a
+   replaced element — pseudo-elements don't render on it), so we instead
+   draw it on the ::before of whatever block follows the image (rule below). */
+.notepad-ruled .notepad-editor > img,
+.notepad-ruled .notepad-editor img {
+  margin-top: 0.7em !important;
+  margin-bottom: 0.7em !important;
+}
+
+/* Rule line above the first block following an image — gives the image its
+   own bottom ruler border, then breathing room, then the text. We render this
+   as a real 100vw box (not a 1px positioned line) so the browser snaps it to
+   a crisp device pixel — matching the visual weight of regular ::after rules
+   below text rather than getting subpixel-blurred (which made the line under
+   the image look lighter/thicker than the rest). */
+.notepad-ruled .notepad-editor > img + * {
+  padding-top: 0.6em !important;
+}
+.notepad-ruled .notepad-editor > img + *::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+}
+.surface-light .notepad-ruled .notepad-editor > img + *::before {
+  border-top-color: rgba(0, 0, 0, 0.18);
+}
+
+/* Full-width rule line via ::after — dark theme */
+.notepad-ruled .notepad-editor > *::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+}
+
+/* List containers: no rule of their own (each <li> draws its own) */
+.notepad-ruled .notepad-editor > ul::after,
+.notepad-ruled .notepad-editor > ol::after {
+  display: none;
+}
+.notepad-ruled .notepad-editor > ul,
+.notepad-ruled .notepad-editor > ol {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Each list item = one visual line → its own full-width rule */
+.notepad-ruled .notepad-editor li {
+  position: relative;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.notepad-ruled .notepad-editor li::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+}
+
+/* ── Light theme ─────────────────────────────────────────────────────────── */
+.surface-light .notepad-ruled .notepad-editor > *::after,
+.surface-light .notepad-ruled .notepad-editor li::after {
+  background: rgba(0, 0, 0, 0.18);
+}

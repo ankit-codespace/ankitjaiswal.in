@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+artifacts/**/dist/
+lib/**/dist/
+
+# local environment
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript incremental state
+*.tsbuildinfo
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
