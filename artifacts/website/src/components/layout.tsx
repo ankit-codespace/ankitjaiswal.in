@@ -178,13 +178,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           borderBottomColor: "rgba(255,255,255,0.07)",
           boxShadow: "0 1px 0 rgba(255,255,255,0.04)",
         } : {
-          // Home page: transparent in hero, gains background on scroll
+          // Keep the brand/navigation legible over the pale hero and interior pages.
           y: (isInHero || isVisible) && !isInProofSection ? 0 : -100,
           opacity: 1,
-          backgroundColor: isInHero ? "rgba(0,0,0,0)" : "rgba(13,17,23,0.94)",
-          backdropFilter: "none",
-          borderBottomColor: isInHero ? "rgba(0,0,0,0)" : "rgba(255,255,255,0.06)",
-          boxShadow: isInHero ? "none" : "0 1px 0 rgba(255,255,255,0.04)",
+          backgroundColor: "rgba(13,17,23,0.94)",
+          backdropFilter: "blur(16px)",
+          borderBottomColor: "rgba(255,255,255,0.06)",
+          boxShadow: "0 1px 0 rgba(255,255,255,0.04)",
         }}
         transition={{ duration: 0.35, ease: "easeInOut" }}
         className="fixed top-0 left-0 right-0 z-50"
@@ -192,17 +192,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       >
         <div className="container mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center hover:opacity-70 transition-opacity">
-            <span
-              style={{
-                fontFamily: "'Sora', sans-serif",
-                fontWeight: 800,
-                fontSize: "20px",
-                letterSpacing: "0",
-                color: isToolsIndex || !isInHero ? "#F9FAFB" : "#0D1117",
-              }}
-            >
-              Ankit Jaiswal
-            </span>
+            <img
+              src="/images/ankitjaiswal-logo.png"
+              alt="Ankit Jaiswal"
+              className="h-10 w-auto object-contain"
+              decoding="async"
+            />
           </Link>
 
           {/* Desktop Nav */}
@@ -226,11 +221,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         fontFamily: "'Inter', sans-serif",
                         fontWeight: 400,
                         fontSize: "12px",
-                        color: isActive ? "#2C2CF3" : (isToolsIndex || !isInHero ? "#A1AAB4" : "#6B7280"),
+                        color: "#F9FAFB",
                         textDecoration: "none",
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#2C2CF3"; }}
-                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = isToolsIndex || !isInHero ? "#A1AAB4" : "#6B7280"; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#FFFFFF"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#F9FAFB"; }}
                     >
                       {item.name}
                     </Link>
@@ -245,11 +240,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         fontFamily: "'Inter', sans-serif",
                         fontWeight: 400,
                         fontSize: "12px",
-                        color: isActive ? "#2C2CF3" : (isToolsIndex || !isInHero ? "#A1AAB4" : "#6B7280"),
+                        color: "#F9FAFB",
                         textDecoration: "none",
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#2C2CF3"; }}
-                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = isToolsIndex || !isInHero ? "#A1AAB4" : "#6B7280"; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#FFFFFF"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#F9FAFB"; }}
                     >
                       {item.name}
                     </a>
@@ -291,10 +286,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             aria-label="Toggle menu"
           >
             {(() => {
-              // When the menu is open, force dark bars (menu sits on light dropdown).
-              // Otherwise: light bars on dark/scrolled headers, dark bars on light hero.
-              const onDarkBg = isMobileMenuOpen ? false : (isToolsIndex || !isInHero);
-              const barColor = onDarkBg ? "#F9FAFB" : "#0D1117";
+              const barColor = "#F9FAFB";
               return (
                 <>
                   <motion.span
@@ -387,18 +379,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 py-12">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <div
-                className="mb-4"
-                style={{
-                  fontFamily: "'Sora', sans-serif",
-                  fontWeight: 800,
-                  fontSize: "18px",
-                  color: "#F9FAFB",
-                  opacity: 0.72,
-                }}
-              >
-                Ankit Jaiswal
-              </div>
+              <img
+                src="/images/ankitjaiswal-logo.png"
+                alt="Ankit Jaiswal"
+                className="h-10 w-auto object-contain mb-4 opacity-80"
+                loading="lazy"
+                decoding="async"
+              />
               <p className="text-sm max-w-xs" style={{ color: "#6B7280", lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>
                 Helping businesses become impossible to ignore in the age of AI search.
               </p>
