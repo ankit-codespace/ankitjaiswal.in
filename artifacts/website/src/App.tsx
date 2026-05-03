@@ -26,12 +26,7 @@ const Notepad = lazy(() => import("@/pages/tools/notepad"));
 const Pomodoro = lazy(() => import("@/pages/tools/pomodoro"));
 
 function RouteFallback() {
-  return (
-    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0A0C10" }}>
-      <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.12)", borderTopColor: "rgba(255,255,255,0.55)", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  );
+  return <div aria-hidden="true" style={{ minHeight: "100svh", background: "#0A0C10" }} />;
 }
 
 function Preloader({ onComplete }: { onComplete: () => void }) {
