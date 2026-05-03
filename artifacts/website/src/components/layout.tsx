@@ -192,12 +192,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
       >
         <div className="container mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center hover:opacity-70 transition-opacity">
-            <img
-              src="https://ankitjaiswal.in/assets/images/logo.webp"
-              alt="Ankit Jaiswal"
-              className="h-8 w-auto object-contain"
-              style={{}}
-            />
+            <span
+              style={{
+                fontFamily: "'Sora', sans-serif",
+                fontWeight: 800,
+                fontSize: "20px",
+                letterSpacing: "0",
+                color: isToolsIndex || !isInHero ? "#F9FAFB" : "#0D1117",
+              }}
+            >
+              Ankit Jaiswal
+            </span>
           </Link>
 
           {/* Desktop Nav */}
@@ -382,11 +387,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 py-12">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <img
-                src="https://ankitjaiswal.in/assets/images/logo.webp"
-                alt="Ankit Jaiswal"
-                className="h-7 w-auto object-contain mb-4 opacity-60"
-              />
+              <div
+                className="mb-4"
+                style={{
+                  fontFamily: "'Sora', sans-serif",
+                  fontWeight: 800,
+                  fontSize: "18px",
+                  color: "#F9FAFB",
+                  opacity: 0.72,
+                }}
+              >
+                Ankit Jaiswal
+              </div>
               <p className="text-sm max-w-xs" style={{ color: "#6B7280", lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>
                 Helping businesses become impossible to ignore in the age of AI search.
               </p>

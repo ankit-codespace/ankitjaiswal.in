@@ -6,7 +6,7 @@ export const SITE = {
   defaultOg: "/opengraph.jpg",
   // Real photo of Ankit — used for avatar UI and as Person.image in JSON-LD
   // so search engines and AI engines have a face to attach to the entity.
-  avatar: "https://ankitjaiswal.in/assets/images/ankit.webp",
+  avatar: "/images/hero-portrait.webp",
   locale: "en_US",
   social: {
     github:   "https://github.com/ankit-codespace",

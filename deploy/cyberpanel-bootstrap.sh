@@ -160,7 +160,7 @@ publish_static_site() {
     mkdir -p "$WEB_ROOT"
   fi
 
-  rsync -a --delete "$APP_DIR/artifacts/website/dist/public/" "$WEB_ROOT/"
+  rsync -a --delete --exclude '/assets/images/***' "$APP_DIR/artifacts/website/dist/public/" "$WEB_ROOT/"
 
   cat > "$WEB_ROOT/.htaccess" <<EOF_HTACCESS
 RewriteEngine On

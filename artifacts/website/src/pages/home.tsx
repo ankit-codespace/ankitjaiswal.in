@@ -101,7 +101,7 @@ const tools = [
   { name: "Pomodoro Track", category: "Productivity", href: "https://pomodorotrack.com/", external: true },
 ];
 
-const HERO_IMAGE_URL = "https://ankitjaiswal.in/assets/images/ankit-portrait.webp";
+const HERO_IMAGE_URL = "/images/hero-portrait-nobg.webp";
 
 export default function Home() {
   const heroContentRef = useRef<HTMLDivElement>(null);
