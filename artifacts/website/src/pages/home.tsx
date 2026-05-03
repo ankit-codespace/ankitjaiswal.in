@@ -107,18 +107,9 @@ export default function Home() {
   const heroContentRef = useRef<HTMLDivElement>(null);
   const heroTextRef = useRef<HTMLElement | null>(null);
   const heroPortraitRef = useRef<HTMLElement | null>(null);
-  const isFirstVisit = !sessionStorage.getItem("preloader_shown");
-  const [heroAnimReady, setHeroAnimReady] = useState(!isFirstVisit);
+  const heroAnimReady = true;
   const [expertiseActiveIdx, setExpertiseActiveIdx] = useState(0);
   const expertiseCardRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  useEffect(() => {
-    if (isFirstVisit) {
-      const timer = setTimeout(() => setHeroAnimReady(true), 1500);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, []);
 
   useEffect(() => {
     if (heroContentRef.current) {

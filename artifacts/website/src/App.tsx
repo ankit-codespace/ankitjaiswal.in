@@ -1,10 +1,9 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { HelmetProvider } from "react-helmet-async";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { Layout } from "@/components/layout";
 import { FeedbackProvider } from "@/components/FeedbackWidget";
@@ -27,45 +26,6 @@ const Pomodoro = lazy(() => import("@/pages/tools/pomodoro"));
 
 function RouteFallback() {
   return <div aria-hidden="true" style={{ minHeight: "100svh", background: "#0A0C10" }} />;
-}
-
-function Preloader({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<"enter" | "hold" | "exit">("enter");
-
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase("hold"), 500);
-    const t2 = setTimeout(() => setPhase("exit"), 900);
-    const t3 = setTimeout(() => onComplete(), 1400);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [onComplete]);
-
-  return (
-    <motion.div
-      className="fixed inset-0 flex items-center justify-center"
-      style={{ background: "#EDEAE4", zIndex: 9999 }}
-      animate={{ opacity: phase === "exit" ? 0 : 1 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <motion.span
-        style={{
-          fontFamily: "'Sora', sans-serif",
-          fontWeight: 900,
-          fontSize: "clamp(60px, 10vw, 100px)",
-          color: "#0D1117",
-          letterSpacing: "-2px",
-        }}
-        initial={{ opacity: 0, scale: 0.8, y: 10 }}
-        animate={{
-          opacity: phase === "exit" ? 0 : 1,
-          scale: phase === "enter" ? [0.8, 1] : 1,
-          y: phase === "exit" ? -20 : 0,
-        }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      >
-        AJ
-      </motion.span>
-    </motion.div>
-  );
 }
 
 function AppRouter() {
@@ -131,19 +91,6 @@ function AppRouter() {
 }
 
 function App() {
-  const hasSeenPreloader = sessionStorage.getItem("preloader_shown") === "true";
-  // Only show the AJ wordmark preloader for first-time landings on the home page.
-  // Direct entries from search/share to deep pages (a tool, /tools, /about, etc.)
-  // skip the splash so the user lands straight on the content they came for.
-  const isHomeLanding = typeof window !== "undefined" &&
-    (window.location.pathname === "/" || window.location.pathname === "");
-  const [showPreloader, setShowPreloader] = useState(!hasSeenPreloader && isHomeLanding);
-
-  const handlePreloaderComplete = useCallback(() => {
-    sessionStorage.setItem("preloader_shown", "true");
-    setShowPreloader(false);
-  }, []);
-
   useEffect(() => {
     // Smooth scroll is desktop-only — Lenis on mobile causes jank and disables
     // the iOS rubber-band, hurting perceived performance. Skip touch devices.
@@ -189,9 +136,6 @@ function App() {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <AnimatePresence>
-            {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
-          </AnimatePresence>
           <FeedbackProvider>
             <AppRouter />
           </FeedbackProvider>
