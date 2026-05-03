@@ -139,6 +139,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // On the /tools directory page the nav should always be opaque — the page is dark from the top
   // and the transparent-in-hero treatment causes the eyebrow label to bleed through the nav.
   const isToolsIndex = location === "/tools";
+  const useHeroHeader = !isToolsIndex && isInHero;
+  const headerLogoSrc = useHeroHeader ? "/images/ankitjaiswal-logo-dark.png" : "/images/ankitjaiswal-logo-light.png";
 
   // Individual tool pages (e.g. /tools/notepad) are self-contained — skip site nav & footer.
   // The /tools index page keeps full nav since it's a directory listing, not a working tool.
@@ -178,13 +180,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           borderBottomColor: "rgba(255,255,255,0.07)",
           boxShadow: "0 1px 0 rgba(255,255,255,0.04)",
         } : {
-          // Keep the brand/navigation legible over the pale hero and interior pages.
+          // Home page: transparent in hero, gains background on scroll.
           y: (isInHero || isVisible) && !isInProofSection ? 0 : -100,
           opacity: 1,
-          backgroundColor: "rgba(13,17,23,0.94)",
-          backdropFilter: "blur(16px)",
-          borderBottomColor: "rgba(255,255,255,0.06)",
-          boxShadow: "0 1px 0 rgba(255,255,255,0.04)",
+          backgroundColor: isInHero ? "rgba(0,0,0,0)" : "rgba(13,17,23,0.94)",
+          backdropFilter: isInHero ? "none" : "blur(16px)",
+          borderBottomColor: isInHero ? "rgba(0,0,0,0)" : "rgba(255,255,255,0.06)",
+          boxShadow: isInHero ? "none" : "0 1px 0 rgba(255,255,255,0.04)",
         }}
         transition={{ duration: 0.35, ease: "easeInOut" }}
         className="fixed top-0 left-0 right-0 z-50"
@@ -193,7 +195,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center hover:opacity-70 transition-opacity">
             <img
-              src="/images/ankitjaiswal-logo.png"
+              src={headerLogoSrc}
               alt="Ankit Jaiswal"
               className="h-10 w-auto object-contain"
               decoding="async"
@@ -221,11 +223,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         fontFamily: "'Inter', sans-serif",
                         fontWeight: 400,
                         fontSize: "12px",
-                        color: "#F9FAFB",
+                        color: isActive ? "#2C2CF3" : (useHeroHeader ? "#6B7280" : "#A1AAB4"),
                         textDecoration: "none",
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#FFFFFF"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#F9FAFB"; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#2C2CF3"; }}
+                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = useHeroHeader ? "#6B7280" : "#A1AAB4"; }}
                     >
                       {item.name}
                     </Link>
@@ -240,11 +242,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         fontFamily: "'Inter', sans-serif",
                         fontWeight: 400,
                         fontSize: "12px",
-                        color: "#F9FAFB",
+                        color: isActive ? "#2C2CF3" : (useHeroHeader ? "#6B7280" : "#A1AAB4"),
                         textDecoration: "none",
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#FFFFFF"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#F9FAFB"; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#2C2CF3"; }}
+                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = useHeroHeader ? "#6B7280" : "#A1AAB4"; }}
                     >
                       {item.name}
                     </a>
@@ -286,7 +288,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             aria-label="Toggle menu"
           >
             {(() => {
-              const barColor = "#F9FAFB";
+              const barColor = useHeroHeader ? "#0D1117" : "#F9FAFB";
               return (
                 <>
                   <motion.span
@@ -380,7 +382,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <img
-                src="/images/ankitjaiswal-logo.png"
+                src="/images/ankitjaiswal-logo-light.png"
                 alt="Ankit Jaiswal"
                 className="h-10 w-auto object-contain mb-4 opacity-80"
                 loading="lazy"
