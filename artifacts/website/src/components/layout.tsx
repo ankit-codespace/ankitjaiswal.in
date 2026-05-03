@@ -197,7 +197,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <img
               src={headerLogoSrc}
               alt="Ankit Jaiswal"
-              className="h-10 w-auto object-contain"
+              className="w-auto object-contain transition-opacity duration-300"
+              style={{
+                height: useHeroHeader ? 36 : 40,
+                opacity: useHeroHeader ? 0.72 : 1,
+              }}
               decoding="async"
             />
           </Link>
