@@ -133,9 +133,20 @@ export default function RecapYTLanding() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="rounded-[24px] p-2 md:p-3 bg-white/[0.02] border border-white/10 shadow-[0_0_100px_rgba(255,255,255,0.03)]"
+            className="rounded-[16px] border border-white/20 bg-[#0F0F0F] overflow-hidden shadow-[0_0_80px_rgba(255,255,255,0.05)] relative"
           >
-            <div className="rounded-[16px] border border-white/5 bg-[#0F0F0F] overflow-hidden relative shadow-2xl">
+            {/* macOS Browser Window Header */}
+            <div className="h-10 border-b border-white/10 bg-[#1A1A1A] flex items-center px-4 gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#FF5F56] shadow-sm" />
+              <div className="w-3 h-3 rounded-full bg-[#FFBD2E] shadow-sm" />
+              <div className="w-3 h-3 rounded-full bg-[#27C93F] shadow-sm" />
+              <div className="flex-1 flex justify-center">
+                 <div className="h-6 w-64 bg-[#0F0F0F] rounded-md border border-white/5 flex items-center justify-center text-[10px] text-white/30 font-mono">
+                    youtube.com/watch?v=recapyt
+                 </div>
+              </div>
+            </div>
+
             {/* Fake Browser Window / YouTube Header */}
             <div className="h-14 border-b border-white/5 bg-[#0F0F0F] flex items-center px-4 gap-4 sticky top-0 z-20">
               <div className="flex items-center gap-4">
@@ -163,7 +174,7 @@ export default function RecapYTLanding() {
                 </button>
                 <div className="relative w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full cursor-pointer hidden sm:flex">
                   <Bell size={24} className="text-white" />
-                  <div className="absolute top-1.5 right-1 bg-red-600 text-white text-[10px] font-bold px-1 rounded-full border-2 border-[#0F0F0F]">9+</div>
+                  <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-[#0F0F0F]"></div>
                 </div>
                 <img src="/images/hero-portrait.webp" alt="Profile" className="w-8 h-8 rounded-full object-cover ml-2" />
               </div>
@@ -177,13 +188,6 @@ export default function RecapYTLanding() {
                 <div className="sticky top-4">
                   <div className="aspect-video bg-black rounded-xl border border-white/5 overflow-hidden relative group">
                     <img src="/alex.webp" alt="Video Thumbnail" className="w-full h-full object-cover opacity-80" />
-                    
-                    {/* Fake Play Button Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                      <div className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                        <Play size={36} className="text-white ml-2" fill="white" />
-                      </div>
-                    </div>
                     
                     {/* YouTube Player Controls Mockup */}
                     <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -206,7 +210,7 @@ export default function RecapYTLanding() {
                   </div>
                   
                   <h2 className="text-xl font-bold text-white leading-tight mt-4">
-                    The Ultimate Sales Training for 2026 [Full Course]
+                    The Ultimate Sales Training [Full Course]
                   </h2>
                   
                   <div className="flex flex-wrap items-center justify-between mt-3">
@@ -267,7 +271,7 @@ export default function RecapYTLanding() {
                 </div>
 
                 {/* RecapYT Content (Scrollable) */}
-                <div className="flex-1 overflow-y-auto p-5 text-sm leading-relaxed custom-scrollbar pb-24 overscroll-contain">
+                <div className="flex-1 min-h-0 overflow-y-auto p-5 text-sm leading-relaxed custom-scrollbar pb-24 overscroll-contain">
                   <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-base">
                     <span className="text-yellow-500">⚡</span> TL;DR
                   </h3>
@@ -348,7 +352,6 @@ export default function RecapYTLanding() {
               }
             `}} />
             
-            </div>
           </motion.div>
         </div>
       </section>
