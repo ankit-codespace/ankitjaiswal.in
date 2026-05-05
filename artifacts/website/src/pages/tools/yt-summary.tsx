@@ -2,7 +2,7 @@ import { Seo } from "@/components/Seo";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Youtube, Download, Zap, BrainCircuit, ShieldCheck, ArrowRight, Chrome, Menu, Search, Mic, Plus, Bell, ThumbsUp, ThumbsDown, Share, ListPlus, MoreHorizontal } from "lucide-react";
+import { Youtube, Download, Zap, BrainCircuit, ShieldCheck, ArrowRight, Chrome, Menu, Search, Mic, Plus, Bell, ThumbsUp, ThumbsDown, Share, ListPlus, MoreHorizontal, Play } from "lucide-react";
 import { tokens } from "@/components/tool/tokens";
 
 function useBrowser() {
@@ -116,15 +116,26 @@ export default function RecapYTLanding() {
       </section>
 
       {/* Interactive Mockup / Demo Section */}
-      <section className="py-20 px-6 relative z-10">
+      <section className="py-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
+          
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4" style={{ fontFamily: tokens.font.display }}>
+              Live Demonstration
+            </h2>
+            <p className="text-white/50 text-lg">
+              A fully interactive preview of how RecapYT natively injects into your browser.
+            </p>
+          </div>
+
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="rounded-2xl border border-white/10 bg-[#0F0F0F] overflow-hidden shadow-2xl relative"
+            className="rounded-[24px] p-2 md:p-3 bg-white/[0.02] border border-white/10 shadow-[0_0_100px_rgba(255,255,255,0.03)]"
           >
+            <div className="rounded-[16px] border border-white/5 bg-[#0F0F0F] overflow-hidden relative shadow-2xl">
             {/* Fake Browser Window / YouTube Header */}
             <div className="h-14 border-b border-white/5 bg-[#0F0F0F] flex items-center px-4 gap-4 sticky top-0 z-20">
               <div className="flex items-center gap-4">
@@ -165,7 +176,14 @@ export default function RecapYTLanding() {
               <div className="flex-1 flex flex-col gap-4 relative">
                 <div className="sticky top-4">
                   <div className="aspect-video bg-black rounded-xl border border-white/5 overflow-hidden relative group">
-                    <img src="/alex.webp" alt="Video Thumbnail" className="w-full h-full object-cover" />
+                    <img src="/alex.webp" alt="Video Thumbnail" className="w-full h-full object-cover opacity-80" />
+                    
+                    {/* Fake Play Button Overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                      <div className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                        <Play size={36} className="text-white ml-2" fill="white" />
+                      </div>
+                    </div>
                     
                     {/* YouTube Player Controls Mockup */}
                     <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -249,7 +267,7 @@ export default function RecapYTLanding() {
                 </div>
 
                 {/* RecapYT Content (Scrollable) */}
-                <div className="flex-1 overflow-y-auto p-5 text-sm leading-relaxed custom-scrollbar pb-24">
+                <div className="flex-1 overflow-y-auto p-5 text-sm leading-relaxed custom-scrollbar pb-24 overscroll-contain">
                   <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-base">
                     <span className="text-yellow-500">⚡</span> TL;DR
                   </h3>
@@ -330,6 +348,7 @@ export default function RecapYTLanding() {
               }
             `}} />
             
+            </div>
           </motion.div>
         </div>
       </section>
