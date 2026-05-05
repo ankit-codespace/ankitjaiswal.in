@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>410 Gone Manager - Refined Admin Interface</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:        #F7F5F0;
+  --surface:   #FFFFFF;
+  --surface-2: #FEFCF8;
+  --border:    #E5E2DB;
+  --border-md: #C9C5BC;
+  --border-dk: #A09C94;
+  --t1:  #18170F;
+  --t2:  #6B6760;
+  --t3:  #9C9890;
+  --t4:  #C4C0B8;
+  --green:     #15803D;
+  --green-bg:  #F0FDF4;
+  --green-bd:  #BBF7D0;
+  --amber:     #B45309;
+  --amber-bg:  #FFFBEB;
+  --amber-bd:  #FDE68A;
+  --blue:      #1D4ED8;
+  --blue-bg:   #EFF6FF;
+  --blue-bd:   #BFDBFE;
+  --red:       #DC2626;
+  --red-bg:    #FEF2F2;
+  --red-bd:    #FECACA;
+  --fgm-admin-bar-offset: 0px;
+  --fgm-sticky-gap: 8px;
+  --easeSpring: cubic-bezier(0.16,1,0.3,1);
+  --easeOut:    cubic-bezier(0.0,0,0.2,1);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:'Sora',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--t1);
+}
+
+.shell{
+  display:flex;
+  min-height:calc(100vh - var(--fgm-sticky-gap));
+  padding-top:var(--fgm-sticky-gap);
+}
+
+body.wp-admin,
+body.admin-bar{--fgm-admin-bar-offset:32px;}
+
+@media screen and (max-width:782px){
+  body.wp-admin,
+  body.admin-bar{--fgm-admin-bar-offset:46px;}
+}
+
+/* -- SIDEBAR -- */
+.sb{
+  width:216px;flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:sticky;
+  top:calc(var(--fgm-admin-bar-offset) + var(--fgm-sticky-gap));
+  height:calc(100vh - var(--fgm-admin-bar-offset) - var(--fgm-sticky-gap));
+  overflow-y:auto;
+}
+
+.sb-brand{
+  padding:18px 16px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+
+.sb-mark{
+  width:30px;height:30px;flex-shrink:0;
+  background:var(--t1);
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+
+.sb-mark::after{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.08) 0%,transparent 60%);
+  pointer-events:none;
+}
+
+.sb-mark span{
+  font-family:'Sora',sans-serif;
+  font-size:10px;font-weight:600;
+  color:#fff;letter-spacing:-0.3px;line-height:1;
+}
+
+.sb-name{font-size:13px;font-weight:600;color:var(--t1);letter-spacing:-0.3px;line-height:1.2}
+.sb-sub{font-size:10.5px;color:var(--t3);font-weight:400;margin-top:2px;}
+
+.sb-nav{padding:10px 0;flex:1}
+
+.sb-sec{
+  padding:10px 16px 4px;
+  font-size:9.5px;font-weight:600;
+  letter-spacing:0.09em;text-transform:uppercase;
+  color:var(--t4);
+}
+
+.sb-item{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;margin:1px 8px;
+  border-radius:6px;
+  color:var(--t2);cursor:pointer;
+  transition:background 130ms ease,color 130ms ease,transform 100ms ease;
+  font-size:12.5px;font-weight:400;
+  position:relative;user-select:none;
+}
+
+.sb-item:hover{background:var(--bg);color:var(--t1);}
+.sb-item:active{transform:scale(0.98);}
+
+.sb-item.on{
+  background:var(--t1);color:#fff;font-weight:500;
+}
+
+.sb-item.on::before{
+  content:'';
+  position:absolute;left:-8px;top:50%;transform:translateY(-50%);
+  width:3px;height:16px;
+  background:#fff;border-radius:0 2px 2px 0;
+  opacity:0.35;
+}
+
+.sb-item svg{width:14px;height:14px;flex-shrink:0;opacity:0.65;}
+.sb-item.on svg{opacity:1;}
+
+/* CHANGE 1: sb-badge - white-space:nowrap added */
+.sb-badge{
+  margin-left:auto;
+  font-size:10px;font-weight:600;
+  padding:2px 6px;border-radius:4px;
+  background:var(--green-bg);color:var(--green);
+  border:1px solid var(--green-bd);
+  letter-spacing:0;
+  white-space:nowrap;                     /* <- FIX */
+  flex-shrink:0;
+  transition:background 200ms,color 200ms,border-color 200ms;
+}
+
+.sb-item.on .sb-badge{
+  background:rgba(255,255,255,0.14);
+  color:rgba(255,255,255,0.8);
+  border-color:rgba(255,255,255,0.18);
+}
+
+/* -- MAIN -- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+
+/* -- TOPBAR -- */
+.topbar{
+  height:56px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;
+  display:flex;align-items:center;gap:14px;
+  position:sticky;
+  top:calc(var(--fgm-admin-bar-offset) + var(--fgm-sticky-gap));
+  z-index:20;
+}
+
+.topbar-title{
+  font-size:13.5px;font-weight:600;
+  color:var(--t1);letter-spacing:-0.3px;
+  white-space:nowrap;
+}
+
+.topbar-title em{
+  font-family:'Times New Roman',Times,serif;
+  font-style:italic;font-weight:400;
+  font-size:14px;letter-spacing:0;color:var(--t2);
+}
+
+.topbar-divider{width:1px;height:16px;background:var(--border);flex-shrink:0;}
+
+/* CHANGE 2: engine-tag - white-space:nowrap added */
+.engine-tag{
+  font-size:11px;color:var(--t3);
+  display:flex;align-items:center;gap:5px;
+  font-weight:400;
+  white-space:nowrap;                     /* <- FIX */
+  flex-shrink:0;
+}
+
+.engine-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);flex-shrink:0;
+}
+
+@keyframes dot-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(21,128,61,0)}
+  50%{box-shadow:0 0 0 4px rgba(21,128,61,0.15)}
+}
+.engine-dot{animation:dot-pulse 2.8s cubic-bezier(0.4,0,0.6,1) infinite;}
+
+.topbar-sep{flex:1;}
+.topbar-acts{display:flex;align-items:center;gap:8px;}
+
+/* -- BUTTONS -- */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 14px;height:32px;
+  border-radius:7px;
+  font-size:12px;font-weight:500;
+  cursor:pointer;
+  transition:background 130ms ease,border-color 130ms ease,color 130ms ease,transform 100ms ease,box-shadow 150ms ease;
+  border:1px solid transparent;
+  font-family:inherit;letter-spacing:-0.1px;
+  white-space:nowrap;
+  position:relative;overflow:hidden;
+}
+
+.btn:active{transform:scale(0.97);}
+
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--t2);}
+.btn-ghost:hover{background:var(--bg);border-color:var(--border-md);color:var(--t1);}
+
+.btn-primary{background:var(--t1);border-color:var(--t1);color:#fff;}
+.btn-primary:hover{background:#2D2C24;}
+
+.btn-primary:focus-visible,
+.btn-ghost:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(24,23,15,0.12);}
+
+.btn-icon svg{width:12px;height:12px;}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-spinner{
+  width:12px;height:12px;
+  border:1.5px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 0.6s linear infinite;
+  flex-shrink:0;
+}
+
+/* -- CONTENT -- */
+.content{
+  padding:24px 28px 32px;
+  display:grid;
+  grid-template-columns:1fr 272px;
+  gap:20px;
+  align-items:start;
+}
+
+/* -- PROTECTION BAR -- */
+@keyframes bar-in{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.prot-bar{
+  grid-column:1/-1;
+  background:var(--green-bg);
+  border:1px solid var(--green-bd);
+  border-radius:8px;
+  padding:9px 14px;
+  display:flex;align-items:center;gap:9px;
+  font-size:12px;color:var(--green);font-weight:500;
+  animation:bar-in 350ms var(--easeSpring) 80ms both;
+}
+
+.prot-bar-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);flex-shrink:0;
+  position:relative;
+}
+.prot-bar-dot::after{
+  content:'';
+  position:absolute;inset:-3px;border-radius:50%;
+  background:rgba(21,128,61,0.2);
+  animation:dot-pulse 3s ease-in-out infinite;
+}
+
+.prot-bar-right{
+  margin-left:auto;
+  font-size:11px;font-weight:400;
+  color:rgba(21,128,61,0.65);
+  white-space:nowrap;flex-shrink:0;
+}
+
+/* -- STAT CARDS -- */
+@keyframes card-in{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.stats{
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+}
+
+.stat{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px 22px;
+  cursor:default;
+  transition:border-color 180ms var(--easeSpring),transform 180ms var(--easeSpring),box-shadow 180ms var(--easeSpring);
+  animation:card-in 400ms var(--easeSpring) both;
+}
+
+.stat:nth-child(1){animation-delay:100ms}
+.stat:nth-child(2){animation-delay:160ms}
+.stat:nth-child(3){animation-delay:220ms}
+
+.stat:hover{
+  border-color:var(--border-md);
+  transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(24,23,15,0.06);
+}
+
+.stat-lbl{
+  font-size:10.5px;font-weight:600;
+  letter-spacing:0.07em;text-transform:uppercase;
+  color:var(--t3);margin-bottom:10px;
+}
+
+.stat-val{
+  font-size:30px;font-weight:600;
+  color:var(--t1);letter-spacing:-1.2px;
+  line-height:1;margin-bottom:8px;
+  font-family:'Sora',sans-serif;
+}
+
+.stat-val.green{color:var(--green);}
+.stat-val.engine{font-size:16px;font-weight:600;letter-spacing:-0.4px;margin-top:4px;}
+
+/* CHANGE 3: stat-foot - flex-wrap:nowrap added */
+.stat-foot{
+  display:flex;align-items:center;gap:7px;
+  font-size:11.5px;color:var(--t3);
+  flex-wrap:nowrap;                       /* <- FIX */
+}
+
+/* CHANGE 4: chip - white-space:nowrap added */
+.chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:4px;
+  font-size:10.5px;font-weight:600;
+  letter-spacing:0.01em;
+  white-space:nowrap;                     /* <- FIX */
+  flex-shrink:0;
+}
+
+.chip.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.chip.amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);}
+.chip.blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);}
+
+/* -- TABLE CARD -- */
+@keyframes tbl-in{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.tbl-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  animation:tbl-in 400ms var(--easeSpring) 300ms both;
+}
+
+.tbl-head{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+
+.tbl-title{font-size:13px;font-weight:600;color:var(--t1);letter-spacing:-0.25px;}
+
+.tbl-count{
+  font-size:11px;color:var(--t3);font-weight:500;
+  background:var(--bg);border:1px solid var(--border);
+  padding:2px 8px;border-radius:4px;
+  white-space:nowrap;flex-shrink:0;
+}
+
+.search-wrap{position:relative;margin-left:auto;}
+
+.search-input{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:0 10px 0 29px;
+  height:30px;
+  font-size:12px;color:var(--t1);
+  width:176px;
+  font-family:inherit;
+  outline:none;
+  transition:border-color 150ms ease,box-shadow 150ms ease,width 220ms var(--easeSpring);
+}
+
+.search-input:hover{border-color:var(--border-md);}
+.search-input:focus{
+  border-color:var(--border-dk);
+  box-shadow:0 0 0 3px rgba(24,23,15,0.07);
+  width:200px;
+}
+
+.search-input::placeholder{color:var(--t4);}
+
+.search-ico{
+  position:absolute;left:9px;top:50%;transform:translateY(-50%);
+  pointer-events:none;opacity:0.35;
+}
+
+table{width:100%;border-collapse:collapse;}
+
+thead th{
+  padding:7px 16px;
+  font-size:10.5px;font-weight:600;
+  letter-spacing:0.055em;text-transform:uppercase;
+  color:var(--t3);
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+  text-align:left;
+}
+
+thead th:last-child{text-align:right;}
+
+tbody tr{
+  border-bottom:1px solid var(--border);
+  transition:background 100ms linear;
+  cursor:pointer;
+}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#FAFAF7;}
+tbody tr:hover .row-acts{opacity:1;}
+tbody tr:hover .act-btn{pointer-events:auto;}
+tbody tr.selected{background:#F5F3EE;}
+
+td{padding:11px 16px;vertical-align:middle;}
+
+.chk-col{width:36px;padding-right:0;}
+
+.chk-box{
+  width:15px;height:15px;
+  border:1.5px solid var(--border-md);
+  border-radius:4px;
+  background:var(--surface);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background 130ms ease,border-color 130ms ease;
+  flex-shrink:0;
+}
+
+.chk-box:hover{border-color:var(--border-dk);}
+
+.path-wrap{display:flex;flex-direction:column;gap:4px;}
+
+.path-url{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11.5px;font-weight:500;
+  color:var(--t1);letter-spacing:-0.3px;line-height:1.2;
+}
+
+.path-meta{
+  display:flex;align-items:center;gap:7px;
+  font-size:11px;color:var(--t3);
+  flex-wrap:nowrap;
+}
+
+/* CHANGE 5: type-tag - white-space:nowrap added */
+.type-tag{
+  display:inline-flex;align-items:center;
+  padding:1px 6px;border-radius:3px;
+  font-size:10px;font-weight:600;
+  letter-spacing:0.02em;
+  white-space:nowrap;                     /* <- FIX */
+  flex-shrink:0;
+}
+
+.type-tag.page{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);}
+.type-tag.category{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);}
+.type-tag.post{background:var(--bg);color:var(--t2);border:1px solid var(--border);}
+
+/* s-pill - white-space:nowrap was already present, preserved */
+.s-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:3px 9px 3px 6px;border-radius:5px;
+  font-size:11px;font-weight:600;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+.s-pill.active{
+  background:var(--green-bg);
+  color:var(--green);
+  border:1px solid var(--green-bd);
+}
+
+.s-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:currentColor;flex-shrink:0;
+}
+
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:0.45}}
+.s-pill.active .s-dot{animation:breathe 3s ease-in-out infinite;}
+
+.date-td{
+  font-size:11.5px;color:var(--t3);
+  white-space:nowrap;
+}
+
+.row-acts{
+  display:flex;align-items:center;gap:4px;
+  justify-content:flex-end;
+  opacity:0;
+  transition:opacity 150ms ease;
+}
+
+.act-btn{
+  height:26px;padding:0 9px;
+  border-radius:5px;
+  font-size:11px;font-weight:500;
+  cursor:pointer;border:1px solid var(--border);
+  background:var(--surface);color:var(--t2);
+  transition:background 120ms ease,border-color 120ms ease,color 120ms ease,transform 100ms ease;
+  font-family:inherit;
+  pointer-events:none;
+  white-space:nowrap;
+}
+
+.act-btn:hover{background:var(--bg);border-color:var(--border-md);color:var(--t1);}
+.act-btn:active{transform:scale(0.96);}
+.act-btn.remove:hover{background:var(--red-bg);border-color:var(--red-bd);color:var(--red);}
+
+/* -- RIGHT PANELS -- */
+.panels{display:flex;flex-direction:column;gap:16px;}
+
+.panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  animation:card-in 400ms var(--easeSpring) both;
+}
+
+.panel:nth-child(1){animation-delay:200ms}
+.panel:nth-child(2){animation-delay:250ms}
+.panel:nth-child(3){animation-delay:300ms}
+
+.panel-hd{
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+
+.panel-title{
+  font-size:12.5px;font-weight:600;color:var(--t1);
+  letter-spacing:-0.2px;
+  display:flex;align-items:center;gap:7px;
+  white-space:nowrap;
+}
+
+.panel-title svg{width:12px;height:12px;color:var(--t3);}
+.panel-count{font-size:11px;color:var(--t3);white-space:nowrap;}
+
+.panel-bd{padding:14px 16px;}
+
+/* -- COMMAND INPUT -- */
+.cmd-area{
+  width:100%;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:7px;
+  padding:10px 12px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11.5px;color:var(--t1);
+  resize:none;height:78px;
+  line-height:1.65;
+  outline:none;
+  display:block;
+  transition:border-color 150ms ease,box-shadow 150ms ease;
+}
+
+.cmd-area:hover{border-color:var(--border-md);}
+.cmd-area:focus{
+  border-color:var(--border-dk);
+  box-shadow:0 0 0 3px rgba(24,23,15,0.07);
+}
+
+.cmd-area::placeholder{color:var(--t4);}
+
+.cmd-meta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:7px;
+}
+
+.cmd-hint{font-size:10.5px;color:var(--t3);line-height:1.5;}
+.cmd-count{font-size:10.5px;color:var(--t4);font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+
+/* -- INJECT BUTTON -- */
+.inject-btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  width:100%;height:34px;margin-top:10px;
+  background:var(--t1);color:#fff;
+  border:1px solid var(--t1);
+  border-radius:7px;
+  font-size:12px;font-weight:500;
+  cursor:pointer;font-family:inherit;
+  transition:background 130ms ease,transform 100ms ease,border-color 200ms ease;
+  letter-spacing:-0.1px;
+  overflow:hidden;position:relative;
+}
+
+.inject-btn:hover{background:#2D2C24;}
+.inject-btn:active{transform:scale(0.97);}
+.inject-btn.loading{background:#2D2C24;cursor:not-allowed;}
+.inject-btn.loading:active{transform:none;}
+
+.inject-btn.success{
+  background:var(--green);border-color:var(--green);
+  animation:success-pulse 300ms var(--easeSpring);
+}
+
+@keyframes success-pulse{
+  0%{transform:scale(1)}40%{transform:scale(1.02)}100%{transform:scale(1)}
+}
+
+.inject-btn-text{transition:opacity 150ms ease;}
+.inject-btn.loading .inject-btn-text{opacity:0;position:absolute;}
+
+/* -- ACTIVITY TRAIL -- */
+@keyframes act-in{
+  from{opacity:0;transform:translateX(-5px)}
+  to{opacity:1;transform:translateX(0)}
+}
+
+.act-item{
+  display:flex;gap:10px;
+  padding:8px 0;
+  border-bottom:1px solid var(--border);
+  align-items:flex-start;
+  opacity:0;
+  animation:act-in 280ms var(--easeSpring) both;
+}
+
+.act-item:last-child{border-bottom:none;padding-bottom:0;}
+.act-item:first-child{padding-top:0;}
+.act-item:nth-child(1){animation-delay:350ms}
+.act-item:nth-child(2){animation-delay:390ms}
+.act-item:nth-child(3){animation-delay:430ms}
+.act-item:nth-child(4){animation-delay:470ms}
+.act-item:nth-child(5){animation-delay:510ms}
+.act-item:nth-child(6){animation-delay:550ms}
+
+.act-ico{
+  width:20px;height:20px;border-radius:5px;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  margin-top:1px;
+}
+
+.act-ico.add{background:var(--green-bg);}
+.act-ico.rep{background:var(--amber-bg);}
+.act-ico.rm{background:var(--red-bg);}
+.act-ico svg{width:9px;height:9px;}
+
+.act-body{flex:1;min-width:0;}
+
+.act-path{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10.5px;font-weight:500;color:var(--t1);
+  display:block;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  line-height:1.3;
+}
+
+.act-detail{
+  font-size:10.5px;color:var(--t3);margin-top:2px;
+  display:flex;align-items:center;gap:5px;
+}
+
+/* CHANGE 6: act-verb - white-space:nowrap added */
+.act-verb{
+  font-size:10px;font-weight:600;
+  padding:0px 5px;border-radius:3px;
+  letter-spacing:0.01em;
+  white-space:nowrap;                     /* <- FIX */
+  flex-shrink:0;
+}
+
+.act-verb.add{background:var(--green-bg);color:var(--green);}
+.act-verb.rep{background:var(--amber-bg);color:var(--amber);}
+
+/* -- SKELETON EMPTY STATE -- */
+.skel-wrap {
+  position: relative;
+  overflow: hidden;
+  padding: 10px 0;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 10%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 10%, rgba(0,0,0,0) 100%);
+  user-select: none;
+  pointer-events: none;
+}
+.skel-item {
+  display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border);
+  align-items: flex-start; opacity: 0.6;
+}
+.skel-item:last-child { border-bottom: none; }
+.skel-ico {
+  width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0;
+  background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: fgm-shimmer 2.5s infinite linear;
+}
+.skel-body { flex: 1; display: flex; flex-direction: column; gap: 5px; margin-top: 3px; }
+.skel-line {
+  height: 10px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: fgm-shimmer 2.5s infinite linear;
+}
+.skel-line.w-lg { width: 85%; }
+.skel-line.w-sm { width: 45%; height: 8px; margin-top: 2px; }
+.skel-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2;
+}
+.skel-pill {
+  background: rgba(255,255,255,0.85); backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  padding: 6px 14px; border-radius: 99px; font-size: 11px; font-weight: 500; color: var(--t2);
+  display: flex; align-items: center; gap: 6px;
+}
+.skel-pill-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 0 2px rgba(21,128,61,0.2);
+  animation: breathe 2s infinite;
+}
+@keyframes fgm-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* -- DANGER ZONE -- */
+.danger{
+  background:var(--red-bg);
+  border:1px solid var(--red-bd);
+  border-radius:10px;
+  padding:14px 16px;
+}
+
+.danger-title{
+  font-size:12px;font-weight:600;color:var(--red);
+  margin-bottom:5px;
+  display:flex;align-items:center;gap:5px;
+}
+
+.danger-title svg{width:13px;height:13px;}
+
+.danger-copy{
+  font-size:11px;color:#7F1D1D;
+  line-height:1.55;margin-bottom:12px;
+}
+
+.reset-btn{
+  width:100%;height:32px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:6px;
+  font-size:11.5px;font-weight:500;
+  cursor:pointer;font-family:inherit;
+  transition:background 150ms ease,color 150ms ease,border-color 150ms ease,transform 100ms ease;
+  border:1px solid var(--red-bd);
+  background:var(--surface);color:var(--red);
+  white-space:nowrap;
+}
+.reset-btn svg{width:14px;height:14px;flex-shrink:0;display:block;overflow:visible;}
+
+.reset-btn:hover{background:var(--red);color:#fff;border-color:var(--red);}
+.reset-btn:active{transform:scale(0.97);}
+.reset-btn.confirming{background:var(--red);color:#fff;border-color:var(--red);}
+
+.reset-confirm{
+  display:none;
+  background:var(--red);
+  border:1px solid #991B1B;
+  border-radius:7px;
+  padding:10px 12px;
+  margin-top:10px;
+  font-size:11px;color:#fff;
+  line-height:1.5;
+  animation:card-in 200ms var(--easeSpring);
+}
+
+.reset-confirm.show{display:block;}
+.reset-confirm strong{font-weight:600;}
+
+.reset-confirm-row{display:flex;gap:8px;margin-top:10px;}
+
+.reset-cancel{
+  flex:1;height:28px;border-radius:5px;
+  border:1px solid rgba(255,255,255,0.3);
+  background:transparent;color:#fff;
+  font-size:11px;font-weight:500;cursor:pointer;
+  font-family:inherit;
+  transition:background 130ms ease;
+}
+.reset-cancel:hover{background:rgba(255,255,255,0.12);}
+
+.reset-go{
+  flex:1;height:28px;border-radius:5px;
+  border:1px solid rgba(0,0,0,0.2);
+  background:#fff;color:var(--red);
+  font-size:11px;font-weight:600;cursor:pointer;
+  font-family:inherit;
+  transition:background 130ms ease;
+}
+.reset-go:hover{background:#FEF2F2;}
+
+/* -- TABLE ROW ENTRY ANIMATIONS -- */
+@keyframes row-in{from{opacity:0}to{opacity:1}}
+tbody tr{animation:row-in 300ms ease both;}
+tbody tr:nth-child(1){animation-delay:320ms}
+tbody tr:nth-child(2){animation-delay:360ms}
+tbody tr:nth-child(3){animation-delay:400ms}
+tbody tr:nth-child(4){animation-delay:440ms}
+tbody tr:nth-child(5){animation-delay:480ms}
+tbody tr:nth-child(6){animation-delay:520ms}
+tbody tr:nth-child(7){animation-delay:560ms}
+tbody tr:nth-child(8){animation-delay:600ms}
+tbody tr:nth-child(n+9){animation-delay:640ms}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <div class="sb-brand">
+      <div class="sb-mark"><span>410</span></div>
+      <div>
+        <div class="sb-name">410 Gone Manager</div>
+        <div class="sb-sub">HDHub &middot; WP 6.9.4</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-sec">Management</div>
+      <div class="sb-item on" tabindex="0">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="14" height="14"><path d="M2 4h12M2 8h9M2 12h5"/></svg>
+        Active Rules
+        <span class="sb-badge">199</span>
+      </div>
+      <div class="sb-item" tabindex="0">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5"/></svg>
+        Activity Trail
+      </div>
+      <div class="sb-item" tabindex="0">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="14" height="14"><path d="M3 8h10M9 4l4 4-4 4M7 4L3 8l4 4"/></svg>
+        Data Migration
+      </div>
+      <div class="sb-sec">WordPress</div>
+      <div class="sb-item" tabindex="0">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="14" height="14"><path d="M2 5.5L8 2l6 3.5v5L8 14l-6-3.5v-5z"/></svg>
+        Dashboard
+      </div>
+      <div class="sb-item" tabindex="0">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 7h6M5 9.5h4"/></svg>
+        Posts
+      </div>
+      <div class="sb-item" tabindex="0">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+        Users
+      </div>
+      <div class="sb-sec">Tools</div>
+      <div class="sb-item" tabindex="0">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v10M4 10l4 4 4-4"/></svg>
+        Export / Import
+      </div>
+      <div class="sb-item" tabindex="0">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="5.5"/><path d="M5.5 8h5M8 5.5v5"/></svg>
+        Site Health
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <span class="topbar-title">410 <em>Gone</em> Management</span>
+      <div class="topbar-divider"></div>
+      <div class="engine-tag">
+        <div class="engine-dot"></div>
+        PHP Engine &middot; Site Protected
+      </div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-acts">
+        <button class="btn btn-ghost btn-icon">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M8 2v10M4 10l4 4 4-4"/></svg>
+          Export CSV
+        </button>
+        <button class="btn btn-primary btn-icon">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>
+          Add Rule
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- PROTECTION BAR -->
+      <div class="prot-bar">
+        <div class="prot-bar-dot"></div>
+        <span>199 rules enforced &mdash; all incoming 410 signals are being handled correctly.</span>
+        <div class="prot-bar-right">Last sync: 2 minutes ago</div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-lbl">Rules Enforced</div>
+          <div class="stat-val green">199</div>
+          <div class="stat-foot">
+            <span class="chip green">Active</span>
+            <span>paths returning 410</span>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="stat-lbl">Activity Log</div>
+          <div class="stat-val">15</div>
+          <div class="stat-foot">
+            <span>events recorded</span>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="stat-lbl">Engine Mode</div>
+          <div class="stat-val engine">PHP Engine</div>
+          <div class="stat-foot">
+            <span class="chip green">Active</span>
+            <span>auto-detect on</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PATH TABLE -->
+      <div class="tbl-card">
+        <div class="tbl-head">
+          <span class="tbl-title">Managed Paths</span>
+          <span class="tbl-count" id="path-count">199 active</span>
+          <div class="search-wrap">
+            <svg class="search-ico" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+            <input class="search-input" type="text" placeholder="Search paths&hellip;" id="path-search" oninput="doSearch(this.value)" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th class="chk-col"></th>
+              <th>Path</th>
+              <th>Status</th>
+              <th>Added</th>
+              <th style="text-align:right"></th>
+            </tr>
+          </thead>
+          <tbody id="path-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- RIGHT PANELS -->
+      <div class="panels">
+
+        <!-- Manual Override -->
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">
+              <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="12" height="12"><path d="M3 4h10M3 8h7M3 12h5"/><path d="M12 10l2 2-2 2"/></svg>
+              Manual Override
+            </span>
+          </div>
+          <div class="panel-bd">
+            <textarea class="cmd-area" id="cmd-input" placeholder="/old-page&#10;/another-removed-post&#10;domain.com/legacy-url" oninput="updateCount()" spellcheck="false"></textarea>
+            <div class="cmd-meta">
+              <div class="cmd-hint">One URL or slug per line.</div>
+              <div class="cmd-count" id="cmd-count">0 paths</div>
+            </div>
+            <button class="inject-btn" id="inject-btn" onclick="doInject()">
+              <div class="btn-spinner" style="display:none" id="inj-spin"></div>
+              <svg id="inj-ico" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+              <span class="inject-btn-text" id="inj-txt">Inject Rule</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Activity Trail -->
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">
+              <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5"/></svg>
+              Activity Trail
+            </span>
+            <span class="panel-count">0 events</span>
+          </div>
+          <div class="panel-bd" style="padding:10px 16px; position:relative;">
+            <div class="skel-wrap">
+              <div class="skel-overlay">
+                <div class="skel-pill">
+                  <div class="skel-pill-dot"></div>
+                  Listening for first activity...
+                </div>
+              </div>
+              <div class="skel-item">
+                <div class="skel-ico"></div>
+                <div class="skel-body"><div class="skel-line w-lg"></div><div class="skel-line w-sm"></div></div>
+              </div>
+              <div class="skel-item">
+                <div class="skel-ico"></div>
+                <div class="skel-body"><div class="skel-line w-lg" style="width:70%;"></div><div class="skel-line w-sm" style="width:35%;"></div></div>
+              </div>
+              <div class="skel-item">
+                <div class="skel-ico"></div>
+                <div class="skel-body"><div class="skel-line w-lg" style="width:90%;"></div><div class="skel-line w-sm" style="width:50%;"></div></div>
+              </div>
+              <div class="skel-item">
+                <div class="skel-ico"></div>
+                <div class="skel-body"><div class="skel-line w-lg" style="width:60%;"></div><div class="skel-line w-sm" style="width:40%;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Migration -->
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">
+              <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="12" height="12"><path d="M3 8h10M9 4l4 4-4 4M7 4L3 8l4 4"/></svg>
+              Data Migration
+            </span>
+          </div>
+          <div class="panel-bd" style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-ghost" style="width:100%;justify-content:center;font-size:11.5px;">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M8 2v10M4 10l4 4 4-4"/></svg>
+              Export CSV
+            </button>
+            <button class="btn btn-ghost" style="width:100%;justify-content:center;font-size:11.5px;border-style:dashed;">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M8 12V2M4 6l4-4 4 4"/></svg>
+              Import CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="danger">
+          <div class="danger-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" width="13" height="13"><path d="M8 2L1.5 14h13L8 2z"/><path d="M8 7v2.5M8 11.5v.5"/></svg>
+            Danger Zone
+          </div>
+          <div class="danger-copy">Permanently wipes all managed rules and activity logs. Cannot be undone.</div>
+          <button class="reset-btn" id="reset-btn" onclick="confirmReset()">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg>
+            <span id="reset-txt">Factory Reset</span>
+          </button>
+          <div class="reset-confirm" id="reset-confirm">
+            <strong>Are you absolutely sure?</strong> This will delete all 199 rules and 15 activity log entries. There is no undo.
+            <div class="reset-confirm-row">
+              <button class="reset-cancel" onclick="cancelReset()">Cancel</button>
+              <button class="reset-go" onclick="cancelReset()">Yes, reset everything</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL = [
+  {url:'/sample-page__trashed/',type:'page',label:'Sample Page',date:'May 2'},
+  {url:'/privacy-policy__trashed/',type:'page',label:'Privacy Policy',date:'May 2'},
+  {url:'/156-2__trashed/',type:'category',label:'Category',date:'May 2'},
+  {url:'/156-2/',type:'category',label:'Category',date:'Apr 1'},
+  {url:'/sample-page/',type:'page',label:'Sample Page',date:'Apr 1'},
+  {url:'/tclr-movie-2025__trashed/',type:'post',label:'The Conjuring: Last Rites',date:'Mar 29'},
+  {url:'/tbf-movie-2025__trashed/',type:'post',label:'The Bride of Frankenstein',date:'Mar 29'},
+  {url:'/khatre-ki-ghanti__trashed/',type:'post',label:'Khatre Ki Ghanti',date:'Mar 28'},
+  {url:'/privacy-policy/',type:'page',label:'Privacy Policy',date:'Mar 27'},
+  {url:'/old-homepage-2023/',type:'page',label:'Old Homepage',date:'Mar 25'},
+];
+
+const typeLabel = {page:'Page',category:'Category',post:'Post'};
+
+function renderRows(data) {
+  const tb = document.getElementById('path-tbody');
+  document.getElementById('path-count').textContent = data.length + ' active';
+  tb.innerHTML = data.map(p => `
+    <tr onclick="toggleRow(this)">
+      <td class="chk-col"><div class="chk-box" id="chk-${p.url}"></div></td>
+      <td>
+        <div class="path-wrap">
+          <span class="path-url">${p.url}</span>
+          <div class="path-meta">
+            <span class="type-tag ${p.type}">${typeLabel[p.type]}</span>
+            <span>${p.label}</span>
+          </div>
+        </div>
+      </td>
+      <td><span class="s-pill active"><span class="s-dot"></span>410 Active</span></td>
+      <td class="date-td">${p.date}</td>
+      <td>
+        <div class="row-acts">
+          <button class="act-btn" onclick="event.stopPropagation()">Verify</button>
+          <button class="act-btn remove" onclick="event.stopPropagation()">Remove</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleRow(tr) {
+  tr.classList.toggle('selected');
+  const chk = tr.querySelector('.chk-box');
+  if (tr.classList.contains('selected')) {
+    chk.style.background = 'var(--t1)';
+    chk.style.borderColor = 'var(--t1)';
+    chk.innerHTML = '<svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  } else {
+    chk.style.background = '';
+    chk.style.borderColor = '';
+    chk.innerHTML = '';
+  }
+}
+
+function doSearch(q) {
+  const r = q ? ALL.filter(p =>
+    p.url.toLowerCase().includes(q.toLowerCase()) ||
+    p.label.toLowerCase().includes(q.toLowerCase())
+  ) : ALL;
+  renderRows(r);
+}
+
+function updateCount() {
+  const lines = document.getElementById('cmd-input').value.split('\n').filter(l => l.trim().length > 0);
+  document.getElementById('cmd-count').textContent = lines.length === 0 ? '0 paths' : lines.length + (lines.length === 1 ? ' path' : ' paths');
+}
+
+function doInject() {
+  const btn = document.getElementById('inject-btn');
+  const spin = document.getElementById('inj-spin');
+  const ico = document.getElementById('inj-ico');
+  const txt = document.getElementById('inj-txt');
+  const val = document.getElementById('cmd-input').value.trim();
+
+  if (!val) {
+    const area = document.getElementById('cmd-input');
+    area.style.borderColor = '#DC2626';
+    area.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.1)';
+    area.focus();
+    setTimeout(() => { area.style.borderColor = ''; area.style.boxShadow = ''; }, 1600);
+    return;
+  }
+
+  btn.classList.add('loading');
+  spin.style.display = 'flex';
+  ico.style.display = 'none';
+  txt.style.opacity = '0';
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    btn.classList.add('success');
+    spin.style.display = 'none';
+    ico.style.display = '';
+    ico.innerHTML = '<path d="M3 8l3 3 7-7" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    txt.textContent = 'Injected';
+    txt.style.opacity = '1';
+    setTimeout(() => {
+      btn.classList.remove('success');
+      ico.innerHTML = '<path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5"/>';
+      txt.textContent = 'Inject Rule';
+      document.getElementById('cmd-input').value = '';
+      updateCount();
+    }, 2000);
+  }, 1400);
+}
+
+function confirmReset() {
+  document.getElementById('reset-confirm').classList.add('show');
+  document.getElementById('reset-btn').classList.add('confirming');
+  document.getElementById('reset-txt').textContent = 'Confirm below...';
+}
+
+function cancelReset() {
+  document.getElementById('reset-confirm').classList.remove('show');
+  document.getElementById('reset-btn').classList.remove('confirming');
+  document.getElementById('reset-txt').textContent = 'Factory Reset';
+}
+
+renderRows(ALL);
+</script>
+</body>
+</html>
