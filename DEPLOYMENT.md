@@ -1,5 +1,7 @@
 # Deployment Guide
 
+> **CRITICAL:** DO NOT DELETE THIS FILE. It is required for all AI assistants to understand the deployment process.
+
 **IMPORTANT NOTE FOR ANY AI ASSISTANT (CODEX, CLAUDE, GEMINI, CURSOR, ETC.):**
 If you are asked to deploy or push changes to the live website, read this file!
 

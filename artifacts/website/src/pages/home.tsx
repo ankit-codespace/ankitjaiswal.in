@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MagneticButton } from "@/components/MagneticButton";
 import { StatsStrip } from "@/components/StatsStrip";
 import { ProofGallery } from "@/components/ProofGallery";
+import { OpenSourceAssets } from "@/components/OpenSourceAssets";
 import { ArrowRight, ArrowUpRight, Code, Shield, Gauge, TrendingUp, Sparkles, Layers, Globe, Zap, Server, Search, RefreshCw, Bot, Network, Lock } from "lucide-react";
 
 const charVariants = {
@@ -90,57 +91,7 @@ const expertiseAreas = [
   },
 ];
 
-const tools = [
-  {
-    name: "Online Notepad",
-    category: "Writing",
-    href: "/online-notepad",
-    description: "Distraction-free writing with PDF export, autosave, and local-first drafts.",
-  },
-  {
-    name: "Pomodoro Timer",
-    category: "Productivity",
-    href: "https://pomodorotrack.com/",
-    external: true,
-    description: "A clean focus timer with daily sessions, lifetime stats, and browser alerts.",
-  },
-  {
-    name: "Clipboard History",
-    category: "Productivity",
-    href: "/tools/clipboard-history",
-    description: "Capture and reuse snippets, links, JSON, and notes directly in your browser.",
-  },
-  {
-    name: "Paste-to-Image",
-    category: "Utility",
-    href: "/tools/paste-to-image",
-    description: "Turn screenshots and clipboard content into downloadable, edited PNGs.",
-  },
-  {
-    name: "WebP Converter",
-    category: "Image",
-    href: "/tools/webp-converter",
-    description: "Convert PNG, JPG, and HEIC files to WebP locally without uploading.",
-  },
-  {
-    name: "YouTube Thumbnail Downloader",
-    category: "Media",
-    href: "/tools/yt-thumbnail-downloader",
-    description: "Grab high-resolution thumbnails from any public YouTube video.",
-  },
-  {
-    name: "YouTube Summary",
-    category: "AI",
-    href: "/tools/youtube-summary",
-    description: "Turn transcripts into tuned prompts for ChatGPT, Claude, or Perplexity.",
-  },
-  {
-    name: "Domain Age Checker",
-    category: "SEO",
-    href: "/tools/domain-age-checker",
-    description: "Find registration date, age, expiry, registrar, and nameservers fast.",
-  },
-];
+
 
 const HERO_IMAGE_URL = "/images/hero-portrait-nobg.webp";
 
@@ -922,98 +873,9 @@ export default function Home() {
           <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
         </section>
 
-        {/* Tools */}
-        <section id="tools" className="relative py-24 md:py-32 overflow-hidden" style={{ background: "#EDEAE4" }}>
-          <div className="mx-auto max-w-6xl px-5 md:px-6 relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="flex flex-col gap-6 md:flex-row md:justify-between md:items-end mb-12 md:mb-14"
-            >
-              <div>
-                <p className="eyebrow-label mb-4" style={{ color: "#1D4ED8" }}>Free Utilities</p>
-                <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", color: "#070A12", lineHeight: 1.05, letterSpacing: "0" }} className="mb-4">
-                  Tools I've shipped
-                </h2>
-                <p className="max-w-xl text-lg" style={{ color: "#4B5563", lineHeight: 1.6, fontFamily: "'Inter', sans-serif" }}>
-                  Practical browser-first utilities for writing, search work, media workflows, and daily productivity.
-                </p>
-              </div>
-              <Link
-                href="/tools"
-                className="inline-flex items-center gap-2 self-start text-base transition-colors duration-200"
-                style={{ color: "#1D4ED8", fontFamily: "'Inter', sans-serif", fontWeight: 650 }}
-              >
-                All tools
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </motion.div>
+        <OpenSourceAssets />
 
-            <div className="grid md:grid-cols-2 gap-4 md:gap-5">
-              {tools.map((tool, idx) => {
-                const card = (
-                  <div
-                    className="h-full relative overflow-hidden transition-all duration-200"
-                    style={{
-                      background: "#FFFFFF",
-                      border: "1px solid rgba(15,23,42,0.07)",
-                      borderRadius: "8px",
-                      minHeight: "132px",
-                      padding: "28px 30px",
-                      boxShadow: "0 10px 28px rgba(15,23,42,0.035)",
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(29,78,216,0.24)";
-                      (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(15,23,42,0.07)";
-                      (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-6">
-                      <div>
-                        <p className="mb-3 text-xs uppercase" style={{ color: "#8A93A3", fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: "0.12em" }}>{tool.category}</p>
-                        <h3 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 850, fontSize: "1.18rem", color: "#070A12", lineHeight: 1.25, letterSpacing: "0" }} className="mb-3">
-                          {tool.name}
-                        </h3>
-                        <p className="text-sm md:text-base" style={{ color: "#334155", fontFamily: "'Inter', sans-serif", lineHeight: 1.55 }}>
-                          {tool.description}
-                        </p>
-                      </div>
-                      <ArrowUpRight className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" style={{ color: "#64748B" }} />
-                    </div>
-                  </div>
-                );
 
-                return (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.42, delay: idx * 0.045 }}
-                    className="group h-full"
-                  >
-                    {tool.external ? (
-                      <a href={tool.href} target="_blank" rel="dofollow noopener noreferrer" className="block h-full">
-                        {card}
-                      </a>
-                    ) : (
-                      <Link href={tool.href} className="block h-full">
-                        {card}
-                      </Link>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "rgba(0,0,0,0.06)" }} />
-        </section>
 
       </div>
     </div>

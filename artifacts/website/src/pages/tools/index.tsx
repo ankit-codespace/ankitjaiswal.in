@@ -4,11 +4,69 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   ExternalLink, Image as ImageIcon, Clipboard, Globe, Youtube, Camera,
   ArrowRight, Lock, FileText, Sparkles, Timer, ArrowUpRight,
+  Server, Trash2, ArrowDownToLine, ChevronRight
 } from "lucide-react";
 import { tokens } from "@/components/tool/tokens";
 import { SITE, PERSON_SAME_AS, absUrl } from "@/lib/site";
 
-/* ───────────────── Tool catalog ───────────────── */
+/* ───────────────── Tool catalogs ───────────────── */
+
+type FlagshipTool = {
+  id: string;
+  name: string;
+  tagline: string;
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string; style?: React.CSSProperties }>;
+  logoUrl?: string;
+  href: string;
+  color: string;
+  features: string[];
+  external?: boolean;
+};
+
+const FLAGSHIP_TOOLS: readonly FlagshipTool[] = [
+  {
+    id: "recapyt",
+    name: "RecapYT Summarizer",
+    tagline: "Instant YouTube summaries natively injected via custom high-speed AI architecture.",
+    Icon: Youtube,
+    logoUrl: "/recapyt-icon.png",
+    href: "/tools/youtube-summary",
+    color: "#EF4444",
+    features: [
+      "Native hyper-fast AI API integration",
+      "Massive 1M token context window",
+      "No tab switching — injects into YouTube UI"
+    ],
+  },
+  {
+    id: "cloudflare-purger",
+    name: "Cloudflare Edge Purger",
+    tagline: "Instant cache invalidation directly from WordPress admin.",
+    Icon: Server,
+    href: "https://github.com/your-github/cloudflare-cache",
+    color: "#F59E0B",
+    external: true,
+    features: [
+      "Hooks into wp_save_post for automated purging",
+      "Password-protected remote purge URL",
+      "Complete audit log of purge requests"
+    ],
+  },
+  {
+    id: "410-manager",
+    name: "410 Gone Manager",
+    tagline: "Preserve SEO crawl budget by managing deleted content correctly.",
+    Icon: Trash2,
+    href: "https://github.com/your-github/410-gone-manager",
+    color: "#3B82F6",
+    external: true,
+    features: [
+      "Auto-catches deleted posts (wp_trash_post)",
+      "Signals Google to immediately de-index dead URLs",
+      "Prevents 404 crawl budget waste"
+    ],
+  }
+];
 
 type Tool = {
   Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
@@ -20,12 +78,7 @@ type Tool = {
   external?: boolean;
 };
 
-/* Order is deliberate: it walks the user through a natural workday arc —
- * write → focus → reuse snippets → capture screen → optimize images →
- * grab YouTube assets → research with AI → finish on SEO research.
- * Adjacent cards always share context, which keeps the page scannable
- * and reduces decision fatigue. */
-const TOOLS: readonly Tool[] = [
+const UTILITY_TOOLS: readonly Tool[] = [
   {
     Icon: FileText,
     name: "Online Notepad",
@@ -75,14 +128,6 @@ const TOOLS: readonly Tool[] = [
     href: "/tools/yt-thumbnail-downloader",
   },
   {
-    Icon: Sparkles,
-    name: "YouTube Summary",
-    desc: "Paste a YouTube transcript, get hand-tuned prompts for ChatGPT, Claude, Perplexity, or Gemini. Local key-sentence and keyword extraction. Your transcript never leaves your browser.",
-    category: "AI",
-    tags: ["transcript", "summarizer", "chatgpt", "claude"],
-    href: "/tools/youtube-summary",
-  },
-  {
     Icon: Globe,
     name: "Domain Age Checker",
     desc: "Live WHOIS lookup that shows registration date, age in years, expiry, registrar and nameservers. Useful for SEO research and link prospecting.",
@@ -110,12 +155,12 @@ export default function ToolsIndex() {
     "@type": "ItemList",
     name: "Free Online Tools by Ankit Jaiswal",
     itemListOrder: "ItemListOrderAscending",
-    numberOfItems: TOOLS.length,
-    itemListElement: TOOLS.map((t, i) => ({
+    numberOfItems: FLAGSHIP_TOOLS.length + UTILITY_TOOLS.length,
+    itemListElement: [...FLAGSHIP_TOOLS, ...UTILITY_TOOLS].map((t, i) => ({
       "@type": "ListItem",
       position: i + 1,
       name: t.name,
-      description: t.desc,
+      description: t.tagline || (t as Tool).desc,
       url: t.external ? t.href : absUrl(t.href),
     })),
   };
@@ -168,17 +213,15 @@ export default function ToolsIndex() {
         <motion.div {...fadeIn(0)}>
           <p className="ti-eyebrow">The toolkit</p>
           <h1 className="ti-h1">
-            Free, privacy-first tools
+            Open-Source Infrastructure
             <br />
-            <span className="ti-h1-soft">for the rest of the internet.</span>
+            <span className="ti-h1-soft">and everyday browser utilities.</span>
           </h1>
           <p className="ti-lead">
-            Eight focused utilities for writing, image work, YouTube research, and SEO &mdash;
-            built by an independent engineer, designed to feel like one product. Every
-            in-browser tool runs locally: no upload, no account, no quota, no tracking.
+            A growing collection of robust internal infrastructure for massive scale, alongside focused utilities for writing, image work, and SEO &mdash; built by an independent engineer.
           </p>
           <p className="ti-meta">
-            Updated April 2026 &middot; By {" "}
+            Updated May 2026 &middot; By {" "}
             <Link href="/about" className="ti-meta-link">Ankit Jaiswal</Link>
             {" "}&middot; <Link href="/" className="ti-meta-link">Portfolio home</Link>
           </p>
@@ -187,13 +230,99 @@ export default function ToolsIndex() {
 
       <div className="ti-rule" aria-hidden="true" />
 
-      {/* ── Tools grid ── */}
-      <section className="ti-grid-wrap" aria-label="All tools">
+      {/* ── Tier 1: Flagship Tools ── */}
+      <section className="ti-grid-wrap" aria-label="Flagship Infrastructure" style={{ paddingTop: "64px" }}>
+        <motion.div {...fadeIn(0.05)} className="mb-8">
+          <h2 className="ti-section-title">Flagship Infrastructure</h2>
+          <p className="ti-section-desc">Heavy-duty, premium tools open-sourced for the community.</p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-5">
+          {FLAGSHIP_TOOLS.map((tool, idx) => {
+            const inner = (
+              <motion.div
+                key={tool.id}
+                {...fadeIn(0.1 + idx * 0.05)}
+                className="group flex flex-col justify-between h-full"
+                style={{
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "12px",
+                  padding: "32px",
+                  minHeight: "340px",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)";
+                }}
+              >
+                <div>
+                  <div 
+                    className="w-12 h-12 rounded-lg flex items-center justify-center mb-6 transition-colors duration-300"
+                    style={{ background: `rgba(255,255,255,0.04)`, border: `1px solid rgba(255,255,255,0.08)` }}
+                  >
+                    {tool.logoUrl ? (
+                      <img src={tool.logoUrl} alt={tool.name} className="w-7 h-7 object-contain" />
+                    ) : (
+                      <tool.Icon style={{ color: tool.color, width: "24px", height: "24px" }} />
+                    )}
+                  </div>
+                  <h3 style={{ fontFamily: tokens.font.display, fontWeight: 700, fontSize: "1.25rem", color: tokens.text.primary, lineHeight: 1.2 }} className="mb-3">
+                    {tool.name}
+                  </h3>
+                  <p style={{ color: tokens.text.muted, fontFamily: tokens.font.body, lineHeight: 1.5, fontSize: "15px" }} className="mb-6">
+                    {tool.tagline}
+                  </p>
+
+                  <ul className="space-y-3 mb-8">
+                    {tool.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <ChevronRight className="shrink-0 mt-0.5" style={{ color: tool.color }} size={16} />
+                        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "13.5px", lineHeight: 1.4 }}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-auto pt-4 flex items-center justify-between border-t border-white/5 group-hover:border-white/10 transition-colors">
+                  <span style={{ color: tokens.text.primary, fontSize: "14px", fontWeight: 500 }}>Learn more</span>
+                  <ArrowRight size={16} style={{ color: tool.color }} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </motion.div>
+            );
+
+            return tool.external ? (
+              <a key={tool.href} href={tool.href} target="_blank" rel="noopener noreferrer" className="block h-full outline-none">
+                {inner}
+              </a>
+            ) : (
+              <Link key={tool.href} href={tool.href} className="block h-full outline-none">
+                {inner}
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Tier 2: Utility Tools ── */}
+      <section className="ti-grid-wrap" aria-label="Everyday Utilities" style={{ paddingTop: "48px" }}>
+        <motion.div {...fadeIn(0.2)} className="mb-8">
+          <h2 className="ti-section-title">Browser Utilities</h2>
+          <p className="ti-section-desc">Fast, privacy-first tools running locally on your device.</p>
+        </motion.div>
+
         <div className="ti-grid">
-          {TOOLS.map((tool, idx) => {
+          {UTILITY_TOOLS.map((tool, idx) => {
             const Icon = tool.Icon;
             const inner = (
-              <motion.article {...fadeIn(0.06 + idx * 0.035)} className="ti-card">
+              <motion.article {...fadeIn(0.25 + idx * 0.035)} className="ti-card">
                 <div className="ti-card-top">
                   <span className="ti-card-icon" aria-hidden="true">
                     <Icon size={18} strokeWidth={1.6} />
@@ -242,10 +371,8 @@ export default function ToolsIndex() {
             );
           })}
 
-          {/* Suggest-a-tool placeholder — fills the trailing grid cell and
-              turns dead space into an invitation, the way Linear/Stripe do. */}
           <Link href="/contact" className="ti-card-link ti-card-link--ghost">
-            <motion.article {...fadeIn(0.06 + TOOLS.length * 0.035)} className="ti-card ti-card--ghost">
+            <motion.article {...fadeIn(0.25 + UTILITY_TOOLS.length * 0.035)} className="ti-card ti-card--ghost">
               <div className="ti-card-top">
                 <span className="ti-card-icon ti-card-icon--ghost" aria-hidden="true">
                   <ArrowRight size={16} strokeWidth={1.6} />
@@ -355,6 +482,22 @@ function ToolsIndexStyles() {
       .ti-rule {
         height: 1px;
         background: rgba(255,255,255,0.05);
+      }
+
+      .ti-section-title {
+        font-family: ${tokens.font.display};
+        font-size: 24px;
+        font-weight: 700;
+        color: ${tokens.text.primary};
+        margin: 0 0 8px 0;
+        letter-spacing: -0.01em;
+      }
+      
+      .ti-section-desc {
+        font-family: ${tokens.font.body};
+        font-size: 15px;
+        color: ${tokens.text.muted};
+        margin: 0;
       }
 
       /* ── Grid ── */
