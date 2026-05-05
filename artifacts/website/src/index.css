@@ -373,8 +373,8 @@ html.lenis, html.lenis body {
 .cred-strip {
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
-  gap: 28px;
+  flex-wrap: wrap;
+  gap: 16px 28px;
   margin-top: 16px;
   font-family: 'Inter', sans-serif;
   font-size: 15px;
@@ -383,7 +383,6 @@ html.lenis, html.lenis body {
   color: #374151;
 }
 .cred-strip span {
-  white-space: nowrap;
   flex-shrink: 0;
 }
 

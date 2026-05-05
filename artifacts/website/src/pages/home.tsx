@@ -393,7 +393,8 @@ export default function Home() {
 
                 {/* Stat text */}
                 <motion.span
-                  style={{ fontSize: "13px", fontWeight: 500, color: "#6B7280", whiteSpace: "nowrap" }}
+                  className="whitespace-normal md:whitespace-nowrap"
+                  style={{ fontSize: "13px", fontWeight: 500, color: "#6B7280" }}
                   initial={{ opacity: 0 }}
                   animate={heroAnimReady ? { opacity: 1 } : { opacity: 0 }}
                   transition={{
@@ -476,8 +477,8 @@ export default function Home() {
 
         {/* RIGHT: Photo — positioned relative to section so bottom-0 = viewport bottom */}
         {/* RIGHT: Photo — layer 2, sandwiched between fill and outline 5M+ */}
-        <div data-hero-portrait className="absolute -right-14 top-0 h-[480px] w-[70%] md:right-8 md:top-0 md:bottom-0 md:h-full md:w-[60%] pointer-events-none md:pointer-events-auto will-change-transform" style={{ zIndex: 2 }}>
-          <div className="absolute inset-0 z-10 w-full h-full opacity-50 md:opacity-100">
+        <div data-hero-portrait className="absolute -right-10 bottom-0 h-[50vh] w-[85%] md:right-8 md:top-0 md:bottom-0 md:h-full md:w-[60%] pointer-events-none md:pointer-events-auto will-change-transform" style={{ zIndex: 2 }}>
+          <div className="absolute inset-0 z-10 w-full h-full opacity-30 md:opacity-100" style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 25%)", maskImage: "linear-gradient(to right, transparent 0%, black 25%)" }}>
             <img
               src={HERO_IMAGE_URL}
               alt="Ankit Jaiswal"
@@ -489,10 +490,6 @@ export default function Home() {
               fetchPriority="high"
               decoding="async"
             />
-
-            {/* Mobile gradient overlays */}
-            <div className="absolute left-0 top-0 bottom-0 w-[30%] bg-gradient-to-r from-[#D2D9DF] via-[#D2D9DF]/60 to-transparent md:hidden" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#D2D9DF] via-transparent to-transparent md:hidden" />
           </div>
         </div>
 
