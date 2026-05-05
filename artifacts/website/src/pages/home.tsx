@@ -225,6 +225,11 @@ export default function Home() {
         }}
       />
 
+      {/* HUGE DEPLOYMENT TEST TEXT */}
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 99999, fontSize: "15vw", color: "red", fontWeight: 900, background: "yellow", padding: "20px", borderRadius: "20px", pointerEvents: "none" }}>
+        HI TEST
+      </div>
+
       {/* ── HERO SECTION ── */}
       <section
         className="relative md:sticky md:top-0 w-full overflow-hidden flex flex-col"
