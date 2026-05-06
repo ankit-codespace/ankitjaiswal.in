@@ -93,7 +93,7 @@ const expertiseAreas = [
 
 
 
-const HERO_IMAGE_URL = "/images/hero-portrait-nobg.webp";
+const HERO_IMAGE_URL = "/images/hero-portrait-bg.png"; // new image; old: hero-portrait-nobg.webp
 
 export default function Home() {
   const heroContentRef = useRef<HTMLDivElement>(null);
