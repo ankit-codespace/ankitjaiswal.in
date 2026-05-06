@@ -249,106 +249,111 @@ export default function RecapYTLanding() {
               </div>
               
               {/* Right Column (RecapYT Extension UI - Scrollable) */}
-              <div className="w-full lg:w-[400px] flex-shrink-0 flex flex-col bg-[#181818] rounded-xl border border-white/10 overflow-hidden h-full shadow-lg relative">
-                
-                {/* RecapYT Header */}
-                <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#212121] sticky top-0 z-10">
-                  <div className="flex items-center gap-2">
-                    <Youtube size={20} className="text-red-500" />
-                    <span className="font-bold text-white text-sm tracking-wide">Recap<span className="text-red-500">YT</span></span>
+              <div style={{ width:'100%', maxWidth:'400px', flexShrink:0, display:'flex', flexDirection:'column', background:'#1f1f1f', borderRadius:'12px', overflow:'hidden', height:'100%', position:'relative' }}>
+                {/* .aix-hdr */}
+                <header style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'24px 20px 14px' }}>
+                  <RecapYTBrandLogo />
+                  <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
+                    {([['EN',true],['हिन्दी',false],['Hinglish',false]] as [string,boolean][]).map(([l,a])=>(
+                      <button key={l} style={{ padding:'2px 0 4px', border:'none', background:'transparent', color:a?'#fafafa':'rgba(250,250,250,0.48)', fontSize:'11px', fontWeight:500, fontFamily:'inherit', cursor:'pointer', borderBottom:`1.5px solid ${a?'#fafafa':'transparent'}`, lineHeight:1 }}>{l}</button>
+                    ))}
                   </div>
-                  <div className="flex gap-3 text-xs font-semibold">
-                    <span className="text-white border-b-2 border-white pb-1">EN</span>
-                    <span className="text-white/40">हिन्दी</span>
-                    <span className="text-white/40">Hinglish</span>
+                </header>
+
+                {/* .aix-body CTA row — split pill matching real extension */}
+                <div style={{ padding:'0 20px 16px' }}>
+                  <div style={{ display:'flex', alignItems:'stretch', background:'#fafafa', border:'1px solid rgba(0,0,0,0.08)', borderRadius:'999px', overflow:'hidden', boxShadow:'0 1px 2px rgba(0,0,0,0.18)' }}>
+                    <button style={{ flex:'1 1 auto', minHeight:'44px', padding:'11px 16px', background:'transparent', border:'none', color:'#0a0a0a', fontSize:'15px', fontWeight:600, fontFamily:'inherit', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', letterSpacing:'-0.012em' }}>
+                      <AixSparkIcon />
+                      <span>Summarize this video</span>
+                    </button>
+                    <button title="Copy transcript" style={{ width:'44px', minHeight:'44px', flex:'0 0 44px', border:'none', borderLeft:'1px solid rgba(0,0,0,0.12)', background:'transparent', color:'#0a0a0a', display:'inline-flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M5 15V7a2 2 0 0 1 2-2h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                    </button>
                   </div>
                 </div>
 
-                <div className="p-4 border-b border-white/5 bg-[#181818] sticky top-[60px] z-10">
-                  <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-white text-black rounded-full text-sm font-bold shadow-md hover:bg-gray-100 transition-colors">
-                    <SparkleIcon /> Summarize this video
+                {/* .aix-result — scrollable summary */}
+                <div className="custom-scrollbar" style={{ flex:1, minHeight:0, overflowY:'auto', padding:'0 20px 8px', overscrollBehavior:'contain' }}>
+                  <AixSectionLabel>TL;DR</AixSectionLabel>
+                  {['Sell 7 days/week — weekends add 104 days/year (29% revenue boost). Respond in <1 min for a 391% higher close rate.',
+                    'Feed the killers: best leads → best closers. A timeshare rep went $250k → $3M/yr with this one change.',
+                    'Details are death traps — never answer a blind question. Ask one back to find what the prospect really wants.',
+                    'The pain is the pitch. Expand deprivation. Use CLOSER: Clarify, Label, Overview pain, Sell vacation, Explain, Reinforce.',
+                    'No isn\'t no forever. Follow up every 3–6 months. Volume negates luck.',
+                    'Never change price. Counter-anchor or change terms. The person who cares most wins the sale.',
+                  ].map((t,i)=><AixBullet key={i}>{t}</AixBullet>)}
+                  <AixHr/>
+                  <AixSectionLabel>Full Summary</AixSectionLabel>
+                  <AixH3>⚡ Sales Multipliers</AixH3>
+                  {['Sat + Sun = 104 extra selling days/year = 29% more revenue.',
+                    'Respond in <1 min: Harvard — 391% higher close rate. 50% of prospects go with whoever responds first.',
+                    'Response >5 min: close likelihood drops 80%.',
+                    '15-min slots (not 1-hour) — more convenient, higher show-up rates.',
+                    'Feed the killers: A timeshare rep went $250k → $3M/yr. Company 5x\'d when rolled out nationwide.',
+                    'Reminder sequence: 24hr before, morning of, 1hr before. Show prep = 30% more show-ups.',
+                  ].map((t,i)=><AixBullet key={i}>{t}</AixBullet>)}
+                  <AixHr/>
+                  <AixH3>🛎️ Before the Sale</AixH3>
+                  {['The sale starts at the click, not the call. Every ad, application, call frames the prospect.',
+                    'Edify the closer: "Shawn helped 400 people just like you — I think he has an opening this afternoon."',
+                    'Qualify with BANT: Budget, Authority, Need, Timing — before asking for money.',
+                    '5-min prep before each call. Never let a prospect repeat themselves. Makes you look like a genius.',
+                  ].map((t,i)=><AixBullet key={i}>{t}</AixBullet>)}
+                  <AixHr/>
+                  <AixH3>🗣️ The CLOSER Framework</AixH3>
+                  {[['C — Clarify','Why are you here? People call to solve a problem, not get info.'],
+                    ['L — Label','"You are [here], want to get [there], and [this] is the obstacle."'],
+                    ['O — Overview pain','Expand it: "What have you tried? How much did it cost? Cost of inaction per day?"'],
+                    ['S — Sell the vacation','Talk Maui (result), not the plane (process). Max 2-min pitch.'],
+                    ['E — Explain concerns','Handle objections. AAA: Acknowledge → Associate → Ask.'],
+                    ['R — Reinforce','Handshake, not handoff. BAMFAM — Book A Meeting From A Meeting.'],
+                  ].map(([title,desc],i)=><AixBullet key={i}><strong style={{color:'#fafafa'}}>{title}:</strong> {desc}</AixBullet>)}
+                  <AixHr/>
+                  <AixH3>🔒 Closing & Objections</AixH3>
+                  {['When they say yes, shut up and close. Details turn a yes into a no.',
+                    'AAA Method: Acknowledge → Associate (positive story) → Ask (next question).',
+                    'Details are death traps: mechanic close — "I can\'t diagnose your car before looking under the hood."',
+                    'Stack closes: fire 3 different angles if one doesn\'t work.',
+                    'Best-case/worst-case: "Do nothing = guaranteed same result. Take a shot = a chance to win."',
+                    'Never change price. Counter-anchor: "We could do it for more." Change terms or downsell features.',
+                  ].map((t,i)=><AixBullet key={i}>{t}</AixBullet>)}
+                  <AixHr/>
+                  <AixH3>🧠 Mindset</AixH3>
+                  {['Caring wins: the person who cares most about the prospect wins the sale.',
+                    'Volume negates luck. Force volume early to get through the beginner phase faster.',
+                    'No for now ≠ No forever. Follow up every 3–6 months.',
+                    'Be a trash man (new closers): take worst leads as free training. Yellow = Gold.',
+                  ].map((t,i)=><AixBullet key={i}>{t}</AixBullet>)}
+                  <AixHr/>
+                  <div style={{marginBottom:'24px'}}><strong style={{color:'#fafafa'}}>Bottom line:</strong> Sales is a transfer of conviction through education over a bridge of trust. Master the multipliers, training, framing, closing, and mindset — every pipeline step improves systematically.</div>
+                </div>
+                {/* .aix-actions — Copy / Image / PDF / Regen */}
+                <div style={{ display:'flex', gap:'8px', alignItems:'center', padding:'14px 20px 16px', borderTop:'1px solid rgba(255,255,255,0.07)' }}>
+                  {[
+                    {label:'Copy', icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M5 15V7a2 2 0 0 1 2-2h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>},
+                    {label:'Image', icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M8 15l3-3 2 2 3-4 2 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="8" cy="9" r="1" fill="currentColor"/></svg>},
+                    {label:'PDF', icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M14 3v5h5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M8 14h8M8 17h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>},
+                  ].map(({label,icon})=>(
+                    <button key={label} style={{ flex:1, minHeight:'40px', padding:'6px 7px', background:'#131313', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', color:'rgba(250,250,250,0.70)', fontSize:'13px', fontWeight:550, fontFamily:'inherit', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px' }}>
+                      {icon}<span>{label}</span>
+                    </button>
+                  ))}
+                  <button title="Regenerate" style={{ flex:'0 0 40px', width:'40px', minHeight:'40px', padding:'6px', background:'#131313', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'10px', color:'rgba(250,250,250,0.70)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 0 0-14.4-4.8L4 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 4v4h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 13a8 8 0 0 0 14.4 4.8L20 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 20v-4h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
                 </div>
-
-                {/* RecapYT Content (Scrollable) */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-5 text-sm leading-relaxed custom-scrollbar pb-24 overscroll-contain">
-                  <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-base">
-                    <span className="text-yellow-500">⚡</span> TL;DR
-                  </h3>
-                  
-                  <ul className="space-y-4 text-white/80 list-disc pl-4 mb-8">
-                    <li><strong className="text-white">Sell 7 days a week</strong> (weekends add <strong className="text-white">104 days/year</strong>, a <strong className="text-white">29% revenue boost</strong>) and <strong className="text-white">respond to leads in under 1 minute</strong> (a <strong className="text-white">391% increase</strong> in close likelihood).</li>
-                    <li><strong className="text-white">Feed the killers:</strong> send the <strong className="text-white">best leads to the best closers</strong> and the <strong className="text-white">worst leads to the worst closers</strong> to minimize waste and maximize revenue.</li>
-                    <li><strong className="text-white">Details are death traps;</strong> never answer a detail question blindly. Instead, <strong className="text-white">ask a question back</strong> to find out what the prospect really wants.</li>
-                    <li><strong className="text-white">The pain is the pitch</strong> – expand the prospect's deprivation to create urgency. Use the CLOSER framework: Clarify, Label, Overview past pain, Sell vacation, Explain concerns, Reinforce.</li>
-                    <li><strong className="text-white">No isn't no forever;</strong> always follow up. Volume negates luck – the best salespeople do the most volume and master the fundamentals.</li>
-                    <li><strong className="text-white">Never change price</strong> to close a sale; instead, change terms or do a feature downsell. The person who cares the most about the prospect wins the sale.</li>
-                  </ul>
-
-                  <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-base mt-8 border-t border-white/10 pt-6">
-                    <span className="text-blue-400">📖</span> Full Summary
-                  </h3>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-white font-semibold mb-2">⚡ Sales Multipliers</h4>
-                      <ul className="space-y-3 text-white/70 list-disc pl-4">
-                        <li>Sell 7 days a week: Adding Saturday and Sunday gives 104 extra selling days/year, a 29% revenue increase.</li>
-                        <li>Respond to leads in under 1 minute: A Harvard Business Review study shows a 391% increase in close likelihood if you contact a lead within 60 seconds.</li>
-                        <li>50% of prospects go with the business that responds first, not the best one.</li>
-                        <li>If response time is greater than 5 minutes, likelihood drops by 80%.</li>
-                        <li>15-minute time slots instead of 1-hour slots increase show-up rates because they're more convenient.</li>
-                        <li>Feed the killers: Best leads go to best closers; worst leads go to worst closers.</li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="text-white font-semibold mb-2">📖 Sales Training</h4>
-                      <ul className="space-y-3 text-white/70 list-disc pl-4">
-                        <li>Daily huddles with role-playing: Give one piece of feedback at a time, give it fast, and have them repeat it.</li>
-                        <li>Your best closer is usually not your best sales manager: Sales management is a different skill.</li>
-                        <li>Competition should be us vs. them (a rival), not internal.</li>
-                        <li>Game tape review: Record every call. Have sales and CS review calls together weekly.</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-white font-semibold mb-2">🗣️ The Actual Sale</h4>
-                      <ul className="space-y-3 text-white/70 list-disc pl-4">
-                        <li>Open with Proof, Promise, Plan: "We've done this for lots of people just like you..."</li>
-                        <li>Follow the script: If everyone says the exact words, you can identify if the script is the problem.</li>
-                        <li>CLOSER Framework: Clarify, Label, Overview past pain, Sell the vacation, Explain away concerns, Reinforce the decision.</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-white font-semibold mb-2">🧠 Mindset</h4>
-                      <ul className="space-y-3 text-white/70 list-disc pl-4">
-                        <li>Caring wins: The person who cares the most about the prospect wins the sale.</li>
-                        <li>Volume negates luck: Sales is a numbers game. The more you do, the better you get.</li>
-                        <li>Never negotiate with terrorists: Never change price to close a sale. We could do it for more (counter-anchor) almost always works.</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                {/* Fading gradient at bottom for scroll indication */}
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#181818] to-transparent pointer-events-none z-10"></div>
               </div>
             </div>
             
             <style dangerouslySetInnerHTML={{__html: `
-              .custom-scrollbar::-webkit-scrollbar {
-                width: 6px;
-              }
-              .custom-scrollbar::-webkit-scrollbar-track {
-                background: rgba(255, 255, 255, 0.02);
-              }
-              .custom-scrollbar::-webkit-scrollbar-thumb {
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 10px;
-              }
-              .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                background: rgba(255, 255, 255, 0.2);
+              .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+              .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+              .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+              .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+              @keyframes aixSparkTurn {
+                0%        { transform: translateY(1px) rotate(0deg); }
+                30%, 100% { transform: translateY(1px) rotate(360deg); }
               }
             `}} />
             
@@ -429,6 +434,54 @@ function SparkleIcon() {
       <path d="M10 1L12.16 7.48C12.38 8.14 12.86 8.62 13.52 8.84L20 11L13.52 13.16C12.86 13.38 12.38 13.86 12.16 14.52L10 21L7.84 14.52C7.62 13.86 7.14 13.38 6.48 13.16L0 11L6.48 8.84C7.14 8.62 7.62 8.14 7.84 7.48L10 1Z" fill="#F87171"/>
     </svg>
   );
+}
+
+// Exact spark icon matching the real extension's CSS mask diamond with 9s rotation
+function AixSparkIcon() {
+  const maskSvg = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M8 0 Q8 8 16 8 Q8 8 8 16 Q8 8 0 8 Q8 8 8 0 Z'/></svg>")`;
+  return (
+    <span style={{
+      fontSize: 0, width: '22px', height: '22px', display: 'block', flexShrink: 0,
+      backgroundColor: '#0a0a0a',
+      WebkitMaskImage: maskSvg, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: 'center',
+      maskImage: maskSvg, maskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center',
+      animation: 'aixSparkTurn 9s cubic-bezier(0.83,0,0.17,1) infinite',
+      transformOrigin: '50% 50%',
+    } as React.CSSProperties} />
+  );
+}
+
+// RecapYT logo icon — exact SVG from the real extension's CSS background-image
+function RecapYTBrandLogo() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.95, flexShrink: 0 }}>
+      <rect width="32" height="32" rx="7" fill="#0C0C0E"/>
+      <rect x="12" y="5" width="16" height="3" rx="1.5" fill="#E03230"/>
+      <rect x="6" y="10" width="16" height="3" rx="1.5" fill="rgba(255,255,255,0.90)"/>
+      <rect x="5" y="15" width="22" height="0.5" rx="0.25" fill="#E03230" opacity={0.48}/>
+      <rect x="9" y="17" width="13" height="3" rx="1.5" fill="rgba(255,255,255,0.72)"/>
+      <rect x="14" y="22" width="8" height="3" rx="1.5" fill="rgba(255,255,255,0.48)"/>
+    </svg>
+  );
+}
+
+// Mini layout helpers matching .ai-h2 / .ai-h3 / .ai-li / .ai-hr from extension CSS
+function AixSectionLabel({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(250,250,250,0.48)', margin: '0 0 8px' }}>{children}</div>;
+}
+function AixH3({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontSize: '15px', fontWeight: 600, color: '#fafafa', margin: '12px 0 4px' }}>{children}</div>;
+}
+function AixBullet({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', gap: '8px', margin: '4px 0', fontSize: '15px', lineHeight: '1.72', color: 'rgba(250,250,250,0.70)' }}>
+      <span style={{ color: 'rgba(250,250,250,0.48)', flexShrink: 0 }}>•</span>
+      <span>{children}</span>
+    </div>
+  );
+}
+function AixHr() {
+  return <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.07)', margin: '20px 0' }} />;
 }
 
 function YouTubeLogo() {
