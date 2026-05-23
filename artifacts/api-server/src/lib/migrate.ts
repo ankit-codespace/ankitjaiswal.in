@@ -26,6 +26,18 @@ export async function ensureSchema(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS feedback_created_at_idx ON feedback (created_at DESC);
     CREATE INDEX IF NOT EXISTS feedback_type_idx ON feedback (type);
+    CREATE TABLE IF NOT EXISTS quota_entries (
+      id          SERIAL PRIMARY KEY,
+      email       TEXT NOT NULL,
+      service     TEXT NOT NULL,
+      profile     SMALLINT,
+      reset_at    TIMESTAMPTZ NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      updated_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL
+    );
+    ALTER TABLE quota_entries ADD COLUMN IF NOT EXISTS profile SMALLINT;
+    CREATE INDEX IF NOT EXISTS quota_entries_reset_at_idx ON quota_entries (reset_at ASC);
+    CREATE INDEX IF NOT EXISTS quota_entries_service_idx ON quota_entries (service);
   `);
-  logger.info("schema: feedback table ensured");
+  logger.info("schema: feedback + quota_entries tables ensured");
 }
