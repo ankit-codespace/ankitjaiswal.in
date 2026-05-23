@@ -11,21 +11,31 @@ import {
 type FormState = {
   email: string;
   service: string;
+  folder: string;
   profile: string;
-  resetAt: string;
+  resetDate: string;
+  resetTime: string;
 };
 
 const initialForm: FormState = {
   email: "",
   service: "chatgpt",
+  folder: "",
   profile: "",
-  resetAt: "",
+  resetDate: "",
+  resetTime: "",
 };
 
-function toLocalDateInput(isoDate: string): string {
+function toLocalDateTimeParts(isoDate: string): { date: string; time: string } {
   const d = new Date(isoDate);
   const tzOffset = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+  const localIso = new Date(d.getTime() - tzOffset).toISOString();
+  return { date: localIso.slice(0, 10), time: localIso.slice(11, 16) };
+}
+
+function combineLocalDateTime(date: string, time: string): string {
+  const dt = `${date}T${time || "00:00"}`;
+  return new Date(dt).toISOString();
 }
 
 function getStatus(resetAt: string): "ready" | "soon" | "waiting" {
@@ -66,6 +76,18 @@ export default function QuotaTrackerPrivatePage() {
     [data],
   );
 
+  const folderSuggestions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          data
+            .map((r) => r.folder?.trim())
+            .filter((v): v is string => Boolean(v)),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [data],
+  );
+
   const stats = useMemo(() => {
     const ready = sortedRows.filter((r) => getStatus(r.resetAt) === "ready").length;
     const soon = sortedRows.filter((r) => getStatus(r.resetAt) === "soon").length;
@@ -78,8 +100,9 @@ export default function QuotaTrackerPrivatePage() {
     setForm({
       email: row.email,
       service: row.service,
+      folder: row.folder ?? "",
       profile: row.profile ? String(row.profile) : "",
-      resetAt: toLocalDateInput(row.resetAt),
+      ...toLocalDateTimeParts(row.resetAt),
     });
   }
 
@@ -93,8 +116,9 @@ export default function QuotaTrackerPrivatePage() {
     const payload = {
       email: form.email.trim(),
       service: form.service.trim().toLowerCase(),
+      folder: form.folder.trim() || undefined,
       profile: form.profile ? Number(form.profile) : undefined,
-      resetAt: new Date(form.resetAt).toISOString(),
+      resetAt: combineLocalDateTime(form.resetDate, form.resetTime),
     };
 
     if (editingId) {
@@ -131,12 +155,30 @@ export default function QuotaTrackerPrivatePage() {
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 12, marginBottom: 24 }}>
         <input
           required
-          type="email"
-          placeholder="Email"
+          placeholder="Email or nickname"
           value={form.email}
           onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
           style={{ padding: 10 }}
         />
+        <input
+          required
+          placeholder="Service"
+          value={form.service}
+          onChange={(e) => setForm((s) => ({ ...s, service: e.target.value }))}
+          style={{ padding: 10 }}
+        />
+        <input
+          list="quota-folder-suggestions"
+          placeholder="Folder (e.g. codex, antigravity)"
+          value={form.folder}
+          onChange={(e) => setForm((s) => ({ ...s, folder: e.target.value }))}
+          style={{ padding: 10 }}
+        />
+        <datalist id="quota-folder-suggestions">
+          {folderSuggestions.map((folder) => (
+            <option key={folder} value={folder} />
+          ))}
+        </datalist>
         <select
           value={form.profile}
           onChange={(e) => setForm((s) => ({ ...s, profile: e.target.value }))}
@@ -149,16 +191,15 @@ export default function QuotaTrackerPrivatePage() {
         </select>
         <input
           required
-          placeholder="Service"
-          value={form.service}
-          onChange={(e) => setForm((s) => ({ ...s, service: e.target.value }))}
+          type="date"
+          value={form.resetDate}
+          onChange={(e) => setForm((s) => ({ ...s, resetDate: e.target.value }))}
           style={{ padding: 10 }}
         />
         <input
-          required
-          type="datetime-local"
-          value={form.resetAt}
-          onChange={(e) => setForm((s) => ({ ...s, resetAt: e.target.value }))}
+          type="time"
+          value={form.resetTime}
+          onChange={(e) => setForm((s) => ({ ...s, resetTime: e.target.value }))}
           style={{ padding: 10 }}
         />
         <div style={{ display: "flex", gap: 10 }}>
@@ -174,7 +215,11 @@ export default function QuotaTrackerPrivatePage() {
       </form>
 
       {isLoading && <p>Loading entries...</p>}
-      {error && <p style={{ color: "crimson" }}>Could not load data.</p>}
+      {error && (
+        <p style={{ color: "crimson" }}>
+          Could not load data: {error instanceof Error ? error.message : "Unknown error"}
+        </p>
+      )}
 
       {!isLoading && (
         <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
@@ -183,6 +228,7 @@ export default function QuotaTrackerPrivatePage() {
               <th align="left" style={{ width: 56, padding: "10px 8px", opacity: 0.7 }}>#</th>
               <th align="left" style={{ padding: "10px 8px" }}>Email</th>
               <th align="left" style={{ padding: "10px 8px", width: 140 }}>Service</th>
+              <th align="left" style={{ padding: "10px 8px", width: 120 }}>Folder</th>
               <th align="left" style={{ padding: "10px 8px", width: 90 }}>Profile</th>
               <th align="left" style={{ padding: "10px 8px", width: 190 }}>Reset</th>
               <th align="left" style={{ padding: "10px 8px", width: 90 }}>Status</th>
@@ -197,7 +243,8 @@ export default function QuotaTrackerPrivatePage() {
                   <td style={{ padding: "12px 8px", lineHeight: 1.1, opacity: 0.6 }}>{i + 1}</td>
                   <td style={{ padding: "12px 8px", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.email}</td>
                   <td style={{ padding: "12px 8px", lineHeight: 1.25 }}>{row.service}</td>
-                  <td style={{ padding: "12px 8px", lineHeight: 1.25 }}>{row.profile ? `Win ${row.profile}` : "—"}</td>
+                  <td style={{ padding: "12px 8px", lineHeight: 1.25 }}>{row.folder ?? "-"}</td>
+                  <td style={{ padding: "12px 8px", lineHeight: 1.25 }}>{row.profile ? `Win ${row.profile}` : "-"}</td>
                   <td style={{ padding: "12px 8px", lineHeight: 1.25 }}>{new Date(row.resetAt).toLocaleString()}</td>
                   <td style={{ padding: "12px 8px", lineHeight: 1.25 }}>{status}</td>
                   <td style={{ display: "flex", gap: 8, padding: "10px 8px" }}>
