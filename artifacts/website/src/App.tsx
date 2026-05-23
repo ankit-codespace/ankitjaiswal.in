@@ -23,7 +23,6 @@ const YtThumbnail = lazy(() => import("@/pages/tools/yt-thumbnail"));
 const YtSummary = lazy(() => import("@/pages/tools/yt-summary"));
 const Notepad = lazy(() => import("@/pages/tools/notepad"));
 const Pomodoro = lazy(() => import("@/pages/tools/pomodoro"));
-const QuotaTrackerPrivatePage = lazy(() => import("@/pages/internal/quota-tracker"));
 
 function RouteFallback() {
   return <div aria-hidden="true" style={{ minHeight: "100svh", background: "#0A0C10" }} />;
@@ -83,7 +82,6 @@ function AppRouter() {
           <Route path="/tools/focus-timer" component={Pomodoro} />
           <Route path="/tools/study-timer" component={Pomodoro} />
           <Route path="/pomodoro" component={Pomodoro} />
-          <Route path="/internal/quota-tracker" component={QuotaTrackerPrivatePage} />
 
           <Route component={NotFound} />
         </Switch>
