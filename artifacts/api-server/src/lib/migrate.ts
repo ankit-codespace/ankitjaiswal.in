@@ -30,13 +30,11 @@ export async function ensureSchema(): Promise<void> {
       id          SERIAL PRIMARY KEY,
       email       TEXT NOT NULL,
       service     TEXT NOT NULL,
-      folder      TEXT,
       profile     SMALLINT,
       reset_at    TIMESTAMPTZ NOT NULL,
       created_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL,
       updated_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL
     );
-    ALTER TABLE quota_entries ADD COLUMN IF NOT EXISTS folder TEXT;
     ALTER TABLE quota_entries ADD COLUMN IF NOT EXISTS profile SMALLINT;
     CREATE INDEX IF NOT EXISTS quota_entries_reset_at_idx ON quota_entries (reset_at ASC);
     CREATE INDEX IF NOT EXISTS quota_entries_service_idx ON quota_entries (service);

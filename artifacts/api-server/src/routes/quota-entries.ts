@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asc, eq } from "drizzle-orm";
-import { db, pool } from "@workspace/db";
+import { db } from "@workspace/db";
 import { insertQuotaEntrySchema, quotaEntries } from "@workspace/db/schema";
 
 const router = Router();
@@ -54,35 +54,9 @@ const AUTO_WIN9_EMAILS = new Set([
   "filmywapgen@gmail.com",
   "filmywaptv@gmail.com",
 ]);
-let schemaEnsured = false;
-
-async function ensureQuotaSchema() {
-  if (schemaEnsured) return;
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS quota_entries (
-      id          SERIAL PRIMARY KEY,
-      email       TEXT NOT NULL,
-      service     TEXT NOT NULL,
-      folder      TEXT,
-      profile     SMALLINT,
-      reset_at    TIMESTAMPTZ NOT NULL,
-      created_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-      updated_at  TIMESTAMPTZ DEFAULT NOW() NOT NULL
-    );
-    ALTER TABLE quota_entries ADD COLUMN IF NOT EXISTS folder TEXT;
-    ALTER TABLE quota_entries ADD COLUMN IF NOT EXISTS profile SMALLINT;
-    CREATE INDEX IF NOT EXISTS quota_entries_reset_at_idx ON quota_entries (reset_at ASC);
-    CREATE INDEX IF NOT EXISTS quota_entries_service_idx ON quota_entries (service);
-  `);
-  schemaEnsured = true;
-}
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
-}
-function normalizeFolder(folder?: string): string | null {
-  const v = folder?.trim();
-  return v ? v.toLowerCase() : null;
 }
 
 function resolveProfile(email: string, profile?: number): number | null {
@@ -99,30 +73,24 @@ function resolveProfile(email: string, profile?: number): number | null {
 }
 
 router.get("/quota-entries", async (_req, res) => {
-  try {
-    await ensureQuotaSchema();
-    const rows = await db.select().from(quotaEntries).orderBy(asc(quotaEntries.resetAt));
-    // Deduplicate by normalized email, keeping the most recently updated record.
-    const byEmail = new Map<string, (typeof rows)[number]>();
-    for (const row of rows) {
-      const key = normalizeEmail(row.email);
-      const existing = byEmail.get(key);
-      if (!existing || new Date(row.updatedAt).getTime() >= new Date(existing.updatedAt).getTime()) {
-        byEmail.set(key, row);
-      }
+  const rows = await db.select().from(quotaEntries).orderBy(asc(quotaEntries.resetAt));
+  // Deduplicate by normalized email, keeping the most recently updated record.
+  const byEmail = new Map<string, (typeof rows)[number]>();
+  for (const row of rows) {
+    const key = normalizeEmail(row.email);
+    const existing = byEmail.get(key);
+    if (!existing || new Date(row.updatedAt).getTime() >= new Date(existing.updatedAt).getTime()) {
+      byEmail.set(key, row);
     }
-    const deduped = Array.from(byEmail.values()).sort(
-      (a, b) => new Date(a.resetAt).getTime() - new Date(b.resetAt).getTime(),
-    );
-    res.json(deduped.map((row) => ({ ...row, profile: resolveProfile(row.email, row.profile ?? undefined) })));
-  } catch (err) {
-    res.status(500).json({ message: "Failed to load quota entries." });
   }
+  const deduped = Array.from(byEmail.values()).sort(
+    (a, b) => new Date(a.resetAt).getTime() - new Date(b.resetAt).getTime(),
+  );
+  res.json(deduped.map((row) => ({ ...row, profile: resolveProfile(row.email, row.profile ?? undefined) })));
 });
 
 router.post("/quota-entries", async (req, res) => {
   try {
-    await ensureQuotaSchema();
     const input = insertQuotaEntrySchema.parse(req.body);
     const normalized = normalizeEmail(input.email);
     const existingRows = await db.select().from(quotaEntries);
@@ -135,7 +103,6 @@ router.post("/quota-entries", async (req, res) => {
         .set({
           email: input.email,
           service: input.service,
-          folder: normalizeFolder(input.folder),
           resetAt: input.resetAt,
           profile: resolvedProfile,
           updatedAt: new Date(),
@@ -145,7 +112,7 @@ router.post("/quota-entries", async (req, res) => {
     } else {
       [row] = await db
         .insert(quotaEntries)
-        .values({ ...input, folder: normalizeFolder(input.folder), profile: resolvedProfile })
+        .values({ ...input, profile: resolvedProfile })
         .returning();
     }
     res.status(201).json(row);
@@ -168,16 +135,10 @@ router.put("/quota-entries/:id", async (req, res) => {
   }
 
   try {
-    await ensureQuotaSchema();
     const input = insertQuotaEntrySchema.parse(req.body);
     const [row] = await db
       .update(quotaEntries)
-      .set({
-        ...input,
-        folder: normalizeFolder(input.folder),
-        profile: resolveProfile(input.email, input.profile),
-        updatedAt: new Date(),
-      })
+      .set({ ...input, profile: resolveProfile(input.email, input.profile), updatedAt: new Date() })
       .where(eq(quotaEntries.id, id))
       .returning();
 
@@ -205,7 +166,6 @@ router.delete("/quota-entries/:id", async (req, res) => {
     return;
   }
 
-  await ensureQuotaSchema();
   const [deleted] = await db
     .delete(quotaEntries)
     .where(eq(quotaEntries.id, id))

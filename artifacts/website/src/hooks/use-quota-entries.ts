@@ -4,7 +4,6 @@ export interface QuotaEntry {
   id: number;
   email: string;
   service: string;
-  folder: string | null;
   profile: number | null;
   resetAt: string;
   createdAt: string;
@@ -14,7 +13,6 @@ export interface QuotaEntry {
 export interface QuotaEntryInput {
   email: string;
   service: string;
-  folder?: string;
   profile?: number;
   resetAt: string;
 }
