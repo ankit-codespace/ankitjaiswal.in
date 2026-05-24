@@ -165,8 +165,6 @@ publish_static_site() {
   cat > "$WEB_ROOT/.htaccess" <<EOF_HTACCESS
 RewriteEngine On
 
-RewriteRule ^api/(.*)$ http://127.0.0.1:$API_PORT/api/\$1 [P,L]
-
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.html [L]

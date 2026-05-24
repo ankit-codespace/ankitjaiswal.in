@@ -160,7 +160,7 @@ export default function ToolsIndex() {
       "@type": "ListItem",
       position: i + 1,
       name: t.name,
-      description: t.tagline || (t as Tool).desc,
+      description: "tagline" in t ? t.tagline : t.desc,
       url: t.external ? t.href : absUrl(t.href),
     })),
   };
