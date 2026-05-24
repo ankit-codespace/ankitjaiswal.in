@@ -352,9 +352,13 @@ export function ToolStyles() {
         display: flex; gap: 24px; align-items: flex-start;
       }
       @media (max-width: 640px) {
-        .tool-privacy { flex-direction: column; padding: 28px 24px; }
-        .tool-step { padding: 18px; gap: 14px; }
+        .tool-privacy { flex-direction: column; padding: 24px 18px; }
+        .tool-step { padding: 16px; gap: 12px; }
         .tool-table th, .tool-table td { padding: 11px 12px; font-size: 12.5px; }
+      }
+      @media (max-width: 480px) {
+        .tool-privacy { padding: 20px 14px; gap: 16px; }
+        .tool-step { padding: 12px 14px; gap: 10px; }
       }
 
       /* ── Top header bar — sticky chrome above tool UI ── */
@@ -485,13 +489,13 @@ export function ToolStyles() {
           flex-shrink: 0;
         }
         .tool-header-actions { gap: 6px; }
-        .tool-header-inner { gap: 12px; padding: 0 14px; }
+        .tool-header-inner { gap: 10px; padding: 0 12px; }
         /* Slightly smaller title on phones so two-word names like
            "WebP Converter" stay on a single line. */
         .tool-header-title { font-size: 13.5px; }
       }
       @media (max-width: 360px) {
-        .tool-header-inner { gap: 10px; padding: 0 12px; }
+        .tool-header-inner { gap: 8px; padding: 0 10px; }
         .tool-header-title { font-size: 13px; line-height: 1.15; }
       }
     `}</style>

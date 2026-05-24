@@ -436,7 +436,10 @@ function ToolsIndexStyles() {
         padding: 96px 24px 56px;
       }
       @media (max-width: 640px) {
-        .ti-hero { padding: 64px 16px 40px; }
+        .ti-hero { padding: 56px 16px 36px; }
+      }
+      @media (max-width: 480px) {
+        .ti-hero { padding: 44px 12px 28px; }
       }
       .ti-eyebrow {
         font-family: ${tokens.font.body};
@@ -507,7 +510,10 @@ function ToolsIndexStyles() {
         padding: 48px 24px 32px;
       }
       @media (max-width: 640px) {
-        .ti-grid-wrap { padding: 32px 16px 24px; }
+        .ti-grid-wrap { padding: 24px 16px 20px; }
+      }
+      @media (max-width: 480px) {
+        .ti-grid-wrap { padding: 20px 12px 16px; }
       }
       .ti-grid {
         display: grid;
@@ -536,6 +542,11 @@ function ToolsIndexStyles() {
         display: flex;
         flex-direction: column;
         transition: background .2s ease;
+      }
+      @media (max-width: 540px) {
+        .ti-card {
+          padding: 20px 20px 18px;
+        }
       }
       .ti-card-link:hover .ti-card {
         background: rgba(255,255,255,0.022);

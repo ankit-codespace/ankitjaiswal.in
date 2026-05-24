@@ -657,7 +657,14 @@ export default function WebPConverter() {
         }
         @media (max-width: 640px) {
           .wc-shell {
-            padding: 36px 16px 44px;
+            padding: 28px 12px 36px;
+            gap: 16px;
+          }
+        }
+        @media (max-width: 380px) {
+          .wc-shell {
+            padding: 20px 10px 28px;
+            gap: 12px;
           }
         }
         .hero {
@@ -693,6 +700,19 @@ export default function WebPConverter() {
           display: inline-block;
           vertical-align: -.08em;
         }
+        @media (max-width: 480px) {
+          .hero h1 {
+            font-size: 25px;
+          }
+          .hero h1 em {
+            font-size: 34px;
+            vertical-align: -.06em;
+          }
+          .hero p {
+            font-size: 12.5px;
+            line-height: 1.5;
+          }
+        }
         .hero p {
           font-size: 13px;
           color: var(--t2);
@@ -725,6 +745,17 @@ export default function WebPConverter() {
           overflow: hidden;
           min-height: 210px;
           justify-content: center;
+        }
+        @media (max-width: 480px) {
+          .dz {
+            padding: 24px 16px 20px;
+            min-height: 170px;
+            gap: 10px;
+          }
+          .dz-ico {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+          }
         }
 
         .dz::before {
@@ -819,6 +850,18 @@ export default function WebPConverter() {
           border-radius: var(--r); padding: 11px 18px;
           display: flex; align-items: center; gap: 16px;
         }
+        @media (max-width: 480px) {
+          .qbar {
+            padding: 10px 12px;
+            gap: 12px;
+          }
+          .sep {
+            display: none;
+          }
+          .hint {
+            display: none;
+          }
+        }
         .qlbl {
           font-family: var(--s); font-size: 10px; color: var(--t3);
           text-transform: uppercase; letter-spacing: .1em; white-space: nowrap;
@@ -865,6 +908,18 @@ export default function WebPConverter() {
         .rcard-body {
           padding: 16px; display: grid;
           grid-template-columns: 1fr 48px 1fr; gap: 12px; align-items: center;
+        }
+        @media (max-width: 480px) {
+          .rcard-body {
+            padding: 12px;
+            gap: 8px;
+          }
+          .sval {
+            font-size: 17px;
+          }
+          .rcard-foot {
+            padding: 8px 12px;
+          }
         }
         .sblk { display: flex; flex-direction: column; gap: 3px; }
         .slbl { font-family: var(--s); font-size: 9px; color: var(--t3); text-transform: uppercase; letter-spacing: .1em; }
