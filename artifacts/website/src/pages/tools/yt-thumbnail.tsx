@@ -434,6 +434,7 @@ export default function YtThumbnail() {
       tagline="HD, free, no signup — every available size in one click"
       backHref="/tools"
       backLabel="Tools"
+      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
     >
       {/* Surface alternate canonical via Seo even though ToolPage already sets one
           (the alias may differ from canonical — Seo is idempotent on the link tag). */}
@@ -779,11 +780,15 @@ function YtThumbStyles() {
         padding: 32px 24px 64px;
       }
       .ytt-card {
-        background: ${tokens.bg.card};
-        border: 1px solid ${tokens.border.default};
-        border-radius: 18px;
-        padding: 22px;
-        box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 20px 60px -30px rgba(0,0,0,0.6);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        background: rgba(15, 18, 25, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 40px 100px -25px rgba(0,0,0,0.85),
+                    0 0 0 1px rgba(255,255,255,0.01),
+                    inset 0 1px 0 0 rgba(255,255,255,0.05);
       }
       .ytt-form { display: flex; gap: 10px; }
       .ytt-input-wrap {
@@ -986,8 +991,8 @@ function YtThumbStyles() {
         gap: 14px;
       }
       .ytt-thumb {
-        background: ${tokens.bg.chrome};
-        border: 1px solid ${tokens.border.default};
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 12px;
         overflow: hidden;
         display: flex; flex-direction: column;

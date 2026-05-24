@@ -661,6 +661,7 @@ export default function WebPConverter() {
       title="WebP Converter"
       tagline="Convert any image to WebP — locally, instantly"
       headerActions={headerActions}
+      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
     >
       {/* Local styles for the converter UI (keeps the SEO/design system clean) */}
       <style>{`
@@ -669,25 +670,31 @@ export default function WebPConverter() {
           display: flex;
           flex-direction: column;
           align-items: center;
+          position: relative;
         }
         @media (max-width: 640px) { .wc-shell { padding: 36px 18px 72px; } }
         .wc-card {
           width: 100%;
           max-width: 720px;
-          background: #0D0F14;
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 22px;
+          background: rgba(15, 18, 25, 0.7);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 20px;
           overflow: hidden;
-          box-shadow: 0 30px 80px -20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.02);
+          box-shadow: 
+            0 40px 100px -25px rgba(0,0,0,0.85), 
+            0 0 0 1px rgba(255,255,255,0.01),
+            inset 0 1px 0 0 rgba(255,255,255,0.05);
         }
         .wc-drop {
-          margin: 22px;
-          border-radius: 16px;
-          border: 2px dashed rgba(255,255,255,0.10);
-          background: rgba(255,255,255,0.012);
+          margin: 20px;
+          border-radius: 14px;
+          border: 1px dashed rgba(255,255,255,0.12);
+          background: rgba(255,255,255,0.01);
           cursor: pointer;
-          transition: border-color .18s ease, background .18s ease, box-shadow .25s ease, transform .25s ease;
-          padding: 64px 24px;
+          transition: all .2s cubic-bezier(0.22, 1, 0.36, 1);
+          padding: 60px 24px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -696,51 +703,61 @@ export default function WebPConverter() {
           position: relative;
         }
         .wc-drop:hover {
-          border-color: rgba(255,255,255,0.22);
+          border-color: rgba(255,255,255,0.28);
           background: rgba(255,255,255,0.025);
         }
         .wc-drop.is-drag {
-          border-color: rgba(255,255,255,0.6);
-          background: rgba(255,255,255,0.04);
-          box-shadow: 0 0 0 6px rgba(255,255,255,0.04), inset 0 0 60px rgba(255,255,255,0.04);
-          transform: scale(1.005);
+          border-color: #3b82f6;
+          background: rgba(59, 130, 246, 0.04);
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+          transform: scale(1.002);
         }
         .wc-drop-icon {
-          width: 56px; height: 56px;
-          border-radius: 16px;
+          width: 52px; height: 52px;
+          border-radius: 12px;
           display: inline-flex; align-items: center; justify-content: center;
-          background: rgba(255,255,255,0.04);
+          background: rgba(255,255,255,0.03);
           border: 1px solid rgba(255,255,255,0.08);
           color: rgba(255,255,255,0.55);
-          margin-bottom: 18px;
-          transition: color .2s ease, background .2s ease, border-color .2s ease;
+          margin-bottom: 16px;
+          transition: all .2s ease;
         }
-        .wc-drop.is-drag .wc-drop-icon { color: #fff; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
+        .wc-drop:hover .wc-drop-icon {
+          color: #fff;
+          background: rgba(255,255,255,0.06);
+          border-color: rgba(255,255,255,0.18);
+          transform: translateY(-2px);
+        }
+        .wc-drop.is-drag .wc-drop-icon { 
+          color: #3b82f6; 
+          background: rgba(59, 130, 246, 0.1); 
+          border-color: rgba(59, 130, 246, 0.3); 
+        }
         .wc-drop-title {
           font-family: ${tokens.font.display};
-          font-size: 17px;
+          font-size: 16px;
           font-weight: 600;
-          color: #fff;
+          color: rgba(255,255,255,0.95);
           letter-spacing: -0.01em;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
         .wc-drop-sub {
-          font-size: 13.5px;
-          color: rgba(255,255,255,0.5);
+          font-size: 13px;
+          color: rgba(255,255,255,0.45);
           line-height: 1.5;
         }
         .wc-drop-sub kbd {
           display: inline-block;
           font-family: ${tokens.font.mono};
-          font-size: 11.5px;
-          padding: 2px 6px;
-          border-radius: 5px;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.12);
-          color: #fff;
+          font-size: 11px;
+          padding: 1px 5px;
+          border-radius: 4px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.14);
+          color: rgba(255,255,255,0.9);
         }
         .wc-actions {
-          padding: 0 22px 22px;
+          padding: 0 20px 20px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -750,33 +767,38 @@ export default function WebPConverter() {
         .wc-pill {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 9px 16px;
-          border-radius: 999px;
-          background: transparent;
-          border: 1px solid rgba(255,255,255,0.10);
-          color: rgba(255,255,255,0.72);
-          font-size: 13px;
+          gap: 6px;
+          padding: 8px 14px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 12.5px;
           font-weight: 500;
           font-family: ${tokens.font.body};
-          letter-spacing: -0.005em;
           cursor: pointer;
-          transition: background .15s ease, color .15s ease, border-color .15s ease;
+          transition: all .15s ease;
         }
-        .wc-pill:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: rgba(255,255,255,0.22); }
+        .wc-pill:hover { 
+          background: rgba(255, 255, 255, 0.06); 
+          color: #fff; 
+          border-color: rgba(255, 255, 255, 0.18); 
+        }
         .wc-pill:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
         .wc-meta {
-          padding: 10px 22px 22px;
+          padding: 6px 20px 20px;
           display: flex; align-items: center; justify-content: center;
-          gap: 14px;
-          font-size: 11.5px;
-          color: rgba(255,255,255,0.36);
-          font-family: ${tokens.font.body};
-          letter-spacing: 0.02em;
+          gap: 12px;
+          font-size: 11px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.3);
+          font-family: ${tokens.font.mono};
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
           text-align: center;
           flex-wrap: wrap;
         }
-        .wc-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.22); }
+        .wc-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.15); }
 
         /* Results queue */
         .wc-queue {
@@ -791,7 +813,7 @@ export default function WebPConverter() {
         }
         .wc-queue-title {
           font-family: ${tokens.font.display};
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.16em;
           text-transform: uppercase;
@@ -813,12 +835,12 @@ export default function WebPConverter() {
           display: flex; align-items: center; gap: 14px;
           padding: 12px 14px;
           border: 1px solid rgba(255,255,255,0.06);
-          background: rgba(255,255,255,0.02);
-          border-radius: 14px;
-          transition: border-color .15s ease, background .15s ease;
+          background: rgba(255,255,255,0.015);
+          border-radius: 12px;
+          transition: all .15s ease;
         }
         .wc-row + .wc-row { margin-top: 8px; }
-        .wc-row:hover { border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.035); }
+        .wc-row:hover { border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); }
         .wc-thumb {
           width: 48px; height: 48px;
           border-radius: 8px;
@@ -856,8 +878,8 @@ export default function WebPConverter() {
         }
         .wc-delta {
           font-family: ${tokens.font.mono};
-          font-size: 11.5px;
-          padding: 2px 7px;
+          font-size: 11px;
+          padding: 2px 6px;
           border-radius: 5px;
           font-weight: 500;
           letter-spacing: -0.01em;
@@ -886,7 +908,7 @@ export default function WebPConverter() {
           color: rgba(255,255,255,0.55);
           display: inline-flex; align-items: center; justify-content: center;
           cursor: pointer;
-          transition: background .15s ease, color .15s ease, border-color .15s ease;
+          transition: all .15s ease;
         }
         .wc-icon-btn:hover { color: #fff; background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.22); }
         .wc-icon-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }

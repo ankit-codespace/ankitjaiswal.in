@@ -1124,10 +1124,11 @@ export default function PasteToImage() {
       tagline="Paste, annotate, blur, crop — download in seconds"
       backHref="/tools"
       backLabel="Tools"
+      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
     >
-      <main ref={mainRef} className="flex-1 flex flex-col items-center px-4 pt-6 pb-8" style={{ background: tokens.bg.page }}>
+      <main ref={mainRef} className="flex-1 flex flex-col items-center px-4 pt-6 pb-8" style={{ background: "transparent" }}>
         <div className="w-full max-w-5xl">
-          <div className="bg-[#0D0F14] border border-white/[0.06] rounded-2xl overflow-hidden shadow-2xl">
+          <div className="backdrop-blur-[24px] bg-[rgba(15,18,25,0.7)] border border-white/[0.08] rounded-[20px] overflow-hidden shadow-[0_40px_100px_-25px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.01),inset_0_1px_0_0_rgba(255,255,255,0.05)]">
             <div className="relative px-6 py-3 border-b border-white/[0.04]">
               <div className="flex items-center justify-between gap-4">
                 <div
@@ -1216,17 +1217,16 @@ export default function PasteToImage() {
               {!image ? (
                 <div
                   onClick={handleZoneClick}
-                  className="relative rounded-xl border-2 border-dashed cursor-pointer transition-all duration-300
-                    border-white/[0.12] bg-[#151A22] hover:border-[#4F7DFF]/40 hover:bg-[#181D26]"
+                  className="group relative rounded-[14px] border border-dashed border-white/[0.12] bg-white/[0.01] hover:border-white/[0.28] hover:bg-white/[0.025] cursor-pointer transition-all duration-300 ease-out py-16 px-8 flex flex-col items-center justify-center text-center"
                 >
-                  <div className="py-16 px-8 flex flex-col items-center justify-center">
-                    <Clipboard className="h-12 w-12 text-white/30 mb-4" strokeWidth={1.5} />
-                    <div className="text-sm font-medium tracking-wider uppercase text-white/50">
-                      Click anywhere to paste or press Ctrl+V
-                    </div>
-                    <div className="mt-1.5 text-xs text-white/35">
-                      Supports PNG, JPG, WebP and more
-                    </div>
+                  <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/55 mb-4 group-hover:text-white group-hover:bg-white/[0.06] group-hover:border-white/[0.18] group-hover:-translate-y-0.5 transition-all duration-300">
+                    <Clipboard className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
+                  <div className="font-semibold text-[15px] tracking-tight text-white/[0.95] mb-1.5">
+                    Click anywhere to paste or press Ctrl+V
+                  </div>
+                  <div className="text-xs text-white/45 leading-normal">
+                    Supports PNG, JPG, WebP and more
                   </div>
                 </div>
               ) : (

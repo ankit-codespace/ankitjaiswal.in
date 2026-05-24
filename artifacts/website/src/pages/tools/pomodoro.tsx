@@ -695,6 +695,7 @@ export default function Pomodoro() {
       tagline="Focus in 25-minute sprints — privacy-first, in your browser"
       backHref="/tools"
       backLabel="Tools"
+      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
     >
       <main className="pm-stage" ref={mainRef}>
         <div className="pm-grid">
@@ -1195,11 +1196,15 @@ function PomodoroStyles() {
          "walled-off panel" which competes with the timer for attention.
          Without it, the timer IS the page. */
       .pm-card {
-        background: transparent;
-        border: 0;
-        border-radius: 0;
-        padding: 0;
-        box-shadow: none;
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        background: rgba(15, 18, 25, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 32px 24px;
+        box-shadow: 0 40px 100px -25px rgba(0,0,0,0.85),
+                    0 0 0 1px rgba(255,255,255,0.01),
+                    inset 0 1px 0 0 rgba(255,255,255,0.05);
       }
       .pm-timer-card {
         display: flex; flex-direction: column; align-items: center; gap: 18px;
@@ -1504,8 +1509,8 @@ function PomodoroStyles() {
         display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
       }
       .pm-stat {
-        background: ${tokens.bg.chrome};
-        border: 1px solid ${tokens.border.default};
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 10px;
         padding: 10px 12px;
       }

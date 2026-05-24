@@ -618,11 +618,12 @@ export default function ClipboardHistory() {
       title="Clipboard History"
       tagline="Save, search & reuse text snippets — privately"
       backHref="/tools"
+      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
     >
       <ClipboardStyles />
 
       {/* ── Interactive UI ── */}
-      <main style={{ padding: "32px 18px 60px" }} ref={mainRef}>
+      <main style={{ padding: "32px 18px 60px", background: "transparent" }} ref={mainRef}>
         <div style={{ maxWidth: 920, margin: "0 auto" }}>
 
           {/* Composer */}
@@ -1187,10 +1188,15 @@ function ClipboardStyles() {
     <style>{`
       /* Composer card */
       .cb-card {
-        background: ${tokens.bg.card};
-        border: 1px solid ${tokens.border.subtle};
-        border-radius: 18px;
-        padding: 22px 22px 18px;
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        background: rgba(15, 18, 25, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 40px 100px -25px rgba(0,0,0,0.85),
+                    0 0 0 1px rgba(255,255,255,0.01),
+                    inset 0 1px 0 0 rgba(255,255,255,0.05);
       }
       .cb-card-head {
         display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
@@ -1295,11 +1301,15 @@ function ClipboardStyles() {
       /* Toolbar */
       .cb-toolbar {
         margin-top: 18px;
-        background: ${tokens.bg.card};
-        border: 1px solid ${tokens.border.subtle};
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        background: rgba(15, 18, 25, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 14px;
-        padding: 12px;
+        padding: 14px;
         display: flex; flex-direction: column; gap: 12px;
+        box-shadow: 0 20px 50px -12px rgba(0,0,0,0.6),
+                    inset 0 1px 0 0 rgba(255,255,255,0.03);
       }
       .cb-toolbar-row {
         display: flex; align-items: center; justify-content: space-between;
@@ -1441,22 +1451,22 @@ function ClipboardStyles() {
         display: grid;
         grid-template-columns: 28px 1fr auto;
         gap: 14px;
-        padding: 14px 14px 14px 16px;
-        background: ${tokens.bg.card};
-        border: 1px solid ${tokens.border.subtle};
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 12px;
-        transition: border-color .15s ease, background .15s ease;
+        transition: border-color .2s ease, background .2s ease, transform .2s ease;
       }
       .cb-item:hover {
-        border-color: ${tokens.border.hover};
-        background: rgba(255,255,255,0.035);
+        border-color: rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.03);
       }
       .cb-item-pinned {
-        border-color: rgba(255, 220, 130, 0.22);
-        background: linear-gradient(180deg, rgba(255,220,130,0.04) 0%, ${tokens.bg.card} 60%);
+        border-color: rgba(251, 191, 36, 0.18);
+        background: linear-gradient(180deg, rgba(251, 191, 36, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%);
       }
       .cb-item-pinned:hover {
-        border-color: rgba(255, 220, 130, 0.4);
+        border-color: rgba(251, 191, 36, 0.35);
       }
 
       .cb-item-side {

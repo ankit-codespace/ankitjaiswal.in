@@ -437,6 +437,7 @@ export default function DomainAge() {
       tagline="Live WHOIS lookup — instant, private, free"
       backHref="/tools"
       backLabel="Tools"
+      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
     >
       <main className="da-stage" ref={mainRef}>
         <div className="da-card">
@@ -878,11 +879,15 @@ function DomainAgeStyles() {
         padding: 32px 24px 64px;
       }
       .da-card {
-        background: ${tokens.bg.card};
-        border: 1px solid ${tokens.border.default};
-        border-radius: 18px;
-        padding: 22px;
-        box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 20px 60px -30px rgba(0,0,0,0.6);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        background: rgba(15, 18, 25, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 28px 24px;
+        box-shadow: 0 40px 100px -25px rgba(0,0,0,0.85),
+                    0 0 0 1px rgba(255,255,255,0.01),
+                    inset 0 1px 0 0 rgba(255,255,255,0.05);
       }
       .da-form { display: flex; gap: 10px; }
       .da-input-wrap {
@@ -1007,10 +1012,10 @@ function DomainAgeStyles() {
 
       .da-result {
         margin-top: 18px;
-        background: ${tokens.bg.chrome};
-        border: 1px solid ${tokens.border.default};
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 14px;
-        padding: 18px;
+        padding: 20px;
       }
       .da-result-head {
         display: flex; align-items: center; justify-content: space-between;
@@ -1173,10 +1178,15 @@ function DomainAgeStyles() {
         gap: 14px;
       }
       .da-use-card {
-        padding: 18px;
-        background: rgba(255,255,255,0.02);
-        border: 1px solid ${tokens.border.subtle};
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 14px;
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+      .da-use-card:hover {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.025);
       }
       .da-use-icon {
         width: 36px; height: 36px; border-radius: 9px;
