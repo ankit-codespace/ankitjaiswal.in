@@ -721,6 +721,14 @@ export default function WebPConverter() {
           letter-spacing: .01em;
         }
         .hero p b { font-weight: 500; color: var(--t1); }
+        .txt-accent-tnr {
+          font-family: var(--tnr);
+          font-style: italic;
+          color: var(--hi);
+          font-size: 1.08em;
+          padding: 0 1px;
+          font-weight: normal;
+        }
 
         .cvt { width: 100%; display: flex; flex-direction: column; gap: 10px; }
 
@@ -959,9 +967,12 @@ export default function WebPConverter() {
 
       <main className="wc-shell" ref={mainRef}>
         <div className="hero">
-          <span className="eyebrow">Image Utility</span>
-          <h1>Convert to <em>WebP</em> instantly.</h1>
-          <p><b>Runs entirely in your browser.</b> Your images never leave your machine.</p>
+          <span className="eyebrow">Privacy-First</span>
+          <h1>WebP <em>Converter</em></h1>
+          <p>
+            Convert any <em className="txt-accent-tnr">PNG, JPG, or HEIC</em> to <em className="txt-accent-tnr">WebP</em> locally in your browser.
+            No servers, no queues, no file uploads.
+          </p>
         </div>
 
         <div className="cvt">
@@ -1172,9 +1183,9 @@ export default function WebPConverter() {
           <div className="tool-prose">
             <p>
               WebP is an image format Google released in 2010 to make the web faster.
-              It pulls off something neither JPEG nor PNG can: <strong>both lossy and lossless compression in a single file format</strong>,
-              with optional transparency and animation. The result, in practice, is files that are 25–35% smaller than JPEG and
-              up to 80% smaller than PNG — at the same visual quality.
+              It pulls off something neither JPEG nor PNG can: <em className="txt-accent-tnr">both lossy and lossless compression</em> in a single file format,
+              with optional transparency and animation. The result, in practice, is files that are <em className="txt-accent-tnr">25–35% smaller</em> than JPEG and
+              up to <em className="txt-accent-tnr">80% smaller</em> than PNG — at the same visual quality.
             </p>
             <p>
               For years WebP felt like a Chrome-only experiment. That changed in late 2020, when Safari 14 added support.
@@ -1184,8 +1195,7 @@ export default function WebPConverter() {
             <p>
               This converter takes any image your browser can read — PNG, JPG, GIF, BMP — and re-encodes it as WebP using the
               <a href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toBlob" target="_blank" rel="noopener noreferrer"> HTMLCanvasElement.toBlob</a> API.
-              Because the encoder ships with your browser, the file never leaves your device. No upload. No queue. No "premium"
-              tier. Drop a file, get a WebP.
+              Because the encoder ships with your browser, the file never leaves your device. No <em className="txt-accent-tnr">upload</em>, no <em className="txt-accent-tnr">queue</em>, no premium tier. Drop a file, get a WebP.
             </p>
           </div>
         </ToolSection>
@@ -1207,8 +1217,8 @@ export default function WebPConverter() {
           <SectionHeading kicker="The honest comparison" title="WebP vs JPEG: which should you use in 2026?" />
           <div className="tool-prose">
             <p>
-              Use WebP. The honest answer is almost always WebP, and it has been since 2021.
-              At the same perceived quality, WebP is 25–35% smaller than JPEG. On a typical landing page that's the
+              Use WebP. The honest answer is almost always <em className="txt-accent-tnr">WebP</em>, and it has been since 2021.
+              At the same perceived quality, WebP is <em className="txt-accent-tnr">25–35% smaller</em> than JPEG. On a typical landing page that's the
               difference between a 4-second LCP and a sub-2-second one. Browser support is universal — Safari 14+ on
               iOS and macOS, every Chromium browser, every Firefox.
             </p>
