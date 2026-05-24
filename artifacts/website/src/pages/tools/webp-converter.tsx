@@ -1,17 +1,16 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import {
-  Settings as SettingsIcon, Clipboard, Plus, Check, X, Image as ImageIcon,
-  Download, Trash2, Sparkles, Zap, Lock, Sliders, Maximize2, Layers,
-  Globe, Code2, ShoppingBag, FileImage,
+  Settings as SettingsIcon, Clipboard, Plus, Check, X,
+  Download, Trash2, Sliders, Maximize2, Layers, FileImage
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ToolPage, ToolSEOArticle, ToolSection, SectionHeading, ToolStatusBar,
   ToolFAQ, ToolHowToSteps, ToolFeatureGrid, ToolRelatedTools,
   ToolAuthorCard, ToolPrivacyBand, FeedbackInlineCard, buildToolJsonLd,
-  tokens, type ToolFAQItem, type RelatedTool, type ToolHowToStep, type ToolFeature,
-  type ToolStatusStat,
+  type ToolFAQItem, type RelatedTool, type ToolHowToStep, type ToolFeature,
+  type ToolStatusStat
 } from "@/components/tool";
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -326,6 +325,13 @@ export default function WebPConverter() {
     showToast("Cleared all", "success");
   }, [showToast]);
 
+  const downloadAll = useCallback(() => {
+    results.forEach((r) => {
+      triggerDownload(r.webpUrl, r.webpName);
+    });
+    showToast(`Downloading ${results.length} files`, "success");
+  }, [results, triggerDownload, showToast]);
+
   // ── drag and drop ──
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -358,7 +364,6 @@ export default function WebPConverter() {
   // ── paste handlers ──
   const handlePasteButton = useCallback(async () => {
     try {
-      // Modern clipboard API (Chrome / Edge / Safari with permission)
       if (navigator.clipboard && "read" in navigator.clipboard) {
         const items = await navigator.clipboard.read();
         for (const item of items) {
@@ -423,12 +428,12 @@ export default function WebPConverter() {
   /* ── SEO content data ── */
 
   const features: ToolFeature[] = [
-    { icon: Lock, title: "Stays in your browser", desc: "Files are encoded by the HTML5 Canvas API on your device. Nothing is uploaded to any server. Works offline once the page is loaded." },
-    { icon: Zap, title: "Instant batch convert", desc: "Drop one file or twenty. Each one converts and downloads automatically — no queue, no progress bar theatre." },
+    { icon: FileImage, title: "Stays in your browser", desc: "Files are encoded by the HTML5 Canvas API on your device. Nothing is uploaded to any server. Works offline once the page is loaded." },
+    { icon: FileImage, title: "Instant batch convert", desc: "Drop one file or twenty. Each one converts and downloads automatically — no queue, no progress bar theatre." },
     { icon: Sliders, title: "Quality you control", desc: "Slide from 1 to 100. Most photos hit the sweet spot at 75–85, where WebP looks identical to the source and weighs 60–80% less." },
     { icon: Maximize2, title: "Resize on the fly", desc: "Set a max width and oversized images shrink proportionally before encoding. Perfect for hero shots that don't need to be 4000px wide." },
     { icon: Layers, title: "Lossless when you need it", desc: "Toggle lossless mode for icons, illustrations, and screenshots where every pixel matters and quality cannot drift." },
-    { icon: Globe, title: "Works with anything", desc: "Reads PNG, JPEG, GIF, BMP, and most other browser-native formats. Output is universal WebP that every modern browser renders." },
+    { icon: FileImage, title: "Works with anything", desc: "Reads PNG, JPEG, GIF, BMP, and most other browser-native formats. Output is universal WebP that every modern browser renders." },
   ];
 
   const steps: ToolHowToStep[] = [
@@ -439,10 +444,10 @@ export default function WebPConverter() {
   ];
 
   const useCases: ToolFeature[] = [
-    { icon: Code2, title: "Web developers", desc: "Cut Largest Contentful Paint by 30–50% just by swapping JPEGs to WebP. Lighthouse scores climb, Core Web Vitals turn green." },
-    { icon: Sparkles, title: "Designers", desc: "Export PNGs from Figma at 2× and convert to lossless WebP. Same crisp quality on retina, half the bandwidth." },
-    { icon: ImageIcon, title: "Bloggers", desc: "Featured images, social cards, hero shots — convert all of them in one drop and your blog feels twice as fast on mobile." },
-    { icon: ShoppingBag, title: "E-commerce", desc: "Product photography goes from megabytes to kilobytes without losing detail. Faster pages, higher conversion rates." },
+    { icon: FileImage, title: "Web developers", desc: "Cut Largest Contentful Paint by 30–50% just by swapping JPEGs to WebP. Lighthouse scores climb, Core Web Vitals turn green." },
+    { icon: FileImage, title: "Designers", desc: "Export PNGs from Figma at 2× and convert to lossless WebP. Same crisp quality on retina, half the bandwidth." },
+    { icon: FileImage, title: "Bloggers", desc: "Featured images, social cards, hero shots — convert all of them in one drop and your blog feels twice as fast on mobile." },
+    { icon: FileImage, title: "E-commerce", desc: "Product photography goes from megabytes to kilobytes without losing detail. Faster pages, higher conversion rates." },
   ];
 
   const faqs: ToolFAQItem[] = [
@@ -476,68 +481,39 @@ export default function WebPConverter() {
           exit={{ opacity: 0, y: -6, scale: 0.98 }}
           transition={{ duration: 0.14, ease: "easeOut" }}
           style={{
-            position: "fixed",
-            top: 64,
-            right: 18,
+            position: "absolute",
+            top: 56,
+            right: 0,
             zIndex: 60,
             width: 280,
-            background: "#13161D",
-            border: "1px solid rgba(255,255,255,0.10)",
-            borderRadius: 14,
+            background: "var(--bg2)",
+            border: "1px solid var(--b1)",
+            borderRadius: "var(--r)",
             padding: 18,
-            boxShadow: "0 24px 64px -8px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)",
+            boxShadow: "0 24px 64px -8px rgba(0,0,0,0.55)",
           }}
           role="dialog"
           aria-label="Conversion settings"
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <span style={{ fontFamily: tokens.font.display, fontSize: 13, fontWeight: 600, color: tokens.text.primary, letterSpacing: "-0.005em" }}>
-              Conversion settings
+            <span style={{ fontFamily: "var(--d)", fontSize: 13, fontWeight: 600, color: "var(--t1)", letterSpacing: "-0.005em" }}>
+              Settings
             </span>
             <button
               onClick={() => setShowSettings(false)}
               aria-label="Close settings"
-              style={{ background: "transparent", border: "none", color: tokens.text.quiet, cursor: "pointer", padding: 4, borderRadius: 6, display: "inline-flex" }}
+              style={{ background: "transparent", border: "none", color: "var(--t3)", cursor: "pointer", padding: 4, borderRadius: 6, display: "inline-flex" }}
             >
               <X size={14} />
             </button>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* Quality */}
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 12.5, color: tokens.text.muted, fontFamily: tokens.font.body }}>Quality</span>
-                <span style={{
-                  fontFamily: tokens.font.mono, fontSize: 12, color: lossless ? tokens.text.quiet : tokens.text.primary,
-                  background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: 6,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}>
-                  {lossless ? "—" : `${quality}`}
-                </span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={100}
-                step={1}
-                value={quality}
-                disabled={lossless}
-                onChange={(e) => setQuality(parseInt(e.target.value, 10))}
-                aria-label="Quality"
-                style={{ width: "100%", accentColor: "#fff", opacity: lossless ? 0.4 : 1 }}
-              />
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10.5, color: tokens.text.kicker, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: tokens.font.body }}>
-                <span>Smaller</span>
-                <span>Better</span>
-              </div>
-            </div>
-
             {/* Max width */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 12.5, color: tokens.text.muted, fontFamily: tokens.font.body }}>Max width</span>
-                <span style={{ fontSize: 11, color: tokens.text.kicker, fontFamily: tokens.font.body }}>px</span>
+                <span style={{ fontSize: 12.5, color: "var(--t2)", fontFamily: "var(--s)" }}>Max width</span>
+                <span style={{ fontSize: 11, color: "var(--t3)", fontFamily: "var(--s)" }}>px</span>
               </div>
               <input
                 type="number"
@@ -547,13 +523,13 @@ export default function WebPConverter() {
                 aria-label="Max width in pixels"
                 style={{
                   width: "100%",
-                  background: "#0A0C10",
-                  border: "1px solid rgba(255,255,255,0.10)",
+                  background: "var(--bg0)",
+                  border: "1px solid var(--b1)",
                   borderRadius: 8,
                   padding: "8px 10px",
                   fontSize: 13,
-                  color: tokens.text.primary,
-                  fontFamily: tokens.font.body,
+                  color: "var(--t1)",
+                  fontFamily: "var(--s)",
                   outline: "none",
                 }}
               />
@@ -562,8 +538,8 @@ export default function WebPConverter() {
             {/* Lossless toggle */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: 12.5, color: tokens.text.muted, fontFamily: tokens.font.body }}>Lossless</div>
-                <div style={{ fontSize: 11, color: tokens.text.kicker, marginTop: 2, fontFamily: tokens.font.body }}>For icons & screenshots</div>
+                <div style={{ fontSize: 12.5, color: "var(--t2)", fontFamily: "var(--s)" }}>Lossless</div>
+                <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 2, fontFamily: "var(--s)" }}>For screenshots & logos</div>
               </div>
               <button
                 onClick={() => setLossless((v) => !v)}
@@ -574,7 +550,7 @@ export default function WebPConverter() {
                   position: "relative",
                   width: 40, height: 22,
                   borderRadius: 999,
-                  background: lossless ? "#fff" : "rgba(255,255,255,0.12)",
+                  background: lossless ? "var(--t1)" : "var(--bg4)",
                   border: "none",
                   cursor: "pointer",
                   transition: "background 0.18s ease",
@@ -591,24 +567,24 @@ export default function WebPConverter() {
                     width: 16,
                     height: 16,
                     borderRadius: "50%",
-                    background: lossless ? "#0A0C10" : "#fff",
+                    background: lossless ? "var(--bg0)" : "var(--t1)",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
                   }}
                 />
               </button>
             </div>
 
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
+            <div style={{ borderTop: "1px solid var(--b0)", paddingTop: 12 }}>
               <button
                 onClick={() => { setQuality(80); setMaxWidth(""); setLossless(false); }}
                 style={{
                   fontSize: 11.5,
-                  color: tokens.text.soft,
+                  color: "var(--t3)",
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
                   padding: 0,
-                  fontFamily: tokens.font.body,
+                  fontFamily: "var(--s)",
                   letterSpacing: "0.02em",
                 }}
               >
@@ -623,22 +599,27 @@ export default function WebPConverter() {
 
   /* ── Header action: Settings button ── */
   const headerActions = (
-    <button
-      ref={settingsBtnRef}
-      onClick={(e) => { e.stopPropagation(); setShowSettings((v) => !v); }}
-      className="tool-header-btn"
-      aria-label="Settings"
-      aria-expanded={showSettings}
-      style={
-        showSettings
-          ? { background: "rgba(255,255,255,0.06)", color: "#fff", borderColor: "rgba(255,255,255,0.26)" }
-          : undefined
-      }
-    >
-      <SettingsIcon size={13} strokeWidth={2} />
-      <span>Settings</span>
-    </button>
+    <div style={{ position: "relative" }}>
+      <button
+        ref={settingsBtnRef}
+        onClick={(e) => { e.stopPropagation(); setShowSettings((v) => !v); }}
+        className="tool-header-btn"
+        aria-label="Settings"
+        aria-expanded={showSettings}
+        style={
+          showSettings
+            ? { background: "var(--bg4)", color: "var(--t1)", borderColor: "var(--b2)" }
+            : undefined
+        }
+      >
+        <SettingsIcon size={13} strokeWidth={2} />
+        <span>Settings</span>
+      </button>
+      {settingsPanel}
+    </div>
   );
+
+  const sliderPercentage = ((quality - 1) / 99 * 100).toFixed(1);
 
   /* ────────────────────────────────────────────────────────────────────── */
   /* Render                                                                  */
@@ -661,274 +642,254 @@ export default function WebPConverter() {
       title="WebP Converter"
       tagline="Convert any image to WebP — locally, instantly"
       headerActions={headerActions}
-      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
+      bgColor="var(--bg0)"
     >
-      {/* Local styles for the converter UI (keeps the SEO/design system clean) */}
       <style>{`
+        /* ── CONVERTER ── */
         .wc-shell {
-          padding: 56px 24px 96px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-        }
-        @media (max-width: 640px) { .wc-shell { padding: 36px 18px 72px; } }
-        .wc-card {
           width: 100%;
-          max-width: 720px;
-          background: rgba(15, 18, 25, 0.7);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px;
-          overflow: hidden;
-          box-shadow: 
-            0 40px 100px -25px rgba(0,0,0,0.85), 
-            0 0 0 1px rgba(255,255,255,0.01),
-            inset 0 1px 0 0 rgba(255,255,255,0.05);
-        }
-        .wc-drop {
-          margin: 20px;
-          border-radius: 14px;
-          border: 1px dashed rgba(255,255,255,0.12);
-          background: rgba(255,255,255,0.01);
-          cursor: pointer;
-          transition: all .2s cubic-bezier(0.22, 1, 0.36, 1);
-          padding: 60px 24px;
+          max-width: 640px;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
+          gap: 24px;
+          margin: 0 auto;
+          padding: 44px 24px 52px;
+        }
+        @media (max-width: 640px) {
+          .wc-shell {
+            padding: 36px 16px 44px;
+          }
+        }
+        .hero {
           text-align: center;
-          position: relative;
-        }
-        .wc-drop:hover {
-          border-color: rgba(255,255,255,0.28);
-          background: rgba(255,255,255,0.025);
-        }
-        .wc-drop.is-drag {
-          border-color: #3b82f6;
-          background: rgba(59, 130, 246, 0.04);
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
-          transform: scale(1.002);
-        }
-        .wc-drop-icon {
-          width: 52px; height: 52px;
-          border-radius: 12px;
-          display: inline-flex; align-items: center; justify-content: center;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.08);
-          color: rgba(255,255,255,0.55);
-          margin-bottom: 16px;
-          transition: all .2s ease;
-        }
-        .wc-drop:hover .wc-drop-icon {
-          color: #fff;
-          background: rgba(255,255,255,0.06);
-          border-color: rgba(255,255,255,0.18);
-          transform: translateY(-2px);
-        }
-        .wc-drop.is-drag .wc-drop-icon { 
-          color: #3b82f6; 
-          background: rgba(59, 130, 246, 0.1); 
-          border-color: rgba(59, 130, 246, 0.3); 
-        }
-        .wc-drop-title {
-          font-family: ${tokens.font.display};
-          font-size: 16px;
-          font-weight: 600;
-          color: rgba(255,255,255,0.95);
-          letter-spacing: -0.01em;
-          margin-bottom: 6px;
-        }
-        .wc-drop-sub {
-          font-size: 13px;
-          color: rgba(255,255,255,0.45);
-          line-height: 1.5;
-        }
-        .wc-drop-sub kbd {
-          display: inline-block;
-          font-family: ${tokens.font.mono};
-          font-size: 11px;
-          padding: 1px 5px;
-          border-radius: 4px;
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.14);
-          color: rgba(255,255,255,0.9);
-        }
-        .wc-actions {
-          padding: 0 20px 20px;
+          max-width: 580px;
           display: flex;
-          align-items: center;
-          justify-content: center;
+          flex-direction: column;
           gap: 10px;
-          flex-wrap: wrap;
+          margin: 0 auto;
         }
-        .wc-pill {
-          display: inline-flex;
+        .eyebrow {
+          font-family: var(--s);
+          font-size: 10px;
+          color: var(--t3);
+          letter-spacing: .16em;
+          text-transform: uppercase;
+        }
+        .hero h1 {
+          font-family: var(--d);
+          font-size: 32px;
+          font-weight: 800;
+          letter-spacing: -.04em;
+          line-height: 1.1;
+          color: var(--t1);
+        }
+        .hero h1 em {
+          font-style: italic;
+          font-family: var(--tnr);
+          font-size: 46px;
+          color: var(--hi);
+          letter-spacing: -.01em;
+          line-height: .9;
+          display: inline-block;
+          vertical-align: -.08em;
+        }
+        .hero p {
+          font-size: 13px;
+          color: var(--t2);
+          font-weight: 300;
+          line-height: 1.65;
+          letter-spacing: .01em;
+        }
+        .hero p b { font-weight: 500; color: var(--t1); }
+
+        .cvt { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+
+        .dz-shell {
+          border-radius: var(--r);
+          border: 1px solid var(--b2);
+          background: var(--bg1);
+          transition: border-color .22s, background .22s;
+        }
+        .dz-shell:hover  { border-color: var(--b3); }
+        .dz-shell.active { border-color: rgba(240,237,232,.22); background: var(--bg2); }
+
+        .dz {
+          border-radius: calc(var(--r) - 1px);
+          padding: 40px 28px 32px;
+          display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 6px;
-          padding: 8px 14px;
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 12.5px;
-          font-weight: 500;
-          font-family: ${tokens.font.body};
+          gap: 14px;
           cursor: pointer;
-          transition: all .15s ease;
-        }
-        .wc-pill:hover { 
-          background: rgba(255, 255, 255, 0.06); 
-          color: #fff; 
-          border-color: rgba(255, 255, 255, 0.18); 
-        }
-        .wc-pill:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-        .wc-meta {
-          padding: 6px 20px 20px;
-          display: flex; align-items: center; justify-content: center;
-          gap: 12px;
-          font-size: 11px;
-          font-weight: 500;
-          color: rgba(255, 255, 255, 0.3);
-          font-family: ${tokens.font.mono};
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          text-align: center;
-          flex-wrap: wrap;
-        }
-        .wc-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.15); }
-
-        /* Results queue */
-        .wc-queue {
-          width: 100%;
-          max-width: 720px;
-          margin-top: 28px;
-        }
-        .wc-queue-head {
-          display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 14px;
-          padding: 0 4px;
-        }
-        .wc-queue-title {
-          font-family: ${tokens.font.display};
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: rgba(255,255,255,0.4);
-        }
-        .wc-queue-clear {
-          font-size: 12px;
-          color: rgba(255,255,255,0.5);
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-family: ${tokens.font.body};
-          padding: 4px 8px;
-          border-radius: 6px;
-          display: inline-flex; align-items: center; gap: 5px;
-        }
-        .wc-queue-clear:hover { color: #fff; background: rgba(255,255,255,0.04); }
-        .wc-row {
-          display: flex; align-items: center; gap: 14px;
-          padding: 12px 14px;
-          border: 1px solid rgba(255,255,255,0.06);
-          background: rgba(255,255,255,0.015);
-          border-radius: 12px;
-          transition: all .15s ease;
-        }
-        .wc-row + .wc-row { margin-top: 8px; }
-        .wc-row:hover { border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); }
-        .wc-thumb {
-          width: 48px; height: 48px;
-          border-radius: 8px;
-          background: #0A0C10 center / contain no-repeat;
-          flex-shrink: 0;
-          border: 1px solid rgba(255,255,255,0.06);
-        }
-        .wc-row-info {
-          min-width: 0;
-          flex: 1;
-        }
-        .wc-row-name {
-          font-family: ${tokens.font.body};
-          font-size: 13.5px;
-          font-weight: 500;
-          color: rgba(255,255,255,0.92);
-          letter-spacing: -0.005em;
-          margin: 0 0 4px;
+          position: relative;
           overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          min-height: 210px;
+          justify-content: center;
         }
-        .wc-row-meta {
-          display: flex; align-items: center; gap: 8px;
-          font-size: 12px;
-          color: rgba(255,255,255,0.46);
-          font-family: ${tokens.font.body};
-          flex-wrap: wrap;
-        }
-        .wc-row-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.18); }
-        .wc-row-arrow {
-          color: rgba(255,255,255,0.22);
-          font-size: 12px;
-          padding: 0 2px;
-        }
-        .wc-delta {
-          font-family: ${tokens.font.mono};
-          font-size: 11px;
-          padding: 2px 6px;
-          border-radius: 5px;
-          font-weight: 500;
-          letter-spacing: -0.01em;
-        }
-        .wc-delta-good {
-          color: rgba(140, 230, 170, 0.95);
-          background: rgba(140, 230, 170, 0.08);
-          border: 1px solid rgba(140, 230, 170, 0.18);
-        }
-        .wc-delta-neutral {
-          color: rgba(255,255,255,0.55);
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.10);
-        }
-        .wc-delta-bad {
-          color: rgba(255, 170, 170, 0.95);
-          background: rgba(255, 100, 100, 0.06);
-          border: 1px solid rgba(255, 100, 100, 0.18);
-        }
-        .wc-row-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .wc-icon-btn {
-          width: 32px; height: 32px;
-          border-radius: 8px;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: transparent;
-          color: rgba(255,255,255,0.55);
-          display: inline-flex; align-items: center; justify-content: center;
-          cursor: pointer;
-          transition: all .15s ease;
-        }
-        .wc-icon-btn:hover { color: #fff; background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.22); }
-        .wc-icon-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
-        /* Converting badge */
-        .wc-converting {
-          margin-top: 16px;
-          font-size: 12px;
-          color: rgba(255,255,255,0.5);
-          display: inline-flex; align-items: center; gap: 8px;
-          font-family: ${tokens.font.body};
+        .dz::before {
+          content: '';
+          position: absolute; inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+          background-size: 200px 200px;
+          opacity: .022;
+          pointer-events: none;
         }
-        .wc-spinner {
-          width: 12px; height: 12px;
+
+        .dz::after {
+          content: '';
+          position: absolute; top: -30px; left: 50%;
+          transform: translateX(-50%);
+          width: 360px; height: 160px;
+          background: radial-gradient(ellipse, rgba(240,237,232,.026) 0%, transparent 66%);
+          pointer-events: none;
+        }
+
+        .dz.dragging { background: var(--bg2); }
+
+        .dz-ico {
+          width: 42px; height: 42px; border-radius: 10px;
+          background: var(--bg3); border: 1px solid var(--b1);
+          display: flex; align-items: center; justify-content: center;
+          color: var(--t3);
+          transition: color .18s, border-color .18s, background .18s;
+          position: relative; z-index: 1;
+        }
+        .dz-shell:hover .dz-ico,
+        .dz.dragging .dz-ico {
+          color: var(--t2); border-color: var(--b2); background: var(--bg4);
+        }
+
+        .dz-txt { text-align: center; position: relative; z-index: 1; }
+        .dz-txt h2 {
+          font-family: var(--d); font-size: 15px; font-weight: 700;
+          letter-spacing: -.025em; margin-bottom: 5px; color: var(--t1);
+        }
+        .dz-txt p { font-family: var(--s); font-size: 11px; color: var(--t3); }
+        .dz-txt p span { color: var(--t2); }
+
+        .dz-btns { display: flex; gap: 7px; position: relative; z-index: 1; }
+
+        .btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 7px 14px; border-radius: var(--rs);
+          font-size: 12px; font-family: var(--s); font-weight: 500;
+          cursor: pointer; transition: background .14s, color .14s, border-color .14s;
+          border: none; letter-spacing: .005em;
+        }
+        .btn-sec {
+          background: var(--bg3); color: var(--t2); border: 1px solid var(--b1);
+        }
+        .btn-sec:hover { background: var(--bg4); border-color: var(--b2); color: var(--t1); }
+
+        .btn-pri { background: var(--t1); color: #0D0D0C; font-weight: 600; }
+        .btn-pri:hover { background: var(--ac); }
+
+        .btn-ghost { background: transparent; color: var(--t3); border: 1px solid var(--b0); }
+        .btn-ghost:hover { color: var(--t2); border-color: var(--b1); }
+
+        .fmts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 1; }
+        .fmt {
+          font-family: var(--s); font-size: 9px; padding: 2px 7px;
+          border-radius: var(--rs-xs); background: transparent; color: var(--t3);
+          border: 1px solid var(--b0); letter-spacing: .08em; text-transform: uppercase;
+          transition: color .15s, border-color .15s;
+        }
+        .dz-shell:hover .fmt { color: var(--t2); border-color: var(--b1); }
+
+        .proc {
+          display: none; position: absolute; inset: 0;
+          background: rgba(15,15,14,.92); border-radius: calc(var(--r) - 1px);
+          flex-direction: column; align-items: center; justify-content: center;
+          gap: 12px; z-index: 20;
+        }
+        .proc.on { display: flex; }
+        .ring {
+          width: 24px; height: 24px;
+          border: 1.5px solid var(--b2);
+          border-top-color: var(--t1);
           border-radius: 50%;
-          border: 2px solid rgba(255,255,255,0.15);
-          border-top-color: rgba(255,255,255,0.7);
-          animation: wc-spin 0.7s linear infinite;
+          animation: spin .8s linear infinite;
         }
-        @keyframes wc-spin { to { transform: rotate(360deg); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .proc-lbl { font-family: var(--s); font-size: 11px; color: var(--t2); letter-spacing: .04em; }
+
+        .qbar {
+          background: var(--bg1); border: 1px solid var(--b0);
+          border-radius: var(--r); padding: 11px 18px;
+          display: flex; align-items: center; gap: 16px;
+        }
+        .qlbl {
+          font-family: var(--s); font-size: 10px; color: var(--t3);
+          text-transform: uppercase; letter-spacing: .1em; white-space: nowrap;
+        }
+        .qslide { flex: 1; display: flex; align-items: center; gap: 12px; }
+        input[type=range] {
+          -webkit-appearance: none; flex: 1; height: 2px;
+          border-radius: 1px; outline: none; cursor: pointer; background: var(--b1);
+        }
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none; width: 12px; height: 12px;
+          border-radius: 50%; background: var(--t1);
+          border: 2px solid var(--bg0); transition: transform .12s;
+        }
+        input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.25); }
+        .qval {
+          font-family: var(--s); font-size: 13px; color: var(--t1);
+          font-weight: 500; min-width: 26px; text-align: right; letter-spacing: -.01em;
+        }
+        .sep { width: 1px; height: 16px; background: var(--b0); flex-shrink: 0; }
+        .hint { display: flex; align-items: center; gap: 4px; font-family: var(--s); font-size: 10px; color: var(--t3); }
+        .kbd {
+          padding: 2px 6px; background: var(--bg3); border: 1px solid var(--b1);
+          border-radius: var(--rs-xs); font-family: var(--s); font-size: 10px; color: var(--t2);
+        }
+
+        .results { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 24px; }
+        .rcard {
+          background: var(--bg1); border: 1px solid var(--b0);
+          border-radius: var(--r); overflow: hidden;
+          transition: border-color .2s;
+        }
+        .rcard:hover { border-color: var(--b1); }
+
+        .rcard-top {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 16px; border-bottom: 1px solid var(--b0);
+          background: var(--bg2);
+        }
+        .rname { font-family: var(--s); font-size: 12px; color: var(--t1); font-weight: 500; }
+        .rstatus { display: flex; align-items: center; gap: 5px; font-family: var(--s); font-size: 10px; color: var(--ok); }
+        .rsdot { width: 4px; height: 4px; border-radius: 50%; background: var(--ok); }
+
+        .rcard-body {
+          padding: 16px; display: grid;
+          grid-template-columns: 1fr 48px 1fr; gap: 12px; align-items: center;
+        }
+        .sblk { display: flex; flex-direction: column; gap: 3px; }
+        .slbl { font-family: var(--s); font-size: 9px; color: var(--t3); text-transform: uppercase; letter-spacing: .1em; }
+        .sval { font-family: var(--s); font-size: 20px; font-weight: 500; color: var(--t1); letter-spacing: -.03em; }
+        .sval.ok   { color: var(--ok); }
+        .sval.warn { color: var(--warn); }
+        .ssub { font-family: var(--s); font-size: 10px; color: var(--t3); }
+        .arrow-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .cbadge { font-family: var(--s); font-size: 10px; padding: 2px 7px; border-radius: var(--rs-xs); }
+        .cbadge.ok   { background: var(--ok2); color: var(--ok); border: 1px solid rgba(82,196,122,.14); }
+        .cbadge.warn { background: rgba(200,134,58,.07); color: var(--warn); border: 1px solid rgba(200,134,58,.16); }
+
+        .rcard-foot { padding: 9px 16px; border-top: 1px solid var(--b0); display: flex; gap: 7px; }
+        .btn-dl { flex: 1; justify-content: center; }
+
+        .toast {
+          position: fixed; bottom: 22px; left: 50%;
+          transform: translateX(-50%) translateY(56px); opacity: 0;
+          background: var(--bg3); border: 1px solid var(--b0);
+          border-radius: var(--rs); padding: 9px 16px;
+          font-family: var(--s); font-size: 11px;
+          transition: transform .22s, opacity .22s; z-index: 200; white-space: nowrap;
+          pointer-events: none;
+        }
+        .toast.on { transform: translateX(-50%) translateY(0); opacity: 1; }
       `}</style>
 
       {/* Hidden file input */}
@@ -941,134 +902,204 @@ export default function WebPConverter() {
         onChange={handleFileInputChange}
       />
 
-      {/* Settings popover */}
-      {settingsPanel}
-
       <main className="wc-shell" ref={mainRef}>
-        <div className="wc-card">
-          <div
-            className={`wc-drop${isDragOver ? " is-drag" : ""}`}
-            onClick={handleDropZoneClick}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragEnter={handleDragOver}
-            onDragLeave={handleDragLeave}
-            role="button"
-            tabIndex={0}
-            aria-label="Drop images here or click to browse"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleDropZoneClick();
-              }
-            }}
-          >
-            <motion.div
-              className="wc-drop-icon"
-              animate={{ scale: isDragOver ? 1.08 : 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 24 }}
+        <div className="hero">
+          <span className="eyebrow">Image Utility</span>
+          <h1>Convert to <em>WebP</em> instantly.</h1>
+          <p><b>Runs entirely in your browser.</b> Your images never leave your machine.</p>
+        </div>
+
+        <div className="cvt">
+          <div className={`dz-shell ${isDragOver ? "active" : ""}`} id="dzShell">
+            <div
+              className={`dz ${isDragOver ? "dragging" : ""}`}
+              id="dz"
+              onClick={handleDropZoneClick}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              role="button"
+              tabIndex={0}
+              aria-label="Drop images here or click to browse"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleDropZoneClick();
+                }
+              }}
             >
-              <Plus size={26} strokeWidth={1.6} />
-            </motion.div>
-            <div className="wc-drop-title">
-              {isDragOver ? "Drop to convert" : "Drop images here"}
-            </div>
-            <div className="wc-drop-sub">
-              or click to browse · paste with <kbd>Ctrl</kbd> <kbd>V</kbd>
+              <div className={`proc ${isConverting ? "on" : ""}`} id="proc">
+                <div className="ring" />
+                <span className="proc-lbl">converting...</span>
+              </div>
+
+              <div className="dz-ico">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M9 2.5v9M5.5 8l3.5 4 3.5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2.5 13.5v1A1.5 1.5 0 004 16h10a1.5 1.5 0 001.5-1.5v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+
+              <div className="dz-txt">
+                <h2>{isDragOver ? "Drop to convert" : "Drop images here"}</h2>
+                <p>click to browse · <span>Ctrl+V</span> to paste</p>
+              </div>
+
+              <div className="dz-btns" onClick={(e) => e.stopPropagation()}>
+                <button className="btn btn-sec" onClick={handleDropZoneClick}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginRight: 4 }}>
+                    <rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" />
+                    <path d="M6 4v4M4 6h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                  </svg>
+                  Browse files
+                </button>
+                <button className="btn btn-sec" onClick={handlePasteButton}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginRight: 4 }}>
+                    <rect x="3" y="0.5" width="6" height="2.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                    <path d="M2 1.5H1.5a1 1 0 00-1 1v8a1 1 0 001 1h9a1 1 0 001-1v-8a1 1 0 00-1-1H10" stroke="currentColor" stroke-width="1.2" strokeLinecap="round" />
+                  </svg>
+                  Paste
+                </button>
+              </div>
+
+              <div className="fmts">
+                <span className="fmt">PNG</span>
+                <span className="fmt">JPG</span>
+                <span className="fmt">GIF</span>
+                <span className="fmt">BMP</span>
+                <span className="fmt">TIFF</span>
+                <span className="fmt">AVIF</span>
+                <span className="fmt">SVG</span>
+              </div>
             </div>
           </div>
 
-          <div className="wc-actions">
-            <button onClick={handlePasteButton} className="wc-pill" aria-label="Paste from clipboard">
-              <Clipboard size={13} strokeWidth={2} />
-              Paste from clipboard
-            </button>
-            <button onClick={handleDropZoneClick} className="wc-pill" aria-label="Browse files">
-              <FileImage size={13} strokeWidth={2} />
-              Browse files
-            </button>
-          </div>
-
-          <div className="wc-meta">
-            <span>PNG · JPG · GIF · BMP · and more</span>
-            <span className="wc-meta-dot" aria-hidden="true" />
-            <span>{lossless ? "Lossless" : `Quality ${quality}`}</span>
-            {maxWidth && (
-              <>
-                <span className="wc-meta-dot" aria-hidden="true" />
-                <span>Max width {maxWidth}px</span>
-              </>
-            )}
+          <div className="qbar">
+            <span className="qlbl">Quality</span>
+            <div className="qslide">
+              <input
+                type="range"
+                min="1"
+                max="100"
+                value={quality}
+                disabled={lossless}
+                onChange={(e) => setQuality(parseInt(e.target.value, 10))}
+                style={{
+                  background: `linear-gradient(90deg, var(--t1) ${sliderPercentage}%, var(--b1) ${sliderPercentage}%)`
+                }}
+              />
+              <span className="qval">{lossless ? "—" : quality}</span>
+            </div>
+            <div className="sep" />
+            <div className="hint">
+              <span className="kbd">Ctrl</span>
+              <span style={{ color: "var(--t3)" }}>+</span>
+              <span className="kbd">V</span>
+              <span style={{ marginLeft: 3 }}>to paste</span>
+            </div>
           </div>
         </div>
 
-        {isConverting && (
-          <div className="wc-converting" role="status" aria-live="polite">
-            <span className="wc-spinner" />
-            Converting…
-          </div>
-        )}
-
         {results.length > 0 && (
-          <div className="wc-queue" aria-label="Converted files">
-            <div className="wc-queue-head">
-              <span className="wc-queue-title">Converted · {results.length}</span>
-              <button onClick={clearAll} className="wc-queue-clear" aria-label="Clear all converted files">
-                <Trash2 size={12} strokeWidth={2} />
-                Clear all
-              </button>
+          <div className="results" id="results">
+            <div className="rcard-top" style={{ background: "transparent", border: "none", padding: "0 4px 6px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span className="rname" style={{ textTransform: "uppercase", fontSize: 10, letterSpacing: ".1em", color: "var(--t3)", fontFamily: "var(--s)" }}>
+                Converted · {results.length}
+              </span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={downloadAll}
+                  className="btn btn-sec"
+                  style={{ padding: "4px 10px", fontSize: 11, color: "var(--t1)" }}
+                >
+                  <Download size={11} style={{ marginRight: 4 }} />
+                  Download all
+                </button>
+                <button
+                  onClick={clearAll}
+                  className="btn btn-ghost"
+                  style={{ padding: "4px 8px", fontSize: 11, color: "var(--t2)" }}
+                >
+                  Clear all
+                </button>
+              </div>
             </div>
-            <AnimatePresence initial={false}>
-              {results.map((r) => {
-                const delta = formatDelta(r.originalSize, r.newSize);
-                return (
-                  <motion.div
-                    key={r.id}
-                    layout
-                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 12, transition: { duration: 0.18 } }}
-                    transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                    className="wc-row"
-                  >
-                    <div
-                      className="wc-thumb"
-                      style={{ backgroundImage: `url(${r.thumbDataUrl})` }}
-                      aria-hidden="true"
-                    />
-                    <div className="wc-row-info">
-                      <div className="wc-row-name" title={r.webpName}>{r.webpName}</div>
-                      <div className="wc-row-meta">
-                        <span>{r.width}×{r.height}</span>
-                        <span className="wc-row-meta-dot" aria-hidden="true" />
-                        <span>{formatBytes(r.originalSize)}</span>
-                        <span className="wc-row-arrow">→</span>
-                        <span style={{ color: "rgba(255,255,255,0.78)" }}>{formatBytes(r.newSize)}</span>
-                        <span className={`wc-delta wc-delta-${delta.tone}`}>{delta.text}</span>
+            {results.map((r) => {
+              const delta = formatDelta(r.originalSize, r.newSize);
+              const smaller = r.newSize < r.originalSize;
+              const pct = Math.round(Math.abs((r.originalSize - r.newSize) / r.originalSize) * 100);
+
+              return (
+                <div key={r.id} className="rcard">
+                  <div className="rcard-top">
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "var(--rs-xs)",
+                        overflow: "hidden",
+                        border: "1px solid var(--b1)",
+                        background: "var(--bg0)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}>
+                        <img
+                          src={r.thumbDataUrl}
+                          alt=""
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            objectFit: "contain",
+                          }}
+                        />
                       </div>
+                      <span className="rname">{r.webpName}</span>
                     </div>
-                    <div className="wc-row-actions">
-                      <button
-                        onClick={() => reDownload(r)}
-                        className="wc-icon-btn"
-                        aria-label={`Re-download ${r.webpName}`}
-                        title="Download again"
-                      >
-                        <Download size={14} strokeWidth={2} />
-                      </button>
-                      <button
-                        onClick={() => removeResult(r.id)}
-                        className="wc-icon-btn"
-                        aria-label={`Remove ${r.webpName}`}
-                        title="Remove from list"
-                      >
-                        <X size={14} strokeWidth={2} />
-                      </button>
+                    <div className="rstatus">
+                      <div className="rsdot" />
+                      converted · q{lossless ? "lossless" : quality} · {r.width}×{r.height}px
                     </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+                  </div>
+                  <div className="rcard-body">
+                    <div className="sblk">
+                      <span className="slbl">Original</span>
+                      <span className="sval">{formatBytes(r.originalSize)}</span>
+                      <span className="ssub">{r.originalName.split(".").pop()?.toUpperCase() || "IMG"}</span>
+                    </div>
+                    <div className="arrow-col">
+                      <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                        <path d="M2.5 8.5h12M10 5l4 3.5-4 3.5" stroke="var(--t3)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span className={`cbadge ${smaller ? "ok" : "warn"}`}>
+                        {smaller ? "-" : "+"}{pct}%
+                      </span>
+                    </div>
+                    <div className="sblk">
+                      <span className="slbl">Converted</span>
+                      <span className={`sval ${smaller ? "ok" : "warn"}`}>{formatBytes(r.newSize)}</span>
+                      <span className="ssub">WebP</span>
+                    </div>
+                  </div>
+                  <div className="rcard-foot">
+                    <button className="btn btn-pri btn-dl" onClick={() => reDownload(r)}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginRight: 4 }}>
+                        <path d="M6 1.5v7M3 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M1 10.5h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                      </svg>
+                      Download WebP
+                    </button>
+                    <button className="btn btn-ghost" onClick={() => removeResult(r.id)} title="Dismiss">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </main>
@@ -1179,42 +1210,12 @@ export default function WebPConverter() {
       </ToolSEOArticle>
 
       {/* ── Toast ── */}
-      <AnimatePresence>
-        {toast.visible && (
-          <motion.div
-            initial={{ opacity: 0, y: 16, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 420, damping: 28 }}
-            role="status"
-            aria-live="polite"
-            style={{
-              position: "fixed",
-              bottom: 28,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 80,
-              padding: "10px 18px",
-              borderRadius: 999,
-              background: "rgba(13,15,20,0.96)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              border: `1px solid ${toast.type === "success" ? "rgba(140,230,170,0.30)" : "rgba(255,120,120,0.32)"}`,
-              color: toast.type === "success" ? "rgba(180,240,200,0.95)" : "rgba(255,170,170,0.95)",
-              fontSize: 13,
-              fontWeight: 500,
-              fontFamily: tokens.font.body,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              boxShadow: "0 12px 32px -8px rgba(0,0,0,0.5)",
-            }}
-          >
-            {toast.type === "success" ? <Check size={14} strokeWidth={2.4} /> : <X size={14} strokeWidth={2.4} />}
-            {toast.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className={`toast ${toast.visible ? "on" : ""}`} style={{
+        borderColor: toast.type === "success" ? "rgba(82,196,122,.28)" : "rgba(196,72,62,.28)",
+        color: toast.type === "success" ? "var(--ok)" : "var(--err)",
+      }}>
+        {toast.message}
+      </div>
 
       <ToolStatusBar
         stats={[

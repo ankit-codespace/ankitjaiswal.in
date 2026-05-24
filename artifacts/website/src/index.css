@@ -135,6 +135,51 @@
   --shadow-2xl: 0px 2px 0px 0px transparent;
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+
+  /* SURFACES — warm-neutral dark, zero blue cast */
+  --bg0: #0F0F0E;
+  --bg1: #161615;
+  --bg2: #1C1C1B;
+  --bg3: #222221;
+  --bg4: #282826;
+
+  /* BORDERS */
+  --b0: #252523;
+  --b1: #2E2E2C;
+  --b2: #3A3A37;
+  --b3: #4A4A46;
+
+  /* TYPOGRAPHY — four levels of importance */
+  --t1: #F0EDE8;
+  --t2: #7A7874;
+  --t3: #3E3E3B;
+  --t4: #282826;
+
+  /* ACCENT — one white CTA per view */
+  --ac: #FFFFFF;
+
+  /* HERO ITALIC — Times New Roman em only, never elsewhere */
+  --hi: #EDE8DF;
+
+  /* SEMANTIC — earned by meaning, never decorative */
+  --ok:   #52C47A;
+  --ok2:  rgba(82,196,122,0.07);
+  --warn: #C8863A;
+  --err:  #C4483E;
+
+  /* RADII */
+  --r:    10px;
+  --rs:    7px;
+  --rs-xs: 4px;
+
+  /* FONTS */
+  --d:   'Sora', sans-serif;
+  --s:   'Inter', sans-serif;
+  --m:   ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --tnr: 'Times New Roman', Times, serif;
+
+  /* system focus ring — apply to all interactive elements */
+  --focus-ring: 0 0 0 2px rgba(240,237,232,.16);
 }
 
 html.lenis, html.lenis body {
@@ -846,4 +891,29 @@ html, body { overflow-x: clip; max-width: 100%; }
 .surface-light .notepad-ruled .notepad-editor > *::after,
 .surface-light .notepad-ruled .notepad-editor li::after {
   background: rgba(0, 0, 0, 0.18);
+}
+
+/* ── LOCKED DESIGN SYSTEM RESETS & UTILITIES ────────────────────────── */
+
+/* Focus-visible ring */
+.locked-focus-ring:focus-visible {
+  outline: 2px solid rgba(240,237,232,.18);
+  outline-offset: 2px;
+  border-radius: var(--rs);
+}
+
+/* Noise Grain Utility - apply on interactive elements */
+.noise-grain {
+  position: relative;
+  overflow: hidden;
+}
+.noise-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: .022;
+  pointer-events: none;
+  z-index: 1;
 }

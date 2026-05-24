@@ -165,6 +165,7 @@ publish_static_site() {
   cat > "$WEB_ROOT/.htaccess" <<EOF_HTACCESS
 RewriteEngine On
 
+RewriteCond %{REQUEST_URI} !^/api/
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.html [L]

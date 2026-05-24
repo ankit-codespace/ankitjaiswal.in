@@ -362,19 +362,17 @@ export function ToolStyles() {
         position: sticky;
         top: 0;
         z-index: 40;
-        background: #0D0F14;
-        border-bottom: 1px solid rgba(255,255,255,0.07);
-        backdrop-filter: saturate(140%) blur(8px);
-        -webkit-backdrop-filter: saturate(140%) blur(8px);
+        background: var(--bg1);
+        border-bottom: 1px solid var(--b0);
       }
       .tool-header-inner {
         max-width: 1280px;
         margin: 0 auto;
         height: 56px;
-        padding: 0 18px;
+        padding: 0 28px;
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 10px;
         min-width: 0;
       }
       /* The title container — wrapped in a div with minWidth:0 — must
@@ -386,39 +384,43 @@ export function ToolStyles() {
       .tool-header-back {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 10px 6px 6px;
-        border-radius: 8px;
-        color: rgba(255,255,255,0.55);
-        font-size: 12.5px;
-        font-family: 'Inter', sans-serif;
+        gap: 5px;
+        background: none;
+        border: 1px solid transparent;
+        border-radius: var(--rs);
+        padding: 5px 9px;
+        color: var(--t3);
+        font-family: var(--m);
+        font-size: 11px;
+        cursor: pointer;
+        transition: color .15s, border-color .15s, background .15s;
         text-decoration: none;
-        transition: color .15s ease, background .15s ease;
       }
       .tool-header-back:hover {
-        color: #fff;
-        background: rgba(255,255,255,0.04);
+        color: var(--t2);
+        border-color: var(--b1);
+        background: var(--bg2);
       }
       .tool-header-back:focus-visible {
-        outline: 2px solid rgba(255,255,255,0.55);
+        outline: 2px solid rgba(240,237,232,.18);
         outline-offset: 2px;
+        border-radius: var(--rs);
       }
       .tool-header-divider {
         width: 1px;
-        height: 22px;
-        background: rgba(255,255,255,0.10);
+        height: 16px;
+        background: var(--b0);
       }
       .tool-header-title {
-        font-family: 'Sora', sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-        color: #fff;
-        letter-spacing: -0.005em;
-        line-height: 1.1;
+        font-family: var(--d);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        color: var(--t1);
       }
       .tool-header-tagline {
-        font-size: 12px;
-        color: rgba(255,255,255,0.45);
+        font-size: 11px;
+        color: var(--t2);
         line-height: 1.2;
         margin-top: 2px;
       }
@@ -435,24 +437,24 @@ export function ToolStyles() {
         gap: 6px;
         height: 32px;
         padding: 0 12px;
-        border-radius: 8px;
-        background: transparent;
-        border: 1px solid rgba(255,255,255,0.14);
-        color: rgba(255,255,255,0.72);
-        font-size: 12.5px;
+        border-radius: var(--rs);
+        background: var(--bg3);
+        border: 1px solid var(--b1);
+        color: var(--t2);
+        font-size: 12px;
         font-weight: 500;
-        font-family: 'Inter', sans-serif;
+        font-family: var(--s);
         letter-spacing: -0.005em;
         cursor: pointer;
         transition: background .15s ease, color .15s ease, border-color .15s ease;
       }
       .tool-header-btn:hover {
-        background: rgba(255,255,255,0.06);
-        color: #fff;
-        border-color: rgba(255,255,255,0.26);
+        background: var(--bg4);
+        color: var(--t1);
+        border-color: var(--b2);
       }
       .tool-header-btn:focus-visible {
-        outline: 2px solid #fff;
+        outline: 2px solid rgba(240,237,232,.18);
         outline-offset: 2px;
       }
       .tool-header-btn-icon {

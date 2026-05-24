@@ -34,6 +34,7 @@ rsync -a --delete --exclude '/assets/images/***' "$APP_DIR/artifacts/website/dis
 cat > "$WEB_ROOT/.htaccess" <<EOF_HTACCESS
 RewriteEngine On
 
+RewriteCond %{REQUEST_URI} !^/api/
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.html [L]
