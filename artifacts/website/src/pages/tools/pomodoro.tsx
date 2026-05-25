@@ -697,10 +697,15 @@ export default function Pomodoro() {
     }
   }, [phase, running, paused, elapsedThisSessionMs, creditPartialFocus, cyclePos, settings.longBreakAfter, settings.autoStartBreak, settings.autoStartWork, startSegment]);
 
-  const setWorkPreset = useCallback((min: number) => {
-    setSettings((s) => ({ ...s, workMin: min }));
-    if (phase === "work" && !running) {
-      // refresh display to new duration
+  const setCurrentPhasePreset = useCallback((min: number) => {
+    setSettings((s) => {
+      const updated = { ...s };
+      if (phase === "work") updated.workMin = min;
+      else if (phase === "short") updated.shortMin = min;
+      else if (phase === "long") updated.longMin = min;
+      return updated;
+    });
+    if (!running) {
       setEndAt(null);
       setPausedRemainMs(null);
     }
@@ -714,15 +719,16 @@ export default function Pomodoro() {
     if (val > 9999) {
       val = 9999;
     }
-    setWorkPreset(val);
+    setCurrentPhasePreset(val);
     setTempMinutes(String(val));
     setIsEditingTime(false);
-  }, [tempMinutes, setWorkPreset]);
+  }, [tempMinutes, setCurrentPhasePreset]);
 
   const scrollTimeoutRef = useRef<number | null>(null);
   const settingsRef = useRef(settings);
   const runningRef = useRef(running);
-  const setWorkPresetRef = useRef(setWorkPreset);
+  const phaseRef = useRef(phase);
+  const setCurrentPhasePresetRef = useRef(setCurrentPhasePreset);
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -733,8 +739,12 @@ export default function Pomodoro() {
   }, [running]);
 
   useEffect(() => {
-    setWorkPresetRef.current = setWorkPreset;
-  }, [setWorkPreset]);
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    setCurrentPhasePresetRef.current = setCurrentPhasePreset;
+  }, [setCurrentPhasePreset]);
 
   useEffect(() => {
     const el = dialRef.current;
@@ -747,15 +757,20 @@ export default function Pomodoro() {
       e.preventDefault();
       
       const direction = e.deltaY < 0 ? 1 : -1;
-      const step = 5;
-      const currentMin = settingsRef.current.workMin;
+      const step = phaseRef.current === "work" ? 5 : 1;
+      
+      const currentMin =
+        phaseRef.current === "work" ? settingsRef.current.workMin
+        : phaseRef.current === "short" ? settingsRef.current.shortMin
+        : settingsRef.current.longMin;
+        
       let nextMin = currentMin + direction * step;
       
       if (nextMin < 1) nextMin = 1;
       if (nextMin > 9999) nextMin = 9999;
 
       if (nextMin !== currentMin) {
-        setWorkPresetRef.current(nextMin);
+        setCurrentPhasePresetRef.current(nextMin);
         
         setScrollBounce(true);
         if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
@@ -1115,6 +1130,31 @@ export default function Pomodoro() {
               })}
             </div>
 
+            <div className="pm-phase-header">
+              {!running ? (
+                <div className="pm-phase-tabs">
+                  {[
+                    { id: "work", label: "Focus" },
+                    { id: "short", label: "Short Break" },
+                    { id: "long", label: "Long Break" }
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={`pm-phase-tab ${phase === t.id ? "active" : ""}`}
+                      onClick={() => setPhase(t.id as Phase)}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="pm-phase-active-label">
+                  {phase === "work" ? "Focusing" : phase === "short" ? "Short Break" : "Long Break"}
+                </span>
+              )}
+            </div>
+
             <div
               ref={dialRef}
               data-lenis-prevent
@@ -1204,26 +1244,30 @@ export default function Pomodoro() {
               {!running ? (
                 <div className="pm-presets-row">
                   <div className="pm-presets">
-                    {[25, 30, 45, 60].map((min) => {
-                      const active = settings.workMin === min;
-                      return (
-                        <button
-                          key={min}
-                          type="button"
-                          className={`pm-preset ${active ? "pm-preset-on" : ""}`}
-                          onClick={() => setWorkPreset(min)}
-                        >
-                          <span className="pm-preset-label">{min}m</span>
-                          {active && (
-                            <motion.span
-                              layoutId="activePresetDot"
-                              className="pm-preset-dot"
-                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
+                    {(() => {
+                      const presets = phase === "work" ? [25, 30, 45, 60] : phase === "short" ? [3, 5, 10, 15] : [10, 15, 20, 30];
+                      const currentValue = phase === "work" ? settings.workMin : phase === "short" ? settings.shortMin : settings.longMin;
+                      return presets.map((min) => {
+                        const active = currentValue === min;
+                        return (
+                          <button
+                            key={min}
+                            type="button"
+                            className={`pm-preset ${active ? "pm-preset-on" : ""}`}
+                            onClick={() => setCurrentPhasePreset(min)}
+                          >
+                            <span className="pm-preset-label">{min}m</span>
+                            {active && (
+                              <motion.span
+                                layoutId="activePresetDot"
+                                className="pm-preset-dot"
+                                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                              />
+                            )}
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               ) : (
@@ -1911,10 +1955,10 @@ function PomodoroStyles() {
       body.pm-light-mode .pm-skeuo-text-dark {
         opacity: 1;
         right: 12px;
-        color: rgba(22, 22, 21, 0.50);
+        color: var(--t3);
       }
       body.pm-light-mode .pm-sun-icon {
-        color: #f59e0b;
+        color: var(--t2);
         transform: rotate(0deg);
       }
 
@@ -1931,13 +1975,13 @@ function PomodoroStyles() {
       body:not(.pm-light-mode) .pm-skeuo-text-light {
         opacity: 1;
         left: 12px;
-        color: rgba(255, 255, 255, 0.35);
+        color: var(--t3);
       }
       body:not(.pm-light-mode) .pm-skeuo-text-dark {
         opacity: 0;
       }
       body:not(.pm-light-mode) .pm-moon-icon {
-        color: var(--t1);
+        color: var(--t2);
         transform: rotate(0deg);
       }
 
@@ -2201,6 +2245,59 @@ function PomodoroStyles() {
       .pm-status-scroll-label.visible-label {
         opacity: 1;
         transform: translateY(0);
+      }
+
+      /* Phase Selection Tabs & Labels */
+      .pm-phase-header {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 24px;
+        margin-bottom: 12px;
+      }
+      .pm-phase-tabs {
+        display: flex;
+        gap: 16px;
+      }
+      .pm-phase-tab {
+        appearance: none;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-family: ${tokens.font.body};
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--t3);
+        padding: 4px 0;
+        position: relative;
+        transition: color 150ms;
+      }
+      .pm-phase-tab:hover {
+        color: var(--t2);
+      }
+      .pm-phase-tab.active {
+        color: var(--t1);
+        font-weight: 600;
+      }
+      .pm-phase-tab.active::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 1.5px;
+        background: var(--t1);
+        border-radius: 1px;
+      }
+      .pm-phase-active-label {
+        font-family: ${tokens.font.body};
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--t3);
       }
 
       /* Presets */
