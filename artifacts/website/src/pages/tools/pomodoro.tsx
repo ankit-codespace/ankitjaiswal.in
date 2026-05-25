@@ -971,64 +971,46 @@ export default function Pomodoro() {
     const currentTheme = resolvedTheme;
     const nextTheme = currentTheme === "light" ? "dark" : "light";
     
+    // Fallback if View Transitions API is not supported
+    if (!(document as any).startViewTransition) {
+      setTheme(nextTheme);
+      return;
+    }
+    
     // 1. Get click coordinate
     const rect = e.currentTarget.getBoundingClientRect();
-    const clientX = e.clientX || (rect.left + rect.width / 2);
-    const clientY = e.clientY || (rect.top + rect.height / 2);
+    const x = e.clientX || (rect.left + rect.width / 2);
+    const y = e.clientY || (rect.top + rect.height / 2);
     
-    // 2. Create ripple div
-    const ripple = document.createElement("div");
-    ripple.className = "pm-theme-ripple";
-    
-    const nextBg = nextTheme === "light" ? "#fdfdfe" : "#0F0F0E";
-    
-    Object.assign(ripple.style, {
-      position: "fixed",
-      left: `${clientX}px`,
-      top: `${clientY}px`,
-      width: "0px",
-      height: "0px",
-      borderRadius: "50%",
-      transform: "translate(-50%, -50%)",
-      pointerEvents: "none",
-      zIndex: "999999",
-      background: nextBg,
-      transition: "width 0.6s cubic-bezier(0.16, 1, 0.3, 1), height 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease",
-      opacity: "1"
-    });
-    
-    document.body.appendChild(ripple);
-    
-    // Force layout reflow
-    ripple.offsetWidth;
-    
-    // Calculate max viewport distance
+    // 2. Calculate final radius to cover the entire viewport
     const w = window.innerWidth;
     const h = window.innerHeight;
-    const maxDist = Math.max(
-      Math.hypot(clientX, clientY),
-      Math.hypot(w - clientX, clientY),
-      Math.hypot(clientX, h - clientY),
-      Math.hypot(w - clientX, h - clientY)
+    const endRadius = Math.hypot(
+      Math.max(x, w - x),
+      Math.max(y, h - y)
     );
-    const size = maxDist * 2.2;
     
-    // Expand ripple
-    ripple.style.width = `${size}px`;
-    ripple.style.height = `${size}px`;
-    
-    // 3. Update React theme state when ripple has fully covered the viewport
-    setTimeout(() => {
+    // 3. Initiate the transition
+    const transition = (document as any).startViewTransition(() => {
       setTheme(nextTheme);
-    }, 280);
+    });
     
-    // 4. Clean up ripple
-    setTimeout(() => {
-      ripple.style.opacity = "0";
-      setTimeout(() => {
-        ripple.remove();
-      }, 250);
-    }, 600);
+    // 4. Animate the incoming theme snapshot outward from the click coordinate
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`
+          ]
+        },
+        {
+          duration: 500,
+          easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+          pseudoElement: "::view-transition-new(root)"
+        }
+      );
+    });
   };
 
   const headerActions = (
@@ -1593,6 +1575,19 @@ function NumField({
 function PomodoroStyles() {
   return (
     <style>{`
+      /* View transition customizations for seamless theme toggle */
+      ::view-transition-old(root) {
+        animation: none;
+        mix-blend-mode: normal;
+      }
+      ::view-transition-new(root) {
+        animation: none;
+        mix-blend-mode: normal;
+      }
+      ::view-transition-image-pair(root) {
+        isolation: auto;
+      }
+
       :root {
         --pm-page-bg: radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.08) 0%, rgba(74, 222, 128, 0.02) 40%, var(--bg0) 80%);
         --pm-work: var(--hi);
