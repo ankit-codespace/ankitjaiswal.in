@@ -1569,7 +1569,7 @@ function PomodoroStyles() {
       body.pm-light-mode {
         /* SURFACES — warm-neutral light, desaturated green tint */
         --bg0: #fdfdfe;     /* Pure white base color */
-        --bg1: #ffffff;     /* Solid white for clean card panels */
+        --bg1: rgba(255, 255, 255, 0.72); /* Frosted panels so atmospheric tint can breathe through */
         --bg2: #f2f2ef;     /* Secondary surfaces */
         --bg3: #ebebe8;     /* Selected/elevated rows */
         --bg4: #dcdcd6;     /* Hover state */
@@ -1610,9 +1610,11 @@ function PomodoroStyles() {
       }
 
       body.pm-light-mode .pm-card {
-        box-shadow: 0 10px 40px -15px rgba(22, 22, 21, 0.08),
-                    0 0 0 1px rgba(22, 22, 21, 0.02),
-                    inset 0 1px 0 0 rgba(255,255,255,0.8);
+        background: rgba(255, 255, 255, 0.72);
+        border-color: rgba(13, 17, 23, 0.09);
+        box-shadow: 0 18px 50px rgba(13, 17, 23, 0.06),
+                    0 0 0 1px rgba(13, 17, 23, 0.03),
+                    inset 0 1px 0 0 rgba(255,255,255,0.82);
       }
 
       body.pm-light-mode .pm-btn-secondary {
@@ -1772,12 +1774,12 @@ function PomodoroStyles() {
         box-shadow: 1.5px 1.5px 4px rgba(22, 22, 21, 0.08), -1px -1px 3px rgba(255, 255, 255, 0.9);
       }
       body.pm-light-mode .pm-skeuo-text-light {
-        opacity: 0;
+        opacity: 1;
+        left: 12px;
+        color: rgba(22, 22, 21, 0.50);
       }
       body.pm-light-mode .pm-skeuo-text-dark {
-        opacity: 1;
-        right: 12px;
-        color: rgba(22, 22, 21, 0.50);
+        opacity: 0;
       }
       body.pm-light-mode .pm-sun-icon {
         color: #f59e0b;
@@ -1795,12 +1797,12 @@ function PomodoroStyles() {
         box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4), -1px -1px 2px rgba(255, 255, 255, 0.03);
       }
       body:not(.pm-light-mode) .pm-skeuo-text-light {
-        opacity: 1;
-        left: 12px;
-        color: rgba(255, 255, 255, 0.35);
+        opacity: 0;
       }
       body:not(.pm-light-mode) .pm-skeuo-text-dark {
-        opacity: 0;
+        opacity: 1;
+        right: 12px;
+        color: rgba(255, 255, 255, 0.35);
       }
       body:not(.pm-light-mode) .pm-moon-icon {
         color: #60a5fa;
