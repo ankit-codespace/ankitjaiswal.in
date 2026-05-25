@@ -1370,9 +1370,9 @@ export default function Pomodoro() {
               <Stat value={fmtFocusTime(liveStats.lifetimeFocusMs)} label="Lifetime focus" />
             </div>
 
-            <div className="pm-timeline">
-              <div className="pm-timeline-head">Today's Timeline</div>
-              {liveStats.completedSessionsToday && liveStats.completedSessionsToday.length > 0 ? (
+            {liveStats.completedSessionsToday && liveStats.completedSessionsToday.length > 0 && (
+              <div className="pm-timeline">
+                <div className="pm-timeline-head">Today's Timeline</div>
                 <div className="pm-timeline-list">
                   {liveStats.completedSessionsToday.map((sess, idx) => {
                     const dateObj = new Date(sess.timestamp);
@@ -1393,16 +1393,8 @@ export default function Pomodoro() {
                     );
                   })}
                 </div>
-              ) : (
-                <div className="pm-timeline-empty">
-                  No sprints logged today yet.
-                </div>
-              )}
-            </div>
-
-            <p className="pm-stats-foot">
-              Stored only in your browser. No account, no upload.
-            </p>
+              </div>
+            )}
           </aside>
         </div>
       </main>
@@ -2443,11 +2435,7 @@ function PomodoroStyles() {
         font-size: 11px; color: ${tokens.text.quiet};
         margin-top: 2px;
       }
-      .pm-stats-foot {
-        font-family: ${tokens.font.body};
-        font-size: 11.5px; color: ${tokens.text.quiet};
-        margin: 0;
-      }
+
 
       .pm-goal-dots {
         display: flex; gap: 4px; margin-top: 6px;
@@ -2509,9 +2497,7 @@ function PomodoroStyles() {
       .pm-timeline-desc {
         color: ${tokens.text.quiet};
       }
-      .pm-timeline-empty {
-        font-size: 12px; color: ${tokens.text.quiet}; font-style: italic; line-height: 1.4;
-      }
+
 
       .pm-interactive-slot {
         width: 100%;
