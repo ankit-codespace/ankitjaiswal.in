@@ -1386,6 +1386,63 @@ export default function PasteToImage() {
           transition: color .15s, border-color .15s;
         }
         .dz-shell:hover .fmt { color: var(--t2); border-color: var(--b1); }
+
+        /* Unified Liquid Split Button */
+        .btn-split-liquid {
+          background: #ffffff !important;
+          color: #0A0C10 !important;
+          border: 1px solid var(--b1) !important;
+          padding: 0 !important;
+          border-radius: 8px !important;
+          display: inline-flex;
+          align-items: center;
+          height: 30px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+          overflow: hidden;
+          transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
+        }
+        .btn-split-liquid:hover {
+          color: #ffffff !important;
+          border-color: #10B981 !important;
+          box-shadow: 0 4px 28px rgba(16, 185, 129, 0.25) !important;
+        }
+        .btn-split-liquid::after {
+          background: #10B981 !important;
+        }
+        .btn-split-action {
+          background: transparent !important;
+          border: none !important;
+          color: inherit !important;
+          padding: 5px 12px 5px 14px !important;
+          font-size: 12.5px !important;
+          height: 30px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          gap: 6px !important;
+          cursor: pointer !important;
+          transition: color 0.14s ease !important;
+        }
+        .btn-split-trigger {
+          background: transparent !important;
+          border: none !important;
+          color: inherit !important;
+          padding: 5px 8px !important;
+          height: 30px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          cursor: pointer !important;
+          transition: color 0.14s ease !important;
+        }
+        .btn-split-sep {
+          width: 1px;
+          height: 16px;
+          background: rgba(0, 0, 0, 0.08) !important;
+          transition: background 0.2s ease;
+        }
+        .btn-split-liquid:hover .btn-split-sep {
+          background: rgba(255, 255, 255, 0.2) !important;
+        }
       `}</style>
 
       {/* Hidden file input */}
@@ -1464,8 +1521,8 @@ export default function PasteToImage() {
                       setShowSettings(!showSettings);
                       setShowMoreMenu(false);
                     }}
-                    className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0"
-                    style={showSettings ? { background: "#222221", color: "#F0EDE8" } : { color: "#3E3E3B" }}
+                    className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0 hover:text-[#F0EDE8] hover:bg-[#222221]"
+                    style={showSettings ? { background: "#222221", color: "#F0EDE8" } : { color: "#8C8A85" }}
                     title="Output settings"
                     aria-label="Output settings"
                   >
@@ -1567,10 +1624,10 @@ export default function PasteToImage() {
                               setCropArea(null);
                             }
                           }}
-                          className="p-1.5 rounded-[7px] transition-all duration-[140ms]"
+                          className="p-1.5 rounded-[7px] transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
                           style={currentTool === tool.id
                             ? { background: "#282826", color: "#F0EDE8" }
-                            : { color: "#3E3E3B" }
+                            : { color: "#8C8A85" }
                           }
                           title={tool.label}
                         >
@@ -1583,10 +1640,10 @@ export default function PasteToImage() {
                             e.stopPropagation();
                             setShowMoreMenu(!showMoreMenu);
                           }}
-                          className="p-1.5 rounded-[7px] transition-all duration-[140ms]"
+                          className="p-1.5 rounded-[7px] transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
                           style={showMoreMenu
                             ? { background: "#222221", color: "#7A7874" }
-                            : { color: "#3E3E3B" }
+                            : { color: "#8C8A85" }
                           }
                           title="More options"
                         >
@@ -1674,8 +1731,8 @@ export default function PasteToImage() {
                       <div className="flex items-center gap-0.5 shrink-0" title="Font size">
                         <button
                           onClick={() => setFontSize(s => Math.max(10, s - 2))}
-                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms]"
-                          style={{ color: "#7A7874" }}
+                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                          style={{ color: "#8C8A85" }}
                           title="Decrease font size"
                         >−</button>
                         <span
@@ -1684,8 +1741,8 @@ export default function PasteToImage() {
                         >{fontSize}</span>
                         <button
                           onClick={() => setFontSize(s => Math.min(72, s + 2))}
-                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms]"
-                          style={{ color: "#7A7874" }}
+                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                          style={{ color: "#8C8A85" }}
                           title="Increase font size"
                         >+</button>
                       </div>
@@ -1695,10 +1752,10 @@ export default function PasteToImage() {
                           <button
                             key={w}
                             onClick={() => setStrokeWidth(w)}
-                            className="w-7 h-7 rounded-[7px] flex items-center justify-center transition-all duration-[140ms]"
+                            className="w-7 h-7 rounded-[7px] flex items-center justify-center transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
                             style={strokeWidth === w
                               ? { background: "#282826", color: "#F0EDE8" }
-                              : { color: "#3E3E3B" }
+                              : { color: "#8C8A85" }
                             }
                             title={w === 2 ? "Thin" : w === 4 ? "Medium" : "Thick"}
                           >
@@ -1716,8 +1773,8 @@ export default function PasteToImage() {
                     <button
                       onClick={undo}
                       disabled={annotations.length === 0}
-                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] disabled:opacity-25 shrink-0"
-                      style={{ color: "#3E3E3B" }}
+                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] disabled:opacity-25 disabled:pointer-events-none shrink-0 hover:text-[#F0EDE8] hover:bg-[#222221]"
+                      style={{ color: "#8C8A85" }}
                       title="Undo"
                     >
                       <Undo2 className="h-4 w-4" />
@@ -1725,10 +1782,8 @@ export default function PasteToImage() {
 
                     <button
                       onClick={clearAll}
-                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0"
+                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0 hover:bg-[#C4483E]/10"
                       style={{ color: "#C4483E" }}
-                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "rgba(196,72,62,0.08)")}
-                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "transparent")}
                       title="Clear"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1748,10 +1803,10 @@ export default function PasteToImage() {
 
                     <button
                       onClick={copyToClipboard}
-                      className="px-3 py-1.5 rounded-[7px] text-[12px] font-medium transition-all duration-[140ms] flex items-center gap-1.5 shrink-0 border"
+                      className="px-3 py-1.5 rounded-[7px] text-[12px] font-medium transition-all duration-[140ms] flex items-center gap-1.5 shrink-0 border hover:text-[#F0EDE8] hover:bg-[#222221]"
                       style={copied
                         ? { background: "rgba(82,196,122,0.07)", borderColor: "rgba(82,196,122,0.2)", color: "#52C47A" }
-                        : { background: "#1C1C1B", borderColor: "#2E2E2C", color: "#7A7874" }
+                        : { background: "#1C1C1B", borderColor: "#2E2E2C", color: "#8C8A85" }
                       }
                       title="Copy to clipboard (Ctrl+C)"
                     >
@@ -1768,44 +1823,21 @@ export default function PasteToImage() {
                       )}
                     </button>
 
-                    <div className="relative flex items-center shrink-0">
+                    <div className="relative flex items-center shrink-0 btn-liquid btn-split-liquid">
                       <button
                         onClick={() => downloadImage()}
-                        className="btn-liquid font-medium"
-                        style={{
-                          padding: "5px 12px 5px 14px",
-                          fontSize: "12.5px",
-                          borderTopLeftRadius: "8px",
-                          borderBottomLeftRadius: "8px",
-                          borderTopRightRadius: "0px",
-                          borderBottomRightRadius: "0px",
-                          borderRight: "1px solid rgba(255,255,255,0.12)",
-                          height: "30px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px"
-                        }}
+                        className="btn-split-action font-medium"
                       >
                         <Download className="h-4 w-4" />
                         Download
                       </button>
+                      <div className="btn-split-sep" />
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowDownloadMenu(!showDownloadMenu);
                         }}
-                        className="btn-liquid"
-                        style={{
-                          padding: "5px 8px",
-                          borderTopLeftRadius: "0px",
-                          borderBottomLeftRadius: "0px",
-                          borderTopRightRadius: "8px",
-                          borderBottomRightRadius: "8px",
-                          height: "30px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
+                        className="btn-split-trigger"
                         title="Choose format"
                         aria-label="Choose format"
                       >
@@ -1847,10 +1879,8 @@ export default function PasteToImage() {
 
                     <button
                       onClick={toggleFullscreen}
-                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0 border"
-                      style={{ background: "#1C1C1B", borderColor: "#2E2E2C", color: "#3E3E3B" }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.borderColor = "#3A3A37"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#3E3E3B"; (e.currentTarget as HTMLElement).style.borderColor = "#2E2E2C"; }}
+                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0 border hover:text-[#F0EDE8] hover:bg-[#222221]"
+                      style={{ background: "#1C1C1B", borderColor: "#2E2E2C", color: "#8C8A85" }}
                       title={isFullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen (F11)"}
                     >
                       {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
