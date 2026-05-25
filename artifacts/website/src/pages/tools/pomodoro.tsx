@@ -329,6 +329,7 @@ export default function Pomodoro() {
   const [currentQuote, setCurrentQuote] = useState<{ text: string; author: string } | null>(null);
   const [scrollBounce, setScrollBounce] = useState(false);
   const [isCircleHovered, setIsCircleHovered] = useState(false);
+  const dialRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const list = phase === "work" ? WORK_QUOTES : BREAK_QUOTES;
@@ -699,30 +700,56 @@ export default function Pomodoro() {
   }, [phase, running]);
 
   const scrollTimeoutRef = useRef<number | null>(null);
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    if (running) return;
-    
-    // Prevent default scroll behavior of page
-    e.preventDefault();
-    
-    const direction = e.deltaY < 0 ? 1 : -1;
-    const step = 5;
-    const currentMin = settings.workMin;
-    let nextMin = currentMin + direction * step;
-    
-    if (nextMin < 5) nextMin = 5;
-    if (nextMin > 120) nextMin = 120;
+  const settingsRef = useRef(settings);
+  const runningRef = useRef(running);
+  const setWorkPresetRef = useRef(setWorkPreset);
 
-    if (nextMin !== currentMin) {
-      setWorkPreset(nextMin);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  useEffect(() => {
+    runningRef.current = running;
+  }, [running]);
+
+  useEffect(() => {
+    setWorkPresetRef.current = setWorkPreset;
+  }, [setWorkPreset]);
+
+  useEffect(() => {
+    const el = dialRef.current;
+    if (!el) return;
+
+    const handleWheelNative = (e: WheelEvent) => {
+      if (runningRef.current) return;
       
-      setScrollBounce(true);
-      if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = window.setTimeout(() => {
-        setScrollBounce(false);
-      }, 150);
-    }
-  }, [running, settings.workMin, setWorkPreset]);
+      // Prevent default scroll behavior of page
+      e.preventDefault();
+      
+      const direction = e.deltaY < 0 ? 1 : -1;
+      const step = 5;
+      const currentMin = settingsRef.current.workMin;
+      let nextMin = currentMin + direction * step;
+      
+      if (nextMin < 5) nextMin = 5;
+      if (nextMin > 120) nextMin = 120;
+
+      if (nextMin !== currentMin) {
+        setWorkPresetRef.current(nextMin);
+        
+        setScrollBounce(true);
+        if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = window.setTimeout(() => {
+          setScrollBounce(false);
+        }, 150);
+      }
+    };
+
+    el.addEventListener("wheel", handleWheelNative, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", handleWheelNative);
+    };
+  }, []);
 
   const requestNotifPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return false;
@@ -1082,8 +1109,8 @@ export default function Pomodoro() {
             </div>
 
             <div
+              ref={dialRef}
               className={`pm-ring-wrap ${!running ? "pm-ring-adjustable" : ""} ${isCircleHovered && !running ? "pm-ring-hovered" : ""}`}
-              onWheel={handleWheel}
               onMouseEnter={() => setIsCircleHovered(true)}
               onMouseLeave={() => setIsCircleHovered(false)}
             >
@@ -1099,22 +1126,29 @@ export default function Pomodoro() {
                 />
               </svg>
               <div className="pm-ring-inner">
+                {!running && (
+                  <div className={`pm-dial-chevron pm-dial-chevron-up ${isCircleHovered ? "visible" : ""}`}>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="18 15 12 9 6 15" />
+                    </svg>
+                  </div>
+                )}
                 <div className={`pm-time ${scrollBounce ? "pm-scroll-bounce" : ""}`} aria-live="polite">
                   {fmtMMSS(remainingMs)}
                 </div>
-                <div className="pm-status">{phaseHint}</div>
-                
-                {/* Scroll Indicator Overlay */}
                 {!running && (
-                  <div className={`pm-scroll-indicator-overlay ${isCircleHovered ? "visible" : ""}`}>
-                    <svg viewBox="0 0 24 24" className="pm-scroll-arrow-icon" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="7 4 12 0 17 4" />
-                      <line x1="12" y1="0" x2="12" y2="24" />
-                      <polyline points="7 20 12 24 17 20" />
+                  <div className={`pm-dial-chevron pm-dial-chevron-down ${isCircleHovered ? "visible" : ""}`}>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
                     </svg>
-                    <span className="pm-scroll-indicator-label">SCROLL DIAL</span>
                   </div>
                 )}
+                <div className="pm-status-container">
+                  <span className={`pm-status-label ${!running && isCircleHovered ? "hidden-label" : ""}`}>{phaseHint}</span>
+                  {!running && (
+                    <span className={`pm-status-scroll-label ${isCircleHovered ? "visible-label" : ""}`}>Scroll dial</span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1126,35 +1160,6 @@ export default function Pomodoro() {
               </div>
             )}
 
-            {/* Duration row: only shown when idle. Once a session starts,
-                mid-session duration changes don't make sense and the row
-                just adds visual noise — so we hide it entirely (Apple
-                Clock Timer pattern) instead of disabling. */}
-            {!running && (
-              <div className="pm-presets-row">
-                {/* Segmented control — one container, text-only items.
-                    Active state is just green text + a 3px green dot
-                    underneath. Same pattern as iOS Segmented Control
-                    and Apple Music's filter row. */}
-                <div className="pm-presets" role="group" aria-label="Work duration presets">
-                  {[25, 30, 45, 60].map((v) => {
-                    const active = settings.workMin === v;
-                    return (
-                      <button
-                        key={v}
-                        type="button"
-                        className={`pm-preset ${active ? "pm-preset-on" : ""}`}
-                        onClick={() => setWorkPreset(v)}
-                        aria-pressed={active}
-                      >
-                        {v} min
-                        <span className="pm-preset-dot" aria-hidden="true" />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* Hero controls row. The discipline borrowed from Apple
                 Clock Timer / Things 3 / Linear: at any moment, the user
@@ -1622,11 +1627,8 @@ function PomodoroStyles() {
         --ok: #16a34a;
         --warn: #d97706;
 
-        --pm-page-bg:
-          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
-          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
-          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
-          #fdfdfe;
+        /* Fix: Set to transparent to prevent doubling background gradients over the body layer */
+        --pm-page-bg: transparent;
       }
 
       html:has(body.pm-light-mode) {
@@ -1634,6 +1636,7 @@ function PomodoroStyles() {
       }
 
       body.pm-light-mode {
+        --layout-bg: transparent !important;
         background-color: #fdfdfe !important;
         background-image:
           radial-gradient(ellipse 100% 60% at 50% -10%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
@@ -1966,57 +1969,44 @@ function PomodoroStyles() {
       }
       @keyframes pm-digit-bounce {
         0% { transform: scale(1); }
-        50% { transform: scale(1.05); text-shadow: 0 0 10px rgba(96, 165, 250, 0.25); }
+        50% { transform: scale(1.06); text-shadow: 0 0 12px rgba(22, 163, 74, 0.2); }
         100% { transform: scale(1); }
       }
 
-      /* Scroll dial overlay indicator */
-      .pm-scroll-indicator-overlay {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: radial-gradient(circle, rgba(15, 15, 14, 0.94) 50%, rgba(15, 15, 14, 0.8) 100%);
-        border-radius: 50%;
+      /* Premium dial chevrons */
+      .pm-dial-chevron {
+        height: 16px;
+        color: var(--pm-work, var(--hi));
         opacity: 0;
+        transition: opacity 0.25s ease, transform 0.25s ease;
         pointer-events: none;
-        transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-        z-index: 10;
       }
-      body.pm-light-mode .pm-scroll-indicator-overlay {
-        background: radial-gradient(circle, rgba(253, 253, 252, 0.95) 50%, rgba(253, 253, 252, 0.84) 100%);
-      }
-      .pm-scroll-indicator-overlay.visible {
-        opacity: 1;
-      }
-      .pm-scroll-arrow-icon {
-        width: 18px;
-        height: 38px;
-        color: var(--hi);
-        opacity: 0.85;
-        animation: pm-arrow-float 1.2s ease-in-out infinite alternate;
-        transition: color 0.3s ease;
-      }
-      body.pm-light-mode .pm-scroll-arrow-icon {
+      body.pm-light-mode .pm-dial-chevron {
         color: #16a34a;
       }
-      .pm-scroll-indicator-label {
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.16em;
-        margin-top: 10px;
-        color: var(--hi);
-        opacity: 0.95;
+      .pm-dial-chevron-up {
+        transform: translateY(4px);
       }
-      body.pm-light-mode .pm-scroll-indicator-label {
-        color: #16a34a;
+      .pm-dial-chevron-up.visible {
+        opacity: 0.65;
+        transform: translateY(0);
+        animation: pm-chevron-float-up 1.2s ease-in-out infinite alternate;
+      }
+      .pm-dial-chevron-down {
+        transform: translateY(-4px);
+      }
+      .pm-dial-chevron-down.visible {
+        opacity: 0.65;
+        transform: translateY(0);
+        animation: pm-chevron-float-down 1.2s ease-in-out infinite alternate;
       }
 
-      @keyframes pm-arrow-float {
-        0% { transform: translateY(-3px); }
+      @keyframes pm-chevron-float-up {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-3px); }
+      }
+      @keyframes pm-chevron-float-down {
+        0% { transform: translateY(0); }
         100% { transform: translateY(3px); }
       }
       .pm-ring-fg-long { stroke: var(--pm-long); }
@@ -2039,10 +2029,43 @@ function PomodoroStyles() {
         line-height: 1;
         transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1), text-shadow 0.15s ease;
       }
-      .pm-status {
+      .pm-status-container {
+        position: relative;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .pm-status-label, .pm-status-scroll-label {
         font-family: ${tokens.font.body};
-        font-size: 11px; color: ${tokens.text.quiet};
-        text-transform: uppercase; letter-spacing: 0.16em;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+      }
+      .pm-status-label {
+        color: ${tokens.text.quiet};
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .pm-status-label.hidden-label {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+      .pm-status-scroll-label {
+        position: absolute;
+        color: var(--pm-work, var(--hi));
+        opacity: 0;
+        transform: translateY(4px);
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      body.pm-light-mode .pm-status-scroll-label {
+        color: #16a34a;
+      }
+      .pm-status-scroll-label.visible-label {
+        opacity: 1;
+        transform: translateY(0);
       }
 
       /* Presets */

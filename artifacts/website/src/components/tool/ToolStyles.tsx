@@ -363,18 +363,11 @@ export function ToolStyles() {
 
       /* ── Top header bar — sticky chrome above tool UI ── */
       .tool-header {
-        position: sticky;
-        top: 0;
+        position: relative;
         z-index: 40;
-        background: transparent;
-        border-bottom: 1px solid transparent;
-        transition: background-color 0.2s ease, border-color 0.2s ease, backdrop-filter 0.2s ease;
-      }
-      .tool-header.scrolled {
         background: var(--bg1);
         border-bottom: 1px solid var(--b0);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        transition: background-color 0.2s ease, border-color 0.2s ease;
       }
       .tool-header-inner {
         max-width: 1280px;

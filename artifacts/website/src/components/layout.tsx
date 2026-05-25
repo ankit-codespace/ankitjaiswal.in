@@ -161,7 +161,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ]);
   if (location.startsWith("/tools/") || TOP_LEVEL_TOOL_ALIASES.has(location)) {
     return (
-      <div style={{ background: "#0A0C10", minHeight: "100vh" }}>
+      <div style={{ background: "var(--layout-bg, #0A0C10)", minHeight: "100vh" }}>
         <main>{children}</main>
       </div>
     );
