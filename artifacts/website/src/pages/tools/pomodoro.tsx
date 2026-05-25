@@ -844,7 +844,7 @@ export default function Pomodoro() {
     },
     {
       q: "Why 25 minutes? Can I change the duration?",
-      a: "25 minutes is the canonical Pomodoro duration — long enough to make real progress, short enough that your brain doesn't fatigue. But people work differently: deep coding may want 45–60 minute blocks, quick admin tasks may suit 15. Use the preset chips (25 / 30 / 45 / 60) or type a custom duration up to 120 minutes.",
+      a: "25 minutes is the canonical Pomodoro duration — long enough to make real progress, short enough that your brain doesn't fatigue. But people work differently: deep coding may want 45–60 minute blocks, quick admin tasks may suit 15. Use the preset chips (25 / 30 / 45 / 60) or type a custom duration up to 2 hours.",
     },
     {
       q: "Does it work when I switch tabs or my screen sleeps?",
@@ -904,7 +904,7 @@ export default function Pomodoro() {
     {
       icon: Target,
       title: "Custom durations",
-      desc: "25/30/45/60-minute preset chips, plus a custom input up to 120 minutes. Change short and long break lengths from settings.",
+      desc: "25/30/45/60-minute preset chips, plus a custom input up to 2 hours. Change short and long break lengths from settings.",
     },
     {
       icon: Zap,
@@ -1135,13 +1135,51 @@ export default function Pomodoro() {
               </div>
             </div>
 
-            {/* Mindful Quote */}
-            {currentQuote && (
-              <div className="pm-quote-container">
-                <p className="pm-quote-text">“{currentQuote.text}”</p>
-                <span className="pm-quote-author">— {currentQuote.author}</span>
-              </div>
-            )}
+            {/* Presets or Mindful Quote slot */}
+            <div className="pm-interactive-slot">
+              {!running ? (
+                <div className="pm-presets-row">
+                  <div className="pm-presets">
+                    {[25, 30, 45, 60].map((min) => {
+                      const active = settings.workMin === min;
+                      return (
+                        <button
+                          key={min}
+                          type="button"
+                          className={`pm-preset ${active ? "pm-preset-on" : ""}`}
+                          onClick={() => setWorkPreset(min)}
+                        >
+                          <span>{min}m</span>
+                          <span className="pm-preset-dot" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="pm-custom">
+                    <input
+                      type="number"
+                      min="5"
+                      max="120"
+                      value={settings.workMin}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val) && val >= 5 && val <= 120) {
+                          setWorkPreset(val);
+                        }
+                      }}
+                    />
+                    <span>min</span>
+                  </div>
+                </div>
+              ) : (
+                currentQuote && (
+                  <div className="pm-quote-container">
+                    <p className="pm-quote-text">“{currentQuote.text}”</p>
+                    <span className="pm-quote-author">— {currentQuote.author}</span>
+                  </div>
+                )
+              )}
+            </div>
 
 
             {/* Hero controls row. The discipline borrowed from Apple
@@ -1837,7 +1875,7 @@ function PomodoroStyles() {
         opacity: 0;
       }
       body:not(.pm-light-mode) .pm-moon-icon {
-        color: #60a5fa;
+        color: var(--t1);
         transform: rotate(0deg);
       }
 
@@ -1926,7 +1964,7 @@ function PomodoroStyles() {
 
       /* Ring */
       .pm-ring-wrap {
-        position: relative; width: 220px; height: 220px;
+        position: relative; width: 240px; height: 240px;
         display: flex; align-items: center; justify-content: center;
         border-radius: 50%;
         transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
@@ -1948,11 +1986,11 @@ function PomodoroStyles() {
         transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
       .pm-ring-bg {
-        fill: none; stroke: var(--b0); stroke-width: 3;
+        fill: none; stroke: var(--b1); stroke-width: 1.5;
         transition: stroke 0.3s ease;
       }
       .pm-ring-fg {
-        fill: none; stroke-width: 3; stroke-linecap: round;
+        fill: none; stroke-width: 4; stroke-linecap: round;
         transition: stroke-dashoffset 480ms cubic-bezier(0.22, 1, 0.36, 1), stroke 320ms;
       }
       .pm-ring-fg-work { stroke: var(--pm-work); }
@@ -2018,7 +2056,7 @@ function PomodoroStyles() {
          (mono) or a headline (Sora). */
       .pm-time {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        font-size: 64px; font-weight: 300; letter-spacing: -0.045em;
+        font-size: 56px; font-weight: 300; letter-spacing: -0.045em;
         color: ${tokens.text.primary};
         font-variant-numeric: tabular-nums;
         font-feature-settings: 'cv11', 'ss01', 'tnum';
@@ -2383,9 +2421,16 @@ function PomodoroStyles() {
         font-size: 12px; color: ${tokens.text.quiet}; font-style: italic; line-height: 1.4;
       }
 
+      .pm-interactive-slot {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 52px;
+      }
       .pm-quote-container {
         display: flex; flex-direction: column; align-items: center;
-        text-align: center; margin-top: 20px; max-width: 320px;
+        text-align: center; max-width: 340px;
       }
       .pm-quote-text {
         font-family: Georgia, serif; font-style: italic; font-size: 13.5px;
