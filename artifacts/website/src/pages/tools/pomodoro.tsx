@@ -1213,14 +1213,14 @@ export default function Pomodoro() {
                           className={`pm-preset ${active ? "pm-preset-on" : ""}`}
                           onClick={() => setWorkPreset(min)}
                         >
+                          <span className="pm-preset-label">{min}m</span>
                           {active && (
                             <motion.span
-                              layoutId="activePresetBackground"
-                              className="pm-preset-active-bg"
+                              layoutId="activePresetDot"
+                              className="pm-preset-dot"
                               transition={{ type: "spring", stiffness: 380, damping: 30 }}
                             />
                           )}
-                          <span className="pm-preset-label">{min}m</span>
                         </button>
                       );
                     })}
@@ -2216,13 +2216,14 @@ function PomodoroStyles() {
       .pm-preset {
         appearance: none; background: transparent; border: 0; cursor: pointer;
         position: relative;
-        padding: 6px 14px 7px;
+        padding: 6px 14px 10px;
         border-radius: 9px;
         color: ${tokens.text.quiet};
         font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em;
         font-variant-numeric: tabular-nums;
         transition: color 140ms;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 1;
@@ -2231,23 +2232,16 @@ function PomodoroStyles() {
         position: relative;
         z-index: 2;
       }
-      .pm-preset-active-bg {
+      .pm-preset-dot {
         position: absolute;
-        inset: 0;
-        border-radius: 9px;
-        background: var(--bg0);
-        box-shadow: 
-          0 1px 2px rgba(0, 0, 0, 0.04), 
-          0 0 0 1px rgba(0, 0, 0, 0.01),
-          inset 0 1px 0 rgba(255, 255, 255, 0.6);
-        z-index: 1;
-      }
-      body.pm-light-mode .pm-preset-active-bg {
-        background: #ffffff;
-        box-shadow: 
-          0 1px 2px rgba(13, 17, 23, 0.05),
-          0 0 0 1px rgba(13, 17, 23, 0.02),
-          inset 0 1px 0 rgba(255, 255, 255, 1);
+        bottom: 4px;
+        left: 50%;
+        width: 3.5px;
+        height: 3.5px;
+        border-radius: 50%;
+        background: ${tokens.text.primary};
+        transform: translateX(-50%);
+        z-index: 2;
       }
       .pm-preset:hover:not(:disabled) { color: ${tokens.text.primary}; }
       .pm-preset:focus-visible { outline: 1.5px solid var(--b3); outline-offset: 2px; }
