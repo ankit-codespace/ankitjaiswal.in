@@ -251,6 +251,8 @@ export default function PasteToImage() {
   const [fontSize, setFontSize] = useState(20);
   const [activeTextPos, setActiveTextPos] = useState<{ x: number; y: number } | null>(null);
 
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
@@ -522,21 +524,56 @@ export default function PasteToImage() {
     return () => document.removeEventListener("paste", handleGlobalPaste);
   }, [loadImage, showToast]);
 
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      loadImage(e.target.files[0]);
+      e.target.value = "";
+    }
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (e.dataTransfer.files?.length) {
+      loadImage(e.dataTransfer.files[0]);
+    }
+  }, [loadImage]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleBrowseClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
   const handleZoneClick = async () => {
     if (image) return;
     try {
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        const imageType = item.types.find((type) => type.startsWith("image/"));
-        if (imageType) {
-          const blob = await item.getType(imageType);
-          loadImage(blob);
-          return;
+      if (navigator.clipboard && "read" in navigator.clipboard) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find((type) => type.startsWith("image/"));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            loadImage(blob);
+            return;
+          }
         }
       }
-      showToast("No image in clipboard", "error");
+      showToast("No image in clipboard. Click 'Browse' or drag a file.", "error");
     } catch {
-      showToast("Use Ctrl+V to paste", "error");
+      showToast("Use Ctrl+V to paste, or click 'Browse' to upload.", "error");
     }
   };
 
@@ -1113,109 +1150,297 @@ export default function PasteToImage() {
       backLabel="Tools"
       bgColor="transparent"
     >
-      <main ref={mainRef} className="flex-1 flex flex-col items-center px-4 pt-6 pb-8" style={{ background: "transparent" }}>
-        <div className="w-full max-w-5xl">
-          <div style={{ background: "#161615", border: "1px solid #252523", borderRadius: 10, overflow: "hidden" }}>
-            <div className="relative px-5 py-3" style={{ borderBottom: "1px solid #252523" }}>
-              <div className="flex items-center justify-between gap-4">
-                <div
-                  className="text-[10px] font-medium tracking-[0.14em] uppercase truncate"
-                  style={{ color: "#3E3E3B" }}
-                  aria-hidden={!image}
-                >
-                  {image ? "Editor" : "Paste image to begin"}
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSettings(!showSettings);
-                    setShowMoreMenu(false);
-                  }}
-                  className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0"
-                  style={showSettings ? { background: "#222221", color: "#F0EDE8" } : { color: "#3E3E3B" }}
-                  title="Output settings"
-                  aria-label="Output settings"
-                >
-                  <Settings className="h-4 w-4" />
+      <style>{`
+        .pti-shell {
+          width: 100%;
+          max-width: 640px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          margin: 0 auto;
+          padding: 44px 24px 52px;
+        }
+        @media (max-width: 640px) {
+          .pti-shell {
+            padding: 28px 12px 36px;
+            gap: 16px;
+          }
+        }
+        .hero {
+          text-align: center;
+          max-width: 580px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin: 0 auto;
+        }
+        .eyebrow {
+          font-family: var(--s);
+          font-size: 10px;
+          color: var(--t3);
+          letter-spacing: .16em;
+          text-transform: uppercase;
+        }
+        .hero h1 {
+          font-family: var(--d);
+          font-size: 32px;
+          font-weight: 800;
+          letter-spacing: -.04em;
+          line-height: 1.1;
+          color: var(--t1);
+        }
+        .hero h1 em {
+          font-style: italic;
+          font-family: var(--tnr);
+          font-size: 46px;
+          color: var(--hi);
+          letter-spacing: -.01em;
+          line-height: .9;
+          display: inline-block;
+          vertical-align: -.08em;
+        }
+        .hero p {
+          font-size: 13px;
+          color: var(--t2);
+          font-weight: 300;
+          line-height: 1.65;
+          letter-spacing: .01em;
+        }
+        .txt-accent-tnr {
+          font-family: var(--tnr);
+          font-style: italic;
+          color: var(--hi);
+          font-size: 1.08em;
+          padding: 0 1px;
+          font-weight: normal;
+        }
+        
+        .dz-shell {
+          border-radius: var(--r);
+          border: 1px solid var(--b2);
+          background: var(--bg1);
+          transition: border-color .22s, background .22s;
+        }
+        .dz-shell:hover  { border-color: var(--b3); }
+        .dz-shell.active { border-color: rgba(240,237,232,.22); background: var(--bg2); }
+
+        .dz {
+          border-radius: calc(var(--r) - 1px);
+          padding: 40px 28px 32px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+          min-height: 210px;
+          justify-content: center;
+        }
+        .dz::before {
+          content: '';
+          position: absolute; inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+          background-size: 200px 200px;
+          opacity: .022;
+          pointer-events: none;
+        }
+        .dz::after {
+          content: '';
+          position: absolute; top: -30px; left: 50%;
+          transform: translateX(-50%);
+          width: 360px; height: 160px;
+          background: radial-gradient(ellipse, rgba(240,237,232,.026) 0%, transparent 66%);
+          pointer-events: none;
+        }
+        .dz.dragging { background: var(--bg2); border-color: var(--b3); }
+        .dz-ico {
+          width: 42px; height: 42px; border-radius: 10px;
+          background: var(--bg3); border: 1px solid var(--b1);
+          display: flex; align-items: center; justify-content: center;
+          color: var(--t3);
+          transition: color .18s, border-color .18s, background .18s;
+          position: relative; z-index: 1;
+        }
+        .dz-shell:hover .dz-ico, .dz.dragging .dz-ico {
+          color: var(--t2); border-color: var(--b2); background: var(--bg4);
+        }
+        .dz-txt { text-align: center; position: relative; z-index: 1; }
+        .dz-txt h2 {
+          font-family: var(--d); font-size: 15px; font-weight: 700;
+          letter-spacing: -.025em; margin-bottom: 5px; color: var(--t1);
+        }
+        .dz-txt p { font-family: var(--s); font-size: 11px; color: var(--t3); }
+        .dz-txt p span { color: var(--t2); }
+
+        .dz-btns { display: flex; gap: 7px; position: relative; z-index: 1; }
+        
+        .btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 7px 14px; border-radius: var(--rs);
+          font-size: 12px; font-family: var(--s); font-weight: 500;
+          cursor: pointer; transition: background .14s, color .14s, border-color .14s;
+          border: none; letter-spacing: .005em;
+        }
+        .btn-sec {
+          background: var(--bg3); color: var(--t2); border: 1px solid var(--b1);
+        }
+        .btn-sec:hover { background: var(--bg4); border-color: var(--b2); color: var(--t1); }
+        .btn-pri { background: var(--t1); color: #0D0D0C; font-weight: 600; }
+        .btn-pri:hover { background: var(--ac); }
+
+        .fmts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 1; }
+        .fmt {
+          font-family: var(--s); font-size: 9px; padding: 2px 7px;
+          border-radius: var(--rs-xs); background: transparent; color: var(--t3);
+          border: 1px solid var(--b0); letter-spacing: .08em; text-transform: uppercase;
+          transition: color .15s, border-color .15s;
+        }
+        .dz-shell:hover .fmt { color: var(--t2); border-color: var(--b1); }
+      `}</style>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleFileInputChange}
+      />
+
+      {!image ? (
+        <main className="pti-shell" ref={mainRef}>
+          <div className="hero">
+            <span className="eyebrow">Clipboard &rarr; Image</span>
+            <h1>Paste to <em>Image</em></h1>
+            <p>
+              Annotate, blur, crop, and save clipboard images <em className="txt-accent-tnr">locally</em> in your browser.
+              No servers, no queues, no uploads.
+            </p>
+          </div>
+
+          <div className="dz-shell">
+            <div
+              onClick={() => handleZoneClick()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`dz ${isDragOver ? "dragging" : ""}`}
+            >
+              <div className="dz-ico">
+                <Clipboard size={18} strokeWidth={1.5} />
+              </div>
+
+              <div className="dz-txt">
+                <h2>Click anywhere to paste or press Ctrl+V</h2>
+                <p>
+                  or drag & drop your image here to <span>begin</span>
+                </p>
+              </div>
+
+              <div className="dz-btns">
+                <button className="btn btn-pri" onClick={(e) => { e.stopPropagation(); handleZoneClick(); }}>
+                  Paste from clipboard
+                </button>
+                <button className="btn btn-sec" onClick={handleBrowseClick}>
+                  Browse files
                 </button>
               </div>
 
-              <AnimatePresence>
-                {showSettings && (
-                  <motion.div
-                    ref={settingsPanelRef}
-                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute top-full right-5 mt-2 z-50 w-56 border rounded-[10px] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
-                    style={{ background: "#1C1C1B", borderColor: "#2E2E2C" }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="space-y-5">
-                      <div>
-                        <span className="text-[10px] font-medium tracking-[0.12em] uppercase block mb-2.5" style={{ color: "#3E3E3B" }}>Format</span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {(["jpeg", "png", "webp", "pdf"] as Format[]).map((f) => (
-                            <button
-                              key={f}
-                              onClick={() => setFormat(f)}
-                              className="py-1.5 px-2.5 rounded-[7px] text-[11px] font-medium tracking-[0.08em] uppercase transition-all duration-[140ms]"
-                              style={format === f
-                                ? { background: "#F0EDE8", color: "#0F0F0E" }
-                                : { background: "#222221", color: "#7A7874", border: "1px solid #2E2E2C" }
-                              }
-                            >
-                              {f === "jpeg" ? "JPG" : f.toUpperCase()}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {format !== "png" && format !== "pdf" && (
-                        <div>
-                          <div className="flex justify-between items-center mb-2.5">
-                            <span className="text-[11px] font-medium" style={{ color: "#7A7874" }}>Quality</span>
-                            <span className="text-[12px] font-medium tabular-nums" style={{ color: "#F0EDE8" }}>{Math.round(quality * 100)}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0.5"
-                            max="1.0"
-                            step="0.05"
-                            value={quality}
-                            onChange={(e) => setQuality(parseFloat(e.target.value))}
-                            className="w-full appearance-none cursor-pointer rounded-full"
-                            style={{ height: 2, background: `linear-gradient(to right,#F0EDE8 ${(quality - 0.5) * 200}%,#2E2E2C ${(quality - 0.5) * 200}%)` }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <div className="fmts">
+                <span className="fmt">PNG</span>
+                <span className="fmt">JPG</span>
+                <span className="fmt">WEBP</span>
+                <span className="fmt">PDF</span>
+              </div>
             </div>
-
-            <div ref={containerRef} className="p-6">
-              {!image ? (
-                <div
-                  onClick={handleZoneClick}
-                  className="group relative rounded-[10px] border border-dashed cursor-pointer transition-all duration-[220ms] py-14 px-8 flex flex-col items-center justify-center text-center"
-                  style={{ borderColor: "#3A3A37" }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#4A4A46")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "#3A3A37")}
-                >
-                  <div className="w-11 h-11 rounded-[10px] flex items-center justify-center mb-5" style={{ background: "#1C1C1B", border: "1px solid #2E2E2C", color: "#3E3E3B" }}>
-                    <Clipboard className="h-5 w-5" strokeWidth={1.5} />
+          </div>
+        </main>
+      ) : (
+        <main ref={mainRef} className="flex-1 flex flex-col items-center px-4 pt-6 pb-8" style={{ background: "transparent" }}>
+          <div className="w-full max-w-5xl">
+            <div style={{ background: "#161615", border: "1px solid #252523", borderRadius: 10, overflow: "hidden" }}>
+              <div className="relative px-5 py-3" style={{ borderBottom: "1px solid #252523" }}>
+                <div className="flex items-center justify-between gap-4">
+                  <div
+                    className="text-[10px] font-medium tracking-[0.14em] uppercase truncate"
+                    style={{ color: "#3E3E3B" }}
+                    aria-hidden={!image}
+                  >
+                    Editor
                   </div>
-                  <div className="font-medium text-[15px] tracking-[-0.01em] mb-1.5" style={{ color: "#F0EDE8" }}>
-                    Click anywhere to paste or press Ctrl+V
-                  </div>
-                  <div className="text-[13px] leading-relaxed" style={{ color: "#3E3E3B" }}>
-                    Supports PNG, JPG, WebP and more
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSettings(!showSettings);
+                      setShowMoreMenu(false);
+                    }}
+                    className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0"
+                    style={showSettings ? { background: "#222221", color: "#F0EDE8" } : { color: "#3E3E3B" }}
+                    title="Output settings"
+                    aria-label="Output settings"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
                 </div>
-              ) : (
+
+                <AnimatePresence>
+                  {showSettings && (
+                    <motion.div
+                      ref={settingsPanelRef}
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute top-full right-5 mt-2 z-50 w-56 border rounded-[10px] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
+                      style={{ background: "#1C1C1B", borderColor: "#2E2E2C" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="space-y-5">
+                        <div>
+                          <span className="text-[10px] font-medium tracking-[0.12em] uppercase block mb-2.5" style={{ color: "#3E3E3B" }}>Format</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(["jpeg", "png", "webp", "pdf"] as Format[]).map((f) => (
+                              <button
+                                key={f}
+                                onClick={() => setFormat(f)}
+                                className="py-1.5 px-2.5 rounded-[7px] text-[11px] font-medium tracking-[0.08em] uppercase transition-all duration-[140ms]"
+                                style={format === f
+                                  ? { background: "#F0EDE8", color: "#0F0F0E" }
+                                  : { background: "#222221", color: "#7A7874", border: "1px solid #2E2E2C" }
+                                }
+                              >
+                                {f === "jpeg" ? "JPG" : f.toUpperCase()}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {format !== "png" && format !== "pdf" && (
+                          <div>
+                            <div className="flex justify-between items-center mb-2.5">
+                              <span className="text-[11px] font-medium" style={{ color: "#7A7874" }}>Quality</span>
+                              <span className="text-[12px] font-medium tabular-nums" style={{ color: "#F0EDE8" }}>{Math.round(quality * 100)}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0.5"
+                              max="1.0"
+                              step="0.05"
+                              value={quality}
+                              onChange={(e) => setQuality(parseFloat(e.target.value))}
+                              className="w-full appearance-none cursor-pointer rounded-full"
+                              style={{ height: 2, background: `linear-gradient(to right,#F0EDE8 ${(quality - 0.5) * 200}%,#2E2E2C ${(quality - 0.5) * 200}%)` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div ref={containerRef} className="p-6">
                 <div
                   ref={editorContainerRef}
                   className={`space-y-3 ${isFullscreen ? "p-6 flex flex-col h-full overflow-hidden" : ""}`}
@@ -1553,19 +1778,13 @@ export default function PasteToImage() {
                       </button>
                     )}
                     <span>.{format === "jpeg" ? "jpg" : format}</span>
-                  </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
-
-          {!image && (
-            <p className="text-center text-[11px] mt-4" style={{ color: "#3E3E3B" }}>
-              Works with screenshots, copied images, and more
-            </p>
-          )}
         </div>
       </main>
+    )}
 
       <ToolSEOArticle
         eyebrow={seo.eyebrow}

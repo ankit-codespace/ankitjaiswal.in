@@ -1593,7 +1593,11 @@ function PomodoroStyles() {
         --ok: #16a34a;
         --warn: #d97706;
 
-        --pm-page-bg: transparent;
+        --pm-page-bg:
+          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
+          #fdfdfe;
       }
 
       html:has(body.pm-light-mode) {
@@ -1774,12 +1778,12 @@ function PomodoroStyles() {
         box-shadow: 1.5px 1.5px 4px rgba(22, 22, 21, 0.08), -1px -1px 3px rgba(255, 255, 255, 0.9);
       }
       body.pm-light-mode .pm-skeuo-text-light {
-        opacity: 1;
-        left: 12px;
-        color: rgba(22, 22, 21, 0.50);
+        opacity: 0;
       }
       body.pm-light-mode .pm-skeuo-text-dark {
-        opacity: 0;
+        opacity: 1;
+        right: 12px;
+        color: rgba(22, 22, 21, 0.50);
       }
       body.pm-light-mode .pm-sun-icon {
         color: #f59e0b;
@@ -1797,12 +1801,12 @@ function PomodoroStyles() {
         box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4), -1px -1px 2px rgba(255, 255, 255, 0.03);
       }
       body:not(.pm-light-mode) .pm-skeuo-text-light {
-        opacity: 0;
+        opacity: 1;
+        left: 12px;
+        color: rgba(255, 255, 255, 0.35);
       }
       body:not(.pm-light-mode) .pm-skeuo-text-dark {
-        opacity: 1;
-        right: 12px;
-        color: rgba(255, 255, 255, 0.35);
+        opacity: 0;
       }
       body:not(.pm-light-mode) .pm-moon-icon {
         color: #60a5fa;
