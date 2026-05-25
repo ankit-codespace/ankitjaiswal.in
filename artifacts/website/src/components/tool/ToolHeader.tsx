@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { FeedbackHeaderButton } from "@/components/FeedbackWidget";
@@ -39,8 +39,19 @@ export function ToolHeader({
   /** Escape hatch in case a tool wants to host its own feedback affordance. */
   hideFeedback?: boolean;
 }) {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="tool-header">
+    <header className={`tool-header ${isScrolled ? "scrolled" : ""}`}>
       <div className="tool-header-inner">
         <Link href={backHref} className="tool-header-back" aria-label={`Back to ${backLabel}`}>
           <ArrowLeft size={14} strokeWidth={2} />
