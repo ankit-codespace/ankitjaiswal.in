@@ -151,9 +151,9 @@
 
   /* TYPOGRAPHY — four levels of importance */
   --t1: #F0EDE8;
-  --t2: #7A7874;
-  --t3: #3E3E3B;
-  --t4: #282826;
+  --t2: #A5A29B;
+  --t3: #7A7874;
+  --t4: #4A4944;
 
   /* ACCENT — one white CTA per view */
   --ac: #FFFFFF;
