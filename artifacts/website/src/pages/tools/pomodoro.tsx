@@ -993,7 +993,7 @@ export default function Pomodoro() {
       pointerEvents: "none",
       zIndex: "999999",
       background: nextBg,
-      transition: "width 0.7s cubic-bezier(0.86, 0, 0.07, 1), height 0.7s cubic-bezier(0.86, 0, 0.07, 1), opacity 0.2s ease",
+      transition: "width 0.6s cubic-bezier(0.16, 1, 0.3, 1), height 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease",
       opacity: "1"
     });
     
@@ -1017,18 +1017,18 @@ export default function Pomodoro() {
     ripple.style.width = `${size}px`;
     ripple.style.height = `${size}px`;
     
-    // 3. Update React theme state halfway through
+    // 3. Update React theme state when ripple has fully covered the viewport
     setTimeout(() => {
       setTheme(nextTheme);
-    }, 350);
+    }, 280);
     
     // 4. Clean up ripple
     setTimeout(() => {
       ripple.style.opacity = "0";
       setTimeout(() => {
         ripple.remove();
-      }, 200);
-    }, 700);
+      }, 250);
+    }, 600);
   };
 
   const headerActions = (

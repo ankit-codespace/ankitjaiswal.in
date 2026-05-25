@@ -25,14 +25,7 @@ const DEFAULT_NAV: ToolFooterLink[] = [
 
 export function ToolFooter({ nav = DEFAULT_NAV }: { nav?: ToolFooterLink[] }) {
   return (
-    <footer
-      style={{
-        background: "#0A0C10",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-        padding: "40px 24px 56px",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
+    <footer className="tool-footer">
       <div
         style={{
           maxWidth: 1040,

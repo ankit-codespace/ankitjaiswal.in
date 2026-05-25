@@ -74,7 +74,7 @@ export function ToolStyles() {
         padding: 0 4px 22px;
         font-size: 14.5px;
         line-height: 1.75;
-        color: rgba(255,255,255,0.62);
+        color: rgba(255,255,255,0.80);
         max-width: 680px;
       }
 
@@ -110,8 +110,14 @@ export function ToolStyles() {
       }
 
       /* ── Footer link / social ── */
+      .tool-footer {
+        background: #0A0C10;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding: 40px 24px 56px;
+        font-family: 'Inter', sans-serif;
+      }
       .tool-footer-link {
-        color: rgba(255,255,255,0.55);
+        color: rgba(255,255,255,0.65);
         text-decoration: none;
         transition: color .15s ease;
       }
@@ -129,7 +135,7 @@ export function ToolStyles() {
         width: 32px;
         height: 32px;
         border-radius: 8px;
-        color: rgba(255,255,255,0.55);
+        color: rgba(255,255,255,0.65);
         background: transparent;
         border: 1px solid rgba(255,255,255,0.10);
         transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
@@ -226,7 +232,7 @@ export function ToolStyles() {
       .tool-prose p {
         font-size: 16px;
         line-height: 1.8;
-        color: rgba(255,255,255,0.7);
+        color: rgba(255,255,255,0.82);
         margin: 0 0 22px;
       }
       .tool-prose p:last-child { margin-bottom: 0; }
@@ -239,7 +245,7 @@ export function ToolStyles() {
         transition: text-decoration-color .15s ease;
       }
       .tool-prose a:hover { text-decoration-color: #fff; }
-
+ 
       /* ── Numbered "how-to" steps ── */
       .tool-step {
         display: flex;
@@ -274,17 +280,17 @@ export function ToolStyles() {
       .tool-step-body {
         font-size: 14px;
         line-height: 1.65;
-        color: rgba(255,255,255,0.62);
+        color: rgba(255,255,255,0.80);
         margin: 0;
       }
-
+ 
       /* ── Tables (shortcuts, comparison) ── */
       .tool-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
         font-size: 13.5px;
-        color: rgba(255,255,255,0.72);
+        color: rgba(255,255,255,0.82);
       }
       .tool-table th {
         text-align: left;
@@ -293,7 +299,7 @@ export function ToolStyles() {
         font-size: 11px;
         letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: rgba(255,255,255,0.5);
+        color: rgba(255,255,255,0.65);
         padding: 14px 16px;
         border-bottom: 1px solid rgba(255,255,255,0.1);
         background: rgba(255,255,255,0.025);
@@ -361,13 +367,13 @@ export function ToolStyles() {
         .tool-step { padding: 12px 14px; gap: 10px; }
       }
 
-      /* ── Top header bar — sticky chrome above tool UI ── */
+      /* ── Top header bar — transparent chrome above tool UI ── */
       .tool-header {
         position: relative;
         z-index: 40;
-        background: var(--bg1);
-        border-bottom: 1px solid var(--b0);
-        transition: background-color 0.2s ease, border-color 0.2s ease;
+        background: transparent;
+        border-bottom: none;
+        transition: background-color 0.4s ease, border-color 0.4s ease;
       }
       .tool-header-inner {
         max-width: 1280px;
@@ -497,6 +503,176 @@ export function ToolStyles() {
       @media (max-width: 360px) {
         .tool-header-inner { gap: 8px; padding: 0 10px; }
         .tool-header-title { font-size: 13px; line-height: 1.15; }
+      }
+
+      /* ── Theme transitions ── */
+      body, .pm-stage, .pm-card, .pm-btn, .pm-btn-secondary, .pm-btn-ghost, .pm-icon-btn, .tool-card, .tool-step, .tool-faq, .tool-faq-answer, .tool-header, .tool-footer, .tool-header-btn {
+        transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                    border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                    color 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    backdrop-filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      /* ── Light Mode Overrides for SEO Articles & Utilities ── */
+      body.pm-light-mode .tool-card {
+        background: rgba(255, 255, 255, 0.72);
+        border-color: rgba(22, 22, 21, 0.08);
+      }
+      body.pm-light-mode .tool-card:hover {
+        border-color: rgba(22, 22, 21, 0.16);
+        background: rgba(255, 255, 255, 0.90);
+      }
+      body.pm-light-mode .tool-icon {
+        background: var(--bg2);
+        border-color: var(--b1);
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-faq {
+        border-color: var(--b0);
+      }
+      body.pm-light-mode .tool-faq:first-child {
+        border-top-color: var(--b0);
+      }
+      body.pm-light-mode .tool-faq summary {
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-faq summary:hover {
+        color: var(--pm-short, #0284c7);
+      }
+      body.pm-light-mode .tool-faq-answer {
+        color: var(--t2);
+      }
+      body.pm-light-mode .tool-related {
+        border-color: var(--b0);
+        background: rgba(255, 255, 255, 0.5);
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-related:hover {
+        border-color: var(--b1);
+        background: rgba(255, 255, 255, 0.85);
+      }
+      body.pm-light-mode .tool-related .tool-related-arrow {
+        color: var(--t3);
+      }
+      body.pm-light-mode .tool-related:hover .tool-related-arrow {
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-footer {
+        background: transparent;
+        border-top-color: var(--b0);
+      }
+      body.pm-light-mode .tool-footer-link {
+        color: var(--t2);
+      }
+      body.pm-light-mode .tool-footer-link:hover {
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-social-link {
+        color: var(--t2);
+        border-color: var(--b1);
+      }
+      body.pm-light-mode .tool-social-link:hover {
+        color: var(--t1);
+        background: rgba(0, 0, 0, 0.04);
+        border-color: var(--b2);
+      }
+      body.pm-light-mode .tool-prose p {
+        color: var(--t2);
+      }
+      body.pm-light-mode .tool-prose strong {
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-prose a {
+        color: var(--pm-short, #0284c7);
+        text-decoration-color: rgba(2, 132, 199, 0.3);
+      }
+      body.pm-light-mode .tool-prose a:hover {
+        text-decoration-color: var(--pm-short, #0284c7);
+      }
+      body.pm-light-mode .tool-step {
+        background: rgba(255, 255, 255, 0.5);
+        border-color: var(--b0);
+      }
+      body.pm-light-mode .tool-step:hover {
+        border-color: var(--b1);
+        background: rgba(255, 255, 255, 0.85);
+      }
+      body.pm-light-mode .tool-step-num {
+        background: var(--bg2);
+        border-color: var(--b1);
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-step-title {
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-step-body {
+        color: var(--t2);
+      }
+      body.pm-light-mode .tool-table {
+        color: var(--t2);
+      }
+      body.pm-light-mode .tool-table th {
+        color: var(--t3);
+        border-bottom-color: var(--b1);
+        background: rgba(0, 0, 0, 0.02);
+      }
+      body.pm-light-mode .tool-table td {
+        border-bottom-color: var(--b0);
+      }
+      body.pm-light-mode .tool-table-wrap {
+        border-color: var(--b1);
+        background: rgba(255, 255, 255, 0.4);
+      }
+      body.pm-light-mode .tool-table tbody tr:hover td {
+        background: rgba(0, 0, 0, 0.015);
+      }
+      body.pm-light-mode .tool-kbd {
+        background: var(--bg2);
+        border-color: var(--b1);
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-compare-table td:first-child {
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-compare-yes {
+        color: #16a34a;
+      }
+      body.pm-light-mode .tool-compare-no {
+        color: var(--t3);
+      }
+      body.pm-light-mode .tool-tip {
+        background: rgba(255, 255, 255, 0.5);
+        border-color: var(--b0);
+      }
+      body.pm-light-mode .tool-tip:hover {
+        border-color: var(--b1);
+        background: rgba(255, 255, 255, 0.85);
+      }
+      body.pm-light-mode .tool-privacy {
+        background: rgba(255, 255, 255, 0.5);
+        border-color: var(--b0);
+      }
+      body.pm-light-mode .tool-author-card {
+        background: linear-gradient(135deg, var(--b1) 0%, var(--b0) 50%, var(--b1) 100%);
+      }
+      body.pm-light-mode .tool-author-card::before {
+        background: radial-gradient(120% 100% at 0% 0%, rgba(44, 44, 243, 0.04), transparent 60%);
+      }
+      body.pm-light-mode .tool-author-card-inner {
+        background: linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 100%);
+      }
+      body.pm-light-mode .tool-author-avatar {
+        box-shadow: 0 0 0 1px var(--b1), 0 12px 28px -10px rgba(0,0,0,0.15);
+      }
+      body.pm-light-mode .tool-author-cta {
+        background: var(--bg2);
+        border-color: var(--b1);
+        color: var(--t1);
+      }
+      body.pm-light-mode .tool-author-cta:hover {
+        background: var(--bg3);
+        border-color: var(--b2);
       }
     `}</style>
   );
