@@ -46,7 +46,7 @@ export function ToolSEOArticle({
           background: tokens.bg.page,
           color: tokens.text.body,
           padding: "120px 24px 0",
-          borderTop: `1px solid rgba(255,255,255,0.04)`,
+          borderTop: `1px solid var(--b0)`,
           fontFamily: tokens.font.body,
         }}
       >
@@ -58,11 +58,11 @@ export function ToolSEOArticle({
           <h1 style={{ fontFamily: tokens.font.display, fontWeight: 800, fontSize: "clamp(28px, 4.5vw, 44px)", lineHeight: 1.1, color: tokens.text.primary, margin: "0 0 22px", letterSpacing: "-0.02em" }}>
             {h1}
           </h1>
-          <p style={{ fontSize: 17, lineHeight: 1.6, color: "rgba(255,255,255,0.66)", margin: "0 auto", maxWidth: 580 }}>
+          <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--t2)", margin: "0 auto", maxWidth: 580 }}>
             {intro}
           </p>
           {metaLine && (
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.36)", marginTop: 18, fontFamily: tokens.font.display, letterSpacing: "0.04em" }}>
+            <p style={{ fontSize: 12, color: "var(--t3)", marginTop: 18, fontFamily: tokens.font.display, letterSpacing: "0.04em" }}>
               {metaLine}
             </p>
           )}
@@ -195,7 +195,7 @@ export function ToolAuthorCard({
           <div style={{ fontSize: 13, color: tokens.text.soft, marginBottom: 14, fontWeight: 400 }}>
             Independent web engineer · SEO specialist · India
           </div>
-          <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "rgba(255,255,255,0.72)", margin: "0 0 18px", maxWidth: "52ch" }}>
+          <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "var(--t2)", margin: "0 0 18px", maxWidth: "52ch" }}>
             {bio}
           </p>
           <div className="tool-author-actions">
@@ -238,7 +238,7 @@ export function ToolPrivacyBand({ heading, body }: { heading: string; body: stri
         <h2 style={{ fontFamily: tokens.font.display, fontWeight: 700, fontSize: 20, color: tokens.text.primary, margin: "0 0 12px", letterSpacing: "-0.01em" }}>
           {heading}
         </h2>
-        <p style={{ fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.66)", margin: 0 }}>{body}</p>
+        <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--t2)", margin: 0 }}>{body}</p>
       </div>
     </div>
   );
@@ -289,7 +289,7 @@ export function ToolFeatureGrid({ items, minWidth = 260 }: { items: ToolFeature[
             <h3 style={{ fontFamily: tokens.font.display, fontWeight: 700, fontSize: 16, color: tokens.text.primary, margin: "0 0 8px", letterSpacing: "-0.005em" }}>
               {f.title}
             </h3>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "rgba(255,255,255,0.6)", margin: 0 }}>{f.desc}</p>
+            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--t2)", margin: 0 }}>{f.desc}</p>
           </div>
         );
       })}
