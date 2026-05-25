@@ -618,7 +618,7 @@ export default function ClipboardHistory() {
       title="Clipboard History"
       tagline="Save, search & reuse text snippets — privately"
       backHref="/tools"
-      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
+      bgColor="var(--cb-page-bg)"
     >
       <ClipboardStyles />
 
@@ -1195,6 +1195,13 @@ function SnippetItem({
 function ClipboardStyles() {
   return (
     <style>{`
+      :root {
+        --cb-page-bg: radial-gradient(circle at 50% 0%, rgba(240, 237, 232, 0.05) 0%, rgba(240, 237, 232, 0.01) 50%, var(--bg0) 100%);
+      }
+      body.pm-light-mode {
+        --cb-page-bg: radial-gradient(circle at 50% 0%, rgba(22, 22, 21, 0.03) 0%, rgba(22, 22, 21, 0.005) 50%, var(--bg0) 100%);
+      }
+
       /* Hero / Heading area */
       .hero {
         text-align: center;
