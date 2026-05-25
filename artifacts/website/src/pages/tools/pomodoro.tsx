@@ -316,6 +316,13 @@ export default function Pomodoro() {
   const [, setTick] = useState(0);
   /** How many work pomodoros completed since the last long break (0..longBreakAfter). */
   const [cyclePos, setCyclePos] = useState(0);
+
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [tempMinutes, setTempMinutes] = useState(String(settings.workMin));
+
+  useEffect(() => {
+    setTempMinutes(String(settings.workMin));
+  }, [settings.workMin]);
   const [showSettings, setShowSettings] = useState(false);
   const [showOverflow, setShowOverflow] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
@@ -699,6 +706,19 @@ export default function Pomodoro() {
     }
   }, [phase, running]);
 
+  const handleCommitTime = useCallback(() => {
+    let val = parseInt(tempMinutes, 10);
+    if (isNaN(val) || val < 1) {
+      val = 1;
+    }
+    if (val > 9999) {
+      val = 9999;
+    }
+    setWorkPreset(val);
+    setTempMinutes(String(val));
+    setIsEditingTime(false);
+  }, [tempMinutes, setWorkPreset]);
+
   const scrollTimeoutRef = useRef<number | null>(null);
   const settingsRef = useRef(settings);
   const runningRef = useRef(running);
@@ -731,8 +751,8 @@ export default function Pomodoro() {
       const currentMin = settingsRef.current.workMin;
       let nextMin = currentMin + direction * step;
       
-      if (nextMin < 5) nextMin = 5;
-      if (nextMin > 120) nextMin = 120;
+      if (nextMin < 1) nextMin = 1;
+      if (nextMin > 9999) nextMin = 9999;
 
       if (nextMin !== currentMin) {
         setWorkPresetRef.current(nextMin);
@@ -1047,6 +1067,11 @@ export default function Pomodoro() {
     </button>
   );
 
+  const timeString = fmtMMSS(remainingMs);
+  const dynamicFontSize = isEditingTime
+    ? (tempMinutes.length > 4 ? "30px" : tempMinutes.length === 4 ? "40px" : "56px")
+    : (timeString.length > 6 ? "30px" : timeString.length === 6 ? "40px" : "56px");
+
   return (
     <ToolPage
       seoTitle={seo.title}
@@ -1116,8 +1141,47 @@ export default function Pomodoro() {
                     </svg>
                   </div>
                 )}
-                <div className={`pm-time ${scrollBounce ? "pm-scroll-bounce" : ""}`} aria-live="polite">
-                  {fmtMMSS(remainingMs)}
+                <div
+                  className={`pm-time ${scrollBounce ? "pm-scroll-bounce" : ""}`}
+                  style={{ fontSize: dynamicFontSize }}
+                  aria-live="polite"
+                >
+                  {isEditingTime ? (
+                    <input
+                      type="text"
+                      className="pm-time-input"
+                      value={tempMinutes}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        setTempMinutes(val);
+                      }}
+                      onBlur={handleCommitTime}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleCommitTime();
+                        } else if (e.key === "Escape") {
+                          setTempMinutes(String(settings.workMin));
+                          setIsEditingTime(false);
+                        }
+                      }}
+                      autoFocus
+                      onFocus={(e) => e.target.select()}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="pm-time-trigger-btn"
+                      onClick={() => {
+                        if (!running) {
+                          setIsEditingTime(true);
+                        }
+                      }}
+                      disabled={running}
+                      title={!running ? "Click to type custom minutes" : undefined}
+                    >
+                      {timeString}
+                    </button>
+                  )}
                 </div>
                 {!running && (
                   <div className={`pm-dial-chevron pm-dial-chevron-down ${isCircleHovered ? "visible" : ""}`}>
@@ -1158,12 +1222,12 @@ export default function Pomodoro() {
                   <div className="pm-custom">
                     <input
                       type="number"
-                      min="5"
-                      max="120"
+                      min="1"
+                      max="9999"
                       value={settings.workMin}
                       onChange={(e) => {
                         const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val) && val >= 5 && val <= 120) {
+                        if (!isNaN(val) && val >= 1 && val <= 9999) {
                           setWorkPreset(val);
                         }
                       }}
@@ -2061,7 +2125,46 @@ function PomodoroStyles() {
         font-variant-numeric: tabular-nums;
         font-feature-settings: 'cv11', 'ss01', 'tnum';
         line-height: 1;
-        transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1), text-shadow 0.15s ease;
+        transition: font-size 0.2s cubic-bezier(0.25, 1, 0.5, 1), transform 0.15s cubic-bezier(0.25, 1, 0.5, 1), text-shadow 0.15s ease;
+      }
+      .pm-time-trigger-btn {
+        appearance: none;
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        color: inherit;
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        cursor: pointer;
+        outline: none;
+        display: inline-block;
+        transition: color 150ms ease;
+      }
+      .pm-time-trigger-btn:hover:not(:disabled) {
+        color: var(--ok);
+      }
+      .pm-time-trigger-btn:disabled {
+        cursor: default;
+      }
+      .pm-time-input {
+        appearance: none;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--t1);
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        text-align: center;
+        width: 100%;
+        max-width: 180px;
+        padding: 0;
+        margin: 0;
+        caret-color: var(--ok);
       }
       .pm-status-container {
         position: relative;
