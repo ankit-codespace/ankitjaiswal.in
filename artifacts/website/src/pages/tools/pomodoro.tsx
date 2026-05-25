@@ -1092,6 +1092,7 @@ export default function Pomodoro() {
 
             <div
               ref={dialRef}
+              data-lenis-prevent
               className={`pm-ring-wrap ${!running ? "pm-ring-adjustable" : ""} ${isCircleHovered && !running ? "pm-ring-hovered" : ""}`}
               onMouseEnter={() => setIsCircleHovered(true)}
               onMouseLeave={() => setIsCircleHovered(false)}
