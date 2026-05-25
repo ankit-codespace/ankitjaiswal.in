@@ -562,14 +562,6 @@ export default function PasteToImage() {
       if (autoDownload) {
         setShouldAutoDownload(true);
       }
-
-      // Auto-enter fullscreen when image is pasted
-      requestAnimationFrame(() => {
-        const container = editorContainerRef.current;
-        if (container && !document.fullscreenElement) {
-          container.requestFullscreen().catch(() => {/* ignore if blocked */});
-        }
-      });
     } catch {
       URL.revokeObjectURL(url);
       showToast("Failed to load image", "error");
