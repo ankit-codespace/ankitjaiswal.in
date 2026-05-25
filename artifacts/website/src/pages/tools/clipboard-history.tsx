@@ -623,8 +623,17 @@ export default function ClipboardHistory() {
       <ClipboardStyles />
 
       {/* ── Interactive UI ── */}
-      <main style={{ padding: "32px 18px 60px", background: "transparent" }} ref={mainRef}>
+      <main style={{ padding: "44px 18px 60px", background: "transparent" }} ref={mainRef}>
         <div style={{ maxWidth: 920, margin: "0 auto" }}>
+
+          <div className="hero">
+            <span className="eyebrow">Local & Private</span>
+            <h1>Clipboard <em>History</em></h1>
+            <p>
+              Save, search, and reuse text snippets <em className="txt-accent-tnr">locally</em> in your browser.
+              No accounts, no sync, zero data leakage.
+            </p>
+          </div>
 
           {/* Composer */}
           <section className="cb-card" aria-label="Save a new snippet">
@@ -1186,17 +1195,64 @@ function SnippetItem({
 function ClipboardStyles() {
   return (
     <style>{`
+      /* Hero / Heading area */
+      .hero {
+        text-align: center;
+        max-width: 580px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin: 0 auto 28px;
+      }
+      .eyebrow {
+        font-family: var(--s);
+        font-size: 10px;
+        color: var(--t3);
+        letter-spacing: .16em;
+        text-transform: uppercase;
+      }
+      .hero h1 {
+        font-family: var(--d);
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: -.04em;
+        line-height: 1.1;
+        color: var(--t1);
+      }
+      .hero h1 em {
+        font-style: italic;
+        font-family: var(--tnr);
+        font-size: 46px;
+        color: var(--hi);
+        letter-spacing: -.01em;
+        line-height: .9;
+        display: inline-block;
+        vertical-align: -.08em;
+      }
+      .hero p {
+        font-size: 13.5px;
+        color: var(--t2);
+        font-weight: 300;
+        line-height: 1.65;
+        letter-spacing: .01em;
+      }
+      .txt-accent-tnr {
+        font-family: var(--tnr);
+        font-style: italic;
+        color: var(--hi);
+        font-size: 1.08em;
+        padding: 0 1px;
+        font-weight: normal;
+      }
+
       /* Composer card */
       .cb-card {
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        background: rgba(15, 18, 25, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--bg1);
+        border: 1px solid var(--b0);
         border-radius: 20px;
         padding: 24px;
-        box-shadow: 0 40px 100px -25px rgba(0,0,0,0.85),
-                    0 0 0 1px rgba(255,255,255,0.01),
-                    inset 0 1px 0 0 rgba(255,255,255,0.05);
+        box-shadow: 0 30px 70px -25px rgba(0,0,0,0.5),
+                    inset 0 1px 0 0 rgba(255,255,255,0.02);
       }
       .cb-card-head {
         display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
@@ -1205,13 +1261,13 @@ function ClipboardStyles() {
       .cb-card-title {
         font-family: ${tokens.font.display};
         font-weight: 700; font-size: 16px;
-        color: ${tokens.text.primary};
+        color: var(--t1);
         margin: 0 0 4px;
         letter-spacing: -0.01em;
       }
       .cb-card-sub {
         font-size: 13px;
-        color: ${tokens.text.quiet};
+        color: var(--t3);
         margin: 0;
         line-height: 1.5;
       }
@@ -1219,31 +1275,31 @@ function ClipboardStyles() {
         display: flex; align-items: center; gap: 12px;
         font-family: ${tokens.font.mono};
         font-size: 11.5px;
-        color: ${tokens.text.quiet};
+        color: var(--t3);
         white-space: nowrap;
       }
-      .cb-stats span b { color: ${tokens.text.primary}; font-weight: 600; }
-      .cb-stats-warn { color: #FBBF24; }
+      .cb-stats span b { color: var(--t1); font-weight: 600; }
+      .cb-stats-warn { color: var(--warn); }
 
       .cb-textarea {
         width: 100%;
-        background: rgba(0,0,0,0.25);
-        border: 1px solid ${tokens.border.default};
+        background: var(--bg0);
+        border: 1px solid var(--b1);
         border-radius: 12px;
         padding: 14px 16px;
         font-family: ${tokens.font.body};
         font-size: 14px;
         line-height: 1.55;
-        color: ${tokens.text.primary};
+        color: var(--t1);
         resize: vertical;
         min-height: 96px;
         transition: border-color .15s ease, background .15s ease;
         outline: none;
       }
-      .cb-textarea::placeholder { color: rgba(255,255,255,0.28); }
+      .cb-textarea::placeholder { color: rgba(255,255,255,0.22); }
       .cb-textarea:focus {
-        border-color: ${tokens.border.focus};
-        background: rgba(0,0,0,0.32);
+        border-color: var(--b3);
+        background: var(--bg0);
       }
 
       .cb-composer-actions {
@@ -1251,7 +1307,7 @@ function ClipboardStyles() {
         gap: 12px; margin-top: 12px; flex-wrap: wrap;
       }
       .cb-hint {
-        font-size: 11.5px; color: ${tokens.text.quiet};
+        font-size: 11.5px; color: var(--t3);
         display: inline-flex; align-items: center; gap: 6px;
       }
 
@@ -1268,48 +1324,48 @@ function ClipboardStyles() {
         white-space: nowrap;
       }
       .cb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-      .cb-btn:focus-visible { outline: 2px solid ${tokens.border.focus}; outline-offset: 2px; }
+      .cb-btn:focus-visible { outline: 2px solid var(--b3); outline-offset: 2px; }
       .cb-btn-primary {
-        background: #fff; color: #0A0C10;
-        border-color: #fff;
+        background: var(--t1); color: var(--bg0);
+        border-color: var(--t1);
+        font-weight: 600;
       }
       .cb-btn-primary:hover:not(:disabled) {
-        background: rgba(255,255,255,0.92);
+        background: var(--ac);
+        border-color: var(--ac);
         transform: translateY(-1px);
       }
       .cb-btn-ghost {
         background: transparent;
-        color: ${tokens.text.body};
-        border-color: ${tokens.border.default};
+        color: var(--t2);
+        border-color: var(--b1);
       }
       .cb-btn-ghost:hover:not(:disabled) {
-        background: rgba(255,255,255,0.05);
-        border-color: ${tokens.border.hover};
-        color: ${tokens.text.primary};
+        background: var(--bg3);
+        border-color: var(--b2);
+        color: var(--t1);
       }
       .cb-btn-danger {
         background: transparent;
-        color: rgba(248, 113, 113, 0.85);
-        border-color: rgba(248, 113, 113, 0.25);
+        color: var(--err);
+        border-color: rgba(196, 72, 62, 0.25);
       }
       .cb-btn-danger:hover:not(:disabled) {
-        background: rgba(248, 113, 113, 0.08);
-        border-color: rgba(248, 113, 113, 0.5);
-        color: rgb(252, 165, 165);
+        background: rgba(196, 72, 62, 0.08);
+        border-color: rgba(196, 72, 62, 0.5);
+        color: var(--err);
       }
 
       /* Toolbar */
       .cb-toolbar {
         margin-top: 18px;
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        background: rgba(15, 18, 25, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--bg1);
+        border: 1px solid var(--b0);
         border-radius: 14px;
-        padding: 14px;
+        padding: 16px;
         display: flex; flex-direction: column; gap: 12px;
-        box-shadow: 0 20px 50px -12px rgba(0,0,0,0.6),
-                    inset 0 1px 0 0 rgba(255,255,255,0.03);
+        box-shadow: 0 20px 40px -12px rgba(0,0,0,0.4),
+                    inset 0 1px 0 0 rgba(255,255,255,0.01);
       }
       .cb-toolbar-row {
         display: flex; align-items: center; justify-content: space-between;
@@ -1323,24 +1379,24 @@ function ClipboardStyles() {
       }
       .cb-search-icon {
         position: absolute; left: 12px;
-        color: ${tokens.text.quiet};
+        color: var(--t3);
         pointer-events: none;
       }
       .cb-search-input {
         width: 100%;
         height: 38px;
         padding: 0 64px 0 34px;
-        background: rgba(0,0,0,0.25);
-        border: 1px solid ${tokens.border.default};
+        background: var(--bg0);
+        border: 1px solid var(--b1);
         border-radius: 10px;
-        color: ${tokens.text.primary};
+        color: var(--t1);
         font-family: ${tokens.font.body};
         font-size: 13.5px;
         outline: none;
         transition: border-color .15s ease;
       }
-      .cb-search-input::placeholder { color: rgba(255,255,255,0.28); }
-      .cb-search-input:focus { border-color: ${tokens.border.focus}; }
+      .cb-search-input::placeholder { color: rgba(255,255,255,0.22); }
+      .cb-search-input:focus { border-color: var(--b3); }
       .cb-search-clear {
         position: absolute; right: 38px;
         background: rgba(255,255,255,0.06);
@@ -1348,14 +1404,15 @@ function ClipboardStyles() {
         width: 20px; height: 20px;
         border-radius: 50%;
         display: inline-flex; align-items: center; justify-content: center;
-        color: ${tokens.text.quiet};
+        color: var(--t3);
         cursor: pointer;
         transition: background .15s ease, color .15s ease;
       }
-      .cb-search-clear:hover { background: rgba(255,255,255,0.12); color: ${tokens.text.primary}; }
+      .cb-search-clear:hover { background: rgba(255,255,255,0.12); color: var(--t1); }
       .cb-search-kbd {
         position: absolute; right: 10px;
         font-size: 11px;
+        color: var(--t3);
         opacity: 0.55;
         pointer-events: none;
       }
@@ -1366,11 +1423,11 @@ function ClipboardStyles() {
       }
       .cb-chip {
         display: inline-flex; align-items: center; gap: 6px;
-        height: 28px; padding: 0 10px;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid ${tokens.border.subtle};
+        height: 28px; padding: 0 12px;
+        background: var(--bg0);
+        border: 1px solid var(--b0);
         border-radius: 999px;
-        color: ${tokens.text.muted};
+        color: var(--t2);
         font-family: ${tokens.font.body};
         font-size: 11.5px;
         font-weight: 500;
@@ -1378,17 +1435,17 @@ function ClipboardStyles() {
         transition: background .15s ease, border-color .15s ease, color .15s ease;
       }
       .cb-chip:hover:not(:disabled) {
-        background: rgba(255,255,255,0.06);
-        border-color: ${tokens.border.hover};
-        color: ${tokens.text.primary};
+        background: var(--bg2);
+        border-color: var(--b1);
+        color: var(--t1);
       }
       .cb-chip:disabled {
         opacity: 0.35; cursor: not-allowed;
       }
       .cb-chip-active {
-        background: rgba(255,255,255,0.10);
-        border-color: ${tokens.border.focus};
-        color: ${tokens.text.primary};
+        background: var(--bg3);
+        border-color: var(--b2);
+        color: var(--t1);
       }
       .cb-chip-count {
         font-family: ${tokens.font.mono};
@@ -1400,47 +1457,47 @@ function ClipboardStyles() {
       /* Sort */
       .cb-sort-group {
         display: inline-flex; align-items: center; gap: 6px;
-        color: ${tokens.text.quiet};
+        color: var(--t3);
       }
       .cb-sort {
         height: 28px;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid ${tokens.border.subtle};
+        background: var(--bg0);
+        border: 1px solid var(--b0);
         border-radius: 8px;
-        color: ${tokens.text.body};
+        color: var(--t2);
         font-family: ${tokens.font.body};
         font-size: 12px;
         padding: 0 10px;
         cursor: pointer;
         outline: none;
       }
-      .cb-sort:focus { border-color: ${tokens.border.focus}; }
+      .cb-sort:focus { border-color: var(--b3); }
 
       /* Bulk */
       .cb-bulk {
         display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         padding-top: 4px;
-        border-top: 1px solid rgba(255,255,255,0.05);
+        border-top: 1px solid var(--b0);
         padding-top: 12px;
       }
       .cb-confirm {
         display: inline-flex; align-items: center; gap: 8px;
-        font-size: 12px; color: rgba(248, 113, 113, 0.95);
+        font-size: 12px; color: var(--err);
         padding-left: 4px;
       }
       .cb-confirm-yes, .cb-confirm-no {
-        background: transparent; border: 1px solid rgba(255,255,255,0.16);
-        color: ${tokens.text.body};
+        background: transparent; border: 1px solid var(--b1);
+        color: var(--t2);
         height: 26px; padding: 0 10px; border-radius: 6px;
         font-size: 12px; cursor: pointer;
         transition: background .15s ease, border-color .15s ease, color .15s ease;
       }
       .cb-confirm-yes {
-        color: rgb(252, 165, 165);
-        border-color: rgba(248, 113, 113, 0.4);
+        color: var(--err);
+        border-color: rgba(196, 72, 62, 0.4);
       }
-      .cb-confirm-yes:hover { background: rgba(248, 113, 113, 0.12); }
-      .cb-confirm-no:hover { background: rgba(255,255,255,0.06); color: ${tokens.text.primary}; }
+      .cb-confirm-yes:hover { background: rgba(196, 72, 62, 0.12); }
+      .cb-confirm-no:hover { background: var(--bg3); color: var(--t1); }
 
       /* List */
       .cb-list {
@@ -1451,19 +1508,20 @@ function ClipboardStyles() {
         display: grid;
         grid-template-columns: 28px 1fr auto;
         gap: 14px;
-        padding: 16px;
-        background: rgba(255, 255, 255, 0.015);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 12px;
+        padding: 16px 20px;
+        background: var(--bg1);
+        border: 1px solid var(--b0);
+        border-radius: 14px;
         transition: border-color .2s ease, background .2s ease, transform .2s ease;
+        box-shadow: 0 4px 20px -8px rgba(0,0,0,0.3);
       }
       .cb-item:hover {
-        border-color: rgba(255, 255, 255, 0.16);
-        background: rgba(255, 255, 255, 0.03);
+        border-color: var(--b1);
+        background: var(--bg2);
       }
       .cb-item-pinned {
         border-color: rgba(251, 191, 36, 0.18);
-        background: linear-gradient(180deg, rgba(251, 191, 36, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%);
+        background: linear-gradient(180deg, rgba(251, 191, 36, 0.03) 0%, var(--bg1) 100%);
       }
       .cb-item-pinned:hover {
         border-color: rgba(251, 191, 36, 0.35);
@@ -1491,7 +1549,7 @@ function ClipboardStyles() {
         font-family: ${tokens.font.body};
         font-size: 13.5px;
         line-height: 1.55;
-        color: rgba(255,255,255,0.82);
+        color: var(--t1);
         margin: 0;
         white-space: pre-wrap;
         word-break: break-word;
@@ -1514,33 +1572,33 @@ function ClipboardStyles() {
         font-family: ${tokens.font.body};
         font-size: 11.5px;
         font-weight: 500;
-        color: rgba(255,255,255,0.55);
+        color: var(--t3);
         cursor: pointer;
         text-decoration: underline;
-        text-decoration-color: rgba(255,255,255,0.18);
+        text-decoration-color: rgba(255,255,255,0.1);
         text-underline-offset: 3px;
         transition: color .15s ease, text-decoration-color .15s ease;
       }
       .cb-expand:hover {
-        color: ${tokens.text.primary};
-        text-decoration-color: ${tokens.text.primary};
+        color: var(--t1);
+        text-decoration-color: var(--t1);
       }
       .cb-expand:focus-visible {
-        outline: 2px solid ${tokens.border.focus};
+        outline: 2px solid var(--b3);
         outline-offset: 2px;
         border-radius: 4px;
       }
       .cb-mono {
         font-family: ${tokens.font.mono};
         font-size: 12.5px;
-        color: rgba(255,255,255,0.78);
+        color: var(--t2);
       }
       .cb-item-meta {
         margin-top: 8px;
         display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         font-family: ${tokens.font.mono};
         font-size: 11px;
-        color: rgba(255,255,255,0.4);
+        color: var(--t3);
       }
       .cb-pinned-tag {
         display: inline-flex; align-items: center; gap: 3px;
