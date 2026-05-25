@@ -1083,6 +1083,30 @@ export default function Pomodoro() {
   );
 
   const timeString = fmtMMSS(remainingMs);
+  const { showHelper, formattedHelper } = useMemo(() => {
+    if (isEditingTime) {
+      const minsVal = parseInt(tempMinutes, 10);
+      if (!isNaN(minsVal) && minsVal >= 60) {
+        const h = Math.floor(minsVal / 60);
+        const m = minsVal % 60;
+        return { showHelper: true, formattedHelper: `${h}h ${m}m` };
+      }
+      return { showHelper: false, formattedHelper: "" };
+    } else {
+      const show = remainingMs >= 60 * 60_000;
+      if (show) {
+        let h = Math.floor(remainingMs / 3_600_000);
+        let m = Math.ceil((remainingMs % 3_600_000) / 60_000);
+        if (m === 60) {
+          h += 1;
+          m = 0;
+        }
+        return { showHelper: true, formattedHelper: `${h}h ${m}m` };
+      }
+      return { showHelper: false, formattedHelper: "" };
+    }
+  }, [isEditingTime, tempMinutes, remainingMs]);
+
   const dynamicFontSize = isEditingTime
     ? (tempMinutes.length > 4 ? "30px" : tempMinutes.length === 4 ? "40px" : "56px")
     : (timeString.length > 6 ? "30px" : timeString.length === 6 ? "40px" : "56px");
@@ -1181,6 +1205,9 @@ export default function Pomodoro() {
                     </svg>
                   </div>
                 )}
+                <div className={`pm-time-helper ${showHelper ? "visible" : ""}`} aria-hidden={!showHelper}>
+                  {formattedHelper}
+                </div>
                 <div
                   className={`pm-time ${scrollBounce ? "pm-scroll-bounce" : ""}`}
                   style={{ fontSize: dynamicFontSize }}
@@ -2155,6 +2182,24 @@ function PomodoroStyles() {
         position: absolute; inset: 0;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 6px;
+      }
+      .pm-time-helper {
+        position: absolute;
+        top: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: ${tokens.font.body};
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        color: var(--t3);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        white-space: nowrap;
+      }
+      .pm-time-helper.visible {
+        opacity: 1;
       }
       /* Time digits: Inter at light weight with tabular-nums and tight
          tracking. Same treatment Linear and Vercel use for numerical UI —
