@@ -178,45 +178,54 @@ export function ToolRelatedTools({ items }: { items: RelatedTool[] }) {
 /* ──────────────────────────────────────────────────────────────────────────── */
 
 export function ToolAuthorCard({
-  bio = "I build fast, useful web tools and help businesses become impossible to ignore in the age of AI search.",
+  bio,
 }: {
-  bio?: string;
+  bio?: React.ReactNode;
 }) {
+  const defaultBio = (
+    <>
+      I build fast, useful web tools and help businesses become <em>impossible</em> to ignore in the age of AI search.
+    </>
+  );
+
   return (
     <div className="tool-author-card">
       <div className="tool-author-card-inner">
-        <div className="tool-author-avatar">
-          <img src={SITE.avatar} alt="Ankit Jaiswal" width={64} height={64} loading="lazy" decoding="async" />
+        <div className="tool-author-card-photo">
+          <img src="/images/anjais-black-white.jpg" alt="Ankit Jaiswal" loading="lazy" decoding="async" />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: tokens.font.display, fontWeight: 700, fontSize: 18, color: tokens.text.primary, letterSpacing: "-0.01em", marginBottom: 4 }}>
-            Ankit Jaiswal
-          </div>
-          <div style={{ fontSize: 13, color: tokens.text.soft, marginBottom: 14, fontWeight: 400 }}>
-            Independent web engineer · SEO specialist · India
-          </div>
-          <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "var(--t2)", margin: "0 0 18px", maxWidth: "52ch" }}>
-            {bio}
-          </p>
-          <div className="tool-author-actions">
-            <Link href="/about" className="tool-author-cta">
-              More about Ankit
-              <ArrowUpRight size={14} strokeWidth={2} />
-            </Link>
-            <div className="tool-author-socials" role="list">
-              <a href={SITE.social.github} target="_blank" rel="noopener noreferrer me author" className="tool-social-link" aria-label="Ankit Jaiswal on GitHub" title="GitHub">
-                <GitHubIcon size={16} />
-              </a>
-              <a href={SITE.social.linkedin} target="_blank" rel="noopener noreferrer me author" className="tool-social-link" aria-label="Ankit Jaiswal on LinkedIn" title="LinkedIn">
-                <LinkedInIcon size={16} />
-              </a>
-              <a href={`https://x.com/${SITE.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer me author" className="tool-social-link" aria-label="Ankit Jaiswal on X (Twitter)" title="X (Twitter)">
-                <XIcon size={15} />
-              </a>
-              <a href={SITE.social.threads} target="_blank" rel="noopener noreferrer me author" className="tool-social-link" aria-label="Ankit Jaiswal on Threads" title="Threads">
-                <ThreadsIcon size={16} />
-              </a>
+        <div className="tool-author-card-content">
+          <div className="tool-author-card-header">
+            <div className="tool-author-card-name">Ankit Jaiswal</div>
+            <div className="tool-author-card-role">
+              <span>Web engineer · SEO specialist</span> · India
             </div>
+          </div>
+          <p className="tool-author-card-bio">
+            {bio ?? defaultBio}
+          </p>
+          <div className="tool-author-card-footer">
+            <Link href="/about" className="tool-author-card-btn-about">
+              More about Ankit
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 8L8 2M8 2H4M8 2v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </Link>
+            <a href={SITE.social.github} target="_blank" rel="noopener noreferrer me author" className="tool-author-card-icon-btn" aria-label="GitHub">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1a7 7 0 00-2.212 13.647c.35.064.48-.151.48-.337v-1.18c-1.947.424-2.357-.94-2.357-.94-.318-.81-.776-1.025-.776-1.025-.635-.433.048-.425.048-.425.701.05 1.07.72 1.07.72.623 1.068 1.634.76 2.032.581.063-.452.244-.76.443-.935-1.554-.177-3.188-.777-3.188-3.46 0-.764.274-1.388.72-1.878-.072-.177-.312-.888.07-1.85 0 0 .586-.188 1.921.716A6.685 6.685 0 018 4.978c.593.003 1.19.08 1.747.234 1.334-.904 1.919-.715 1.919-.715.383.961.143 1.672.07 1.849.448.49.72 1.114.72 1.878 0 2.69-1.637 3.282-3.196 3.455.251.217.474.643.474 1.297v1.921c0 .188.128.405.483.337A7.001 7.001 0 008 1z" fill="currentColor"/>
+              </svg>
+            </a>
+            <a href={SITE.social.linkedin} target="_blank" rel="noopener noreferrer me author" className="tool-author-card-icon-btn" aria-label="LinkedIn">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M1.5 3.5A1.5 1.5 0 103 2a1.5 1.5 0 00-1.5 1.5zM1 5.5h2V14H1V5.5zm4.5 0H7v1.15h.027C7.42 5.9(8.19 5.35 9.33 5.35c2.25 0 2.67 1.48 2.67 3.41V14h-2v-4.8c0-.99-.02-2.26-1.38-2.26-1.38 0-1.59 1.08-1.59 2.19V14h-2V5.5z" fill="currentColor"/>
+              </svg>
+            </a>
+            <a href={`https://x.com/${SITE.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer me author" className="tool-author-card-icon-btn" aria-label="X">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M1 1l5.5 7.5L1 15h1.5l4.5-5.5L11.5 15H15l-5.7-7.8L14.5 1H13l-4.2 5.1L5 1H1z" fill="currentColor"/>
+              </svg>
+            </a>
           </div>
         </div>
       </div>

@@ -153,80 +153,146 @@ export function ToolStyles() {
       }
 
       /* ── Author card ── */
+      /* ── Author card (Option B - Editorial Card) ── */
       .tool-author-card {
-        position: relative;
-        border-radius: 20px;
-        padding: 1px;
-        background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.08) 100%);
+        width: 100%;
+        max-width: 640px;
+        background: var(--bg1);
+        border: 1px solid var(--b1);
+        border-radius: var(--r);
         overflow: hidden;
-        max-width: 760px;
+        position: relative;
+        transition: border-color .2s;
         margin-left: auto;
         margin-right: auto;
       }
+      .tool-author-card:hover { border-color: var(--b2); }
+
+      /* Noise grain — system rule */
       .tool-author-card::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 20px;
-        background: radial-gradient(120% 100% at 0% 0%, rgba(120, 130, 255, 0.10), transparent 60%);
+        content: '';
+        position: absolute; inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
+        background-size: 200px 200px;
+        opacity: .022;
         pointer-events: none;
+        z-index: 0;
       }
+
       .tool-author-card-inner {
+        display: grid;
+        grid-template-columns: 88px 1fr;
         position: relative;
-        display: flex;
-        align-items: flex-start;
-        gap: 24px;
-        padding: 28px 30px;
-        border-radius: 19px;
-        background: linear-gradient(180deg, #0E1117 0%, #0A0C10 100%);
+        z-index: 1;
       }
-      @media (max-width: 540px) {
-        .tool-author-card-inner { padding: 22px; gap: 18px; }
+
+      @media (max-width: 500px) {
+        .tool-author-card-inner {
+          grid-template-columns: 1fr;
+        }
       }
-      .tool-author-avatar {
-        flex-shrink: 0;
-        width: 64px;
-        height: 64px;
-        border-radius: 16px;
+
+      /* Photo column — taller, fills left side */
+      .tool-author-card-photo {
+        border-right: 1px solid var(--b0);
         overflow: hidden;
-        background: linear-gradient(135deg, #2C2CF3 0%, #1A1AC4 100%);
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 12px 28px -10px rgba(0,0,0,0.55);
       }
-      .tool-author-avatar img {
-        display: block; width: 100%; height: 100%;
-        object-fit: cover; object-position: center;
+      @media (max-width: 500px) {
+        .tool-author-card-photo {
+          border-right: none;
+          border-bottom: 1px solid var(--b0);
+          height: 180px;
+        }
       }
-      .tool-author-actions {
+      .tool-author-card-photo img {
+        width: 100%;
+        height: 100%;
+        min-height: 140px;
+        object-fit: cover;
+        object-position: center top;
+        filter: grayscale(1) contrast(1.04);
+        display: block;
+      }
+
+      /* Content column */
+      .tool-author-card-content {
+        padding: 20px 22px;
         display: flex;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
+        flex-direction: column;
+        gap: 10px;
       }
-      .tool-author-cta {
-        display: inline-flex;
+
+      .tool-author-card-header { display: flex; flex-direction: column; gap: 3px; }
+      .tool-author-card-name {
+        font-family: var(--d);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--t1);
+        letter-spacing: -.025em;
+        line-height: 1.1;
+      }
+      .tool-author-card-role {
+        font-size: 11px;
+        color: var(--t3);
+        letter-spacing: .01em;
+      }
+      .tool-author-card-role span { color: var(--t2); }
+
+      .tool-author-card-bio {
+        font-size: 12px;
+        font-weight: 300;
+        color: var(--t2);
+        line-height: 1.6;
+        letter-spacing: .01em;
+      }
+      .tool-author-card-bio em {
+        font-style: italic;
+        font-family: var(--tnr);
+        font-size: 14px;
+        color: var(--hi);
+        letter-spacing: -.01em;
+      }
+
+      .tool-author-card-footer {
+        display: flex;
         align-items: center;
         gap: 6px;
-        padding: 8px 16px;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.14);
-        color: #fff;
-        font-size: 13px;
+        padding-top: 2px;
+      }
+
+      /* Button / CTA */
+      .tool-author-card-btn-about {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 6px 13px;
+        border-radius: var(--rs);
+        font-size: 11px;
+        font-family: var(--s);
         font-weight: 500;
-        font-family: 'Inter', sans-serif;
+        color: var(--t2);
+        background: var(--bg3);
+        border: 1px solid var(--b1);
+        cursor: pointer;
         text-decoration: none;
-        transition: background .18s ease, border-color .18s ease, transform .18s ease;
+        letter-spacing: .005em;
+        transition: background .14s, border-color .14s, color .14s;
+        white-space: nowrap;
       }
-      .tool-author-cta:hover {
-        background: rgba(255,255,255,0.10);
-        border-color: rgba(255,255,255,0.24);
-        transform: translateY(-1px);
+      .tool-author-card-btn-about:hover { background: var(--bg4); border-color: var(--b2); color: var(--t1); }
+
+      /* Social icon buttons */
+      .tool-author-card-icon-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px;
+        border-radius: var(--rs);
+        border: 1px solid var(--b1);
+        background: transparent;
+        color: var(--t3);
+        cursor: pointer;
+        text-decoration: none;
+        transition: color .14s, border-color .14s, background .14s;
       }
-      .tool-author-cta:focus-visible {
-        outline: 2px solid rgba(255,255,255,0.55);
-        outline-offset: 2px;
-      }
-      .tool-author-socials { display: flex; align-items: center; gap: 8px; }
+      .tool-author-card-icon-btn:hover { color: var(--t2); border-color: var(--b2); background: var(--bg3); }
+      .tool-author-card-icon-btn svg { display: block; }
 
       /* ── Long-form prose ── */
       .tool-prose p {
@@ -653,27 +719,7 @@ export function ToolStyles() {
         background: rgba(255, 255, 255, 0.5);
         border-color: var(--b0);
       }
-      body.pm-light-mode .tool-author-card {
-        background: linear-gradient(135deg, var(--b1) 0%, var(--b0) 50%, var(--b1) 100%);
-      }
-      body.pm-light-mode .tool-author-card::before {
-        background: radial-gradient(120% 100% at 0% 0%, rgba(44, 44, 243, 0.04), transparent 60%);
-      }
-      body.pm-light-mode .tool-author-card-inner {
-        background: linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 100%);
-      }
-      body.pm-light-mode .tool-author-avatar {
-        box-shadow: 0 0 0 1px var(--b1), 0 12px 28px -10px rgba(0,0,0,0.15);
-      }
-      body.pm-light-mode .tool-author-cta {
-        background: var(--bg2);
-        border-color: var(--b1);
-        color: var(--t1);
-      }
-      body.pm-light-mode .tool-author-cta:hover {
-        background: var(--bg3);
-        border-color: var(--b2);
-      }
+
     `}</style>
   );
 }
