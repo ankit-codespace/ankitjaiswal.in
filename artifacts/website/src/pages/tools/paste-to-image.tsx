@@ -4,7 +4,7 @@ import {
   Download, Check, X, Clipboard, Copy,
   Settings, Square, Circle, ArrowUpRight, Crop, Undo2, Trash2,
   Maximize2, Minimize2, Droplets, MoreVertical, FlipHorizontal, FlipVertical,
-  RotateCw, RotateCcw,
+  RotateCw, RotateCcw, Type,
   Zap, Lock, Keyboard, EyeOff, Image as ImageIcon, Wand2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -98,17 +98,20 @@ interface ToastState {
   visible: boolean;
 }
 
-type Tool = "select" | "rectangle" | "circle" | "arrow" | "crop" | "blur";
+type Tool = "select" | "rectangle" | "circle" | "arrow" | "blur" | "crop" | "text";
 type Format = "jpeg" | "png" | "webp" | "pdf";
 
 interface Annotation {
-  type: "rectangle" | "circle" | "arrow" | "blur";
+  type: "rectangle" | "circle" | "arrow" | "blur" | "text";
   startX: number;
   startY: number;
   endX: number;
   endY: number;
   color: string;
   strokeWidth: number;
+  // Text-specific (only present when type === "text")
+  text?: string;
+  fontSize?: number;  // normalized to image-native pixels at display scale
 }
 
 type StrokeWidth = 2 | 4 | 6;
@@ -245,6 +248,8 @@ export default function PasteToImage() {
   const [copied, setCopied] = useState(false);
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fontSize, setFontSize] = useState(20);
+  const [activeTextPos, setActiveTextPos] = useState<{ x: number; y: number } | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
@@ -256,6 +261,8 @@ export default function PasteToImage() {
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const filenameInputRef = useRef<HTMLInputElement>(null);
+  const textOverlayRef = useRef<HTMLDivElement>(null);
+  const canvasWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return () => {
@@ -372,6 +379,19 @@ export default function PasteToImage() {
           ctx.drawImage(image, 0, 0, displayWidth, displayHeight);
           ctx.restore();
         }
+      } else if (ann.type === "text" && ann.text) {
+        // Render text annotation at display scale
+        const imageScale = image.width / displayWidth;
+        const displayFontSize = (ann.fontSize ?? 20 * imageScale) / imageScale;
+        ctx.save();
+        ctx.font = `500 ${displayFontSize}px Inter, system-ui, sans-serif`;
+        ctx.fillStyle = ann.color;
+        ctx.textBaseline = "top";
+        const lines = ann.text.split("\n");
+        lines.forEach((line, i) => {
+          ctx.fillText(line, sx, sy + i * displayFontSize * 1.35);
+        });
+        ctx.restore();
       }
     });
 
@@ -581,7 +601,30 @@ export default function PasteToImage() {
   }, [image, displaySize, currentTool, currentColor, strokeWidth, handleDocumentMouseMove]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!image || currentTool === "select") return;
+    if (!image) return;
+
+    // Text tool: show overlay at click position, don't start a draw
+    if (currentTool === "text") {
+      const pos = getMousePos(e);
+      setActiveTextPos(pos);
+      // Focus the overlay after React has rendered it
+      requestAnimationFrame(() => {
+        const el = textOverlayRef.current;
+        if (el) {
+          el.focus();
+          // Place cursor at end
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      });
+      return;
+    }
+
+    if (currentTool === "select") return;
     const pos = getMousePos(e);
     
     isDrawingRef.current = true;
@@ -600,6 +643,35 @@ export default function PasteToImage() {
     document.addEventListener('mousemove', handleDocumentMouseMove);
     document.addEventListener('mouseup', handleDocumentMouseUp);
   };
+
+  // Commit the text overlay to the annotations array
+  const commitTextAnnotation = useCallback(() => {
+    const el = textOverlayRef.current;
+    const text = el?.innerText.trim();
+    if (!text || !activeTextPos || !image || displaySize.width === 0) {
+      setActiveTextPos(null);
+      return;
+    }
+    // Store position normalized to 0-1 range, fontSize in image-native pixels
+    const imageScale = image.width / displaySize.width;
+    setAnnotations(prev => [...prev, {
+      type: "text",
+      startX: activeTextPos.x / displaySize.width,
+      startY: activeTextPos.y / displaySize.height,
+      endX: 0,
+      endY: 0,
+      color: currentColor,
+      strokeWidth: 0,
+      text,
+      fontSize: fontSize * imageScale,
+    }]);
+    setActiveTextPos(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTextPos, currentColor, fontSize, image, displaySize]);
+
+  const discardTextAnnotation = useCallback(() => {
+    setActiveTextPos(null);
+  }, []);
 
   const applyCrop = () => {
     if (!cropArea || !image || cropArea.w < 10 || cropArea.h < 10 || displaySize.width === 0) {
@@ -752,6 +824,21 @@ export default function PasteToImage() {
           ctx.drawImage(image!, 0, 0, image!.width, image!.height);
           ctx.restore();
         }
+      } else if (ann.type === "text" && ann.text) {
+        const px = ann.startX * image!.width;
+        const py = ann.startY * image!.height;
+        const fs = ann.fontSize ?? (20 * imageScale);
+        ctx.save();
+        ctx.font = `500 ${fs}px Inter, system-ui, sans-serif`;
+        ctx.fillStyle = ann.color;
+        ctx.textBaseline = "top";
+        ctx.textRendering = "optimizeLegibility" as unknown as CanvasTextRendering;
+        // Draw each line (support multi-line)
+        const lines = ann.text.split("\n");
+        lines.forEach((line, i) => {
+          ctx.fillText(line, px, py + i * fs * 1.35);
+        });
+        ctx.restore();
       }
     });
     return exportCanvas;
@@ -829,6 +916,11 @@ export default function PasteToImage() {
       
       if (!isInputFocused && !e.ctrlKey && !e.metaKey && !e.altKey) {
         switch (e.key.toLowerCase()) {
+          case "t":
+            e.preventDefault();
+            setCurrentTool("text");
+            setIsCropping(false);
+            break;
           case "r":
             e.preventDefault();
             setCurrentTool("rectangle");
@@ -1003,6 +1095,7 @@ export default function PasteToImage() {
     { id: "circle" as Tool, icon: Circle, label: "Circle (O)" },
     { id: "arrow" as Tool, icon: ArrowUpRight, label: "Arrow (A)" },
     { id: "blur" as Tool, icon: Droplets, label: "Blur (B)" },
+    { id: "text" as Tool, icon: Type, label: "Text (T)" },
     { id: "crop" as Tool, icon: Crop, label: "Crop (C)" },
   ];
 
@@ -1242,25 +1335,47 @@ export default function PasteToImage() {
 
                     <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
-                    <div className="flex gap-0.5 shrink-0" title="Stroke Width">
-                      {([2, 4, 6] as StrokeWidth[]).map((w) => (
+                    {currentTool === "text" ? (
+                      /* Font size stepper — shown only when text tool active */
+                      <div className="flex items-center gap-0.5 shrink-0" title="Font size">
                         <button
-                          key={w}
-                          onClick={() => setStrokeWidth(w)}
-                          className="w-7 h-7 rounded-[7px] flex items-center justify-center transition-all duration-[140ms]"
-                          style={strokeWidth === w
-                            ? { background: "#282826", color: "#F0EDE8" }
-                            : { color: "#3E3E3B" }
-                          }
-                          title={w === 2 ? "Thin" : w === 4 ? "Medium" : "Thick"}
-                        >
-                          <div 
-                            className="rounded-full bg-current" 
-                            style={{ width: w + 2, height: w + 2 }}
-                          />
-                        </button>
-                      ))}
-                    </div>
+                          onClick={() => setFontSize(s => Math.max(10, s - 2))}
+                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms]"
+                          style={{ color: "#7A7874" }}
+                          title="Decrease font size"
+                        >−</button>
+                        <span
+                          className="w-7 text-center text-[12px] font-medium tabular-nums select-none"
+                          style={{ color: "#F0EDE8" }}
+                        >{fontSize}</span>
+                        <button
+                          onClick={() => setFontSize(s => Math.min(72, s + 2))}
+                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms]"
+                          style={{ color: "#7A7874" }}
+                          title="Increase font size"
+                        >+</button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-0.5 shrink-0" title="Stroke Width">
+                        {([2, 4, 6] as StrokeWidth[]).map((w) => (
+                          <button
+                            key={w}
+                            onClick={() => setStrokeWidth(w)}
+                            className="w-7 h-7 rounded-[7px] flex items-center justify-center transition-all duration-[140ms]"
+                            style={strokeWidth === w
+                              ? { background: "#282826", color: "#F0EDE8" }
+                              : { color: "#3E3E3B" }
+                            }
+                            title={w === 2 ? "Thin" : w === 4 ? "Medium" : "Thick"}
+                          >
+                            <div
+                              className="rounded-full bg-current"
+                              style={{ width: w + 2, height: w + 2 }}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
@@ -1345,15 +1460,62 @@ export default function PasteToImage() {
                       ? "flex-1 min-h-0 py-4" 
                       : "py-8 mb-4"
                   }`}>
-                    <div className="relative">
+                    <div ref={canvasWrapperRef} className="relative">
                       <canvas
                         ref={canvasRef}
                         onMouseDown={handleMouseDown}
-                        className={`rounded-[7px] ${
-                          currentTool !== "select" ? "cursor-crosshair" : ""
+                        className={`rounded-[7px] block ${
+                          currentTool === "text"
+                            ? "cursor-text"
+                            : currentTool !== "select" ? "cursor-crosshair" : ""
                         }`}
                         style={{ border: "1px solid #2E2E2C", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
                       />
+
+                      {/* Floating text input overlay — appears at click position when text tool active */}
+                      {activeTextPos && currentTool === "text" && (
+                        <div
+                          ref={textOverlayRef}
+                          contentEditable
+                          suppressContentEditableWarning
+                          spellCheck={false}
+                          onBlur={commitTextAnnotation}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              discardTextAnnotation();
+                            }
+                            // Ctrl+Enter also commits
+                            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                              e.preventDefault();
+                              (e.currentTarget as HTMLElement).blur();
+                            }
+                          }}
+                          style={{
+                            position: "absolute",
+                            left: activeTextPos.x,
+                            top: activeTextPos.y,
+                            minWidth: 80,
+                            maxWidth: displaySize.width - activeTextPos.x - 8,
+                            outline: "none",
+                            border: "1px dashed rgba(240,237,232,0.2)",
+                            borderRadius: 3,
+                            padding: "1px 3px",
+                            color: currentColor,
+                            fontSize: fontSize,
+                            fontFamily: "Inter, system-ui, sans-serif",
+                            fontWeight: 500,
+                            lineHeight: 1.35,
+                            background: "transparent",
+                            whiteSpace: "pre",
+                            caretColor: currentColor,
+                            zIndex: 10,
+                            pointerEvents: "auto",
+                            // Prevent layout from shifting the canvas
+                            transform: "translateZ(0)",
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
 
