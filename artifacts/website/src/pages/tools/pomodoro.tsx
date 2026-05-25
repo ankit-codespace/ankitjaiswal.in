@@ -327,6 +327,8 @@ export default function Pomodoro() {
   const currentWorkDurMsRef = useRef<number | null>(null);
 
   const [currentQuote, setCurrentQuote] = useState<{ text: string; author: string } | null>(null);
+  const [scrollBounce, setScrollBounce] = useState(false);
+  const [isCircleHovered, setIsCircleHovered] = useState(false);
 
   useEffect(() => {
     const list = phase === "work" ? WORK_QUOTES : BREAK_QUOTES;
@@ -696,6 +698,32 @@ export default function Pomodoro() {
     }
   }, [phase, running]);
 
+  const scrollTimeoutRef = useRef<number | null>(null);
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    if (running) return;
+    
+    // Prevent default scroll behavior of page
+    e.preventDefault();
+    
+    const direction = e.deltaY < 0 ? 1 : -1;
+    const step = 5;
+    const currentMin = settings.workMin;
+    let nextMin = currentMin + direction * step;
+    
+    if (nextMin < 5) nextMin = 5;
+    if (nextMin > 120) nextMin = 120;
+
+    if (nextMin !== currentMin) {
+      setWorkPreset(nextMin);
+      
+      setScrollBounce(true);
+      if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = window.setTimeout(() => {
+        setScrollBounce(false);
+      }, 150);
+    }
+  }, [running, settings.workMin, setWorkPreset]);
+
   const requestNotifPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return false;
     if (Notification.permission === "granted") return true;
@@ -1053,7 +1081,12 @@ export default function Pomodoro() {
               })}
             </div>
 
-            <div className="pm-ring-wrap">
+            <div
+              className={`pm-ring-wrap ${!running ? "pm-ring-adjustable" : ""} ${isCircleHovered && !running ? "pm-ring-hovered" : ""}`}
+              onWheel={handleWheel}
+              onMouseEnter={() => setIsCircleHovered(true)}
+              onMouseLeave={() => setIsCircleHovered(false)}
+            >
               <svg className="pm-ring" viewBox="0 0 260 260" aria-hidden="true">
                 <circle cx="130" cy="130" r={ringR} className="pm-ring-bg" />
                 <circle
@@ -1066,8 +1099,22 @@ export default function Pomodoro() {
                 />
               </svg>
               <div className="pm-ring-inner">
-                <div className="pm-time" aria-live="polite">{fmtMMSS(remainingMs)}</div>
+                <div className={`pm-time ${scrollBounce ? "pm-scroll-bounce" : ""}`} aria-live="polite">
+                  {fmtMMSS(remainingMs)}
+                </div>
                 <div className="pm-status">{phaseHint}</div>
+                
+                {/* Scroll Indicator Overlay */}
+                {!running && (
+                  <div className={`pm-scroll-indicator-overlay ${isCircleHovered ? "visible" : ""}`}>
+                    <svg viewBox="0 0 24 24" className="pm-scroll-arrow-icon" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="7 4 12 0 17 4" />
+                      <line x1="12" y1="0" x2="12" y2="24" />
+                      <polyline points="7 20 12 24 17 20" />
+                    </svg>
+                    <span className="pm-scroll-indicator-label">SCROLL DIAL</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1105,24 +1152,6 @@ export default function Pomodoro() {
                       </button>
                     );
                   })}
-                </div>
-                {/* Custom sits outside the segmented pill — different
-                    mental category (arbitrary vs. preset). */}
-                <div className="pm-custom">
-                  <input
-                    type="number"
-                    min={1}
-                    max={120}
-                    step={1}
-                    placeholder="Custom"
-                    value={[25, 30, 45, 60].includes(settings.workMin) ? "" : settings.workMin}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      if (Number.isFinite(v) && v >= 1 && v <= 120) setWorkPreset(v);
-                    }}
-                    aria-label="Custom work duration in minutes"
-                  />
-                  <span>min</span>
                 </div>
               </div>
             )}
@@ -1900,15 +1929,96 @@ function PomodoroStyles() {
       .pm-ring-wrap {
         position: relative; width: 220px; height: 220px;
         display: flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+        transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
       }
-      .pm-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
-      .pm-ring-bg { fill: none; stroke: var(--b0); stroke-width: 3; }
+      .pm-ring-adjustable {
+        cursor: ns-resize;
+      }
+      .pm-ring-hovered {
+        transform: scale(1.025);
+      }
+      body:not(.pm-light-mode) .pm-ring-hovered .pm-ring-bg {
+        stroke: rgba(255, 255, 255, 0.08);
+      }
+      body.pm-light-mode .pm-ring-hovered .pm-ring-bg {
+        stroke: rgba(0, 0, 0, 0.08);
+      }
+      .pm-ring {
+        width: 100%; height: 100%; transform: rotate(-90deg);
+        transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .pm-ring-bg {
+        fill: none; stroke: var(--b0); stroke-width: 3;
+        transition: stroke 0.3s ease;
+      }
       .pm-ring-fg {
         fill: none; stroke-width: 3; stroke-linecap: round;
         transition: stroke-dashoffset 480ms cubic-bezier(0.22, 1, 0.36, 1), stroke 320ms;
       }
       .pm-ring-fg-work { stroke: var(--pm-work); }
       .pm-ring-fg-short { stroke: var(--pm-short); }
+      .pm-ring-fg-long { stroke: var(--pm-long); }
+
+      /* Scroll bounce effect on digits */
+      .pm-scroll-bounce {
+        animation: pm-digit-bounce 0.15s cubic-bezier(0.25, 1, 0.5, 1) alternate;
+      }
+      @keyframes pm-digit-bounce {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); text-shadow: 0 0 10px rgba(96, 165, 250, 0.25); }
+        100% { transform: scale(1); }
+      }
+
+      /* Scroll dial overlay indicator */
+      .pm-scroll-indicator-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle, rgba(15, 15, 14, 0.94) 50%, rgba(15, 15, 14, 0.8) 100%);
+        border-radius: 50%;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        z-index: 10;
+      }
+      body.pm-light-mode .pm-scroll-indicator-overlay {
+        background: radial-gradient(circle, rgba(253, 253, 252, 0.95) 50%, rgba(253, 253, 252, 0.84) 100%);
+      }
+      .pm-scroll-indicator-overlay.visible {
+        opacity: 1;
+      }
+      .pm-scroll-arrow-icon {
+        width: 18px;
+        height: 38px;
+        color: var(--hi);
+        opacity: 0.85;
+        animation: pm-arrow-float 1.2s ease-in-out infinite alternate;
+        transition: color 0.3s ease;
+      }
+      body.pm-light-mode .pm-scroll-arrow-icon {
+        color: #16a34a;
+      }
+      .pm-scroll-indicator-label {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        margin-top: 10px;
+        color: var(--hi);
+        opacity: 0.95;
+      }
+      body.pm-light-mode .pm-scroll-indicator-label {
+        color: #16a34a;
+      }
+
+      @keyframes pm-arrow-float {
+        0% { transform: translateY(-3px); }
+        100% { transform: translateY(3px); }
+      }
       .pm-ring-fg-long { stroke: var(--pm-long); }
 
       .pm-ring-inner {
@@ -1927,6 +2037,7 @@ function PomodoroStyles() {
         font-variant-numeric: tabular-nums;
         font-feature-settings: 'cv11', 'ss01', 'tnum';
         line-height: 1;
+        transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1), text-shadow 0.15s ease;
       }
       .pm-status {
         font-family: ${tokens.font.body};
