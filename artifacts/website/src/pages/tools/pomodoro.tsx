@@ -1244,11 +1244,26 @@ export default function Pomodoro() {
                 centered, hero-weight. Everything else moves into the
                 overflow menu (top-right of card). */}
             <div className="pm-controls" role="group" aria-label="Timer controls">
-              {!running || paused ? (
+              {!running ? (
                 <button type="button" className="pm-btn pm-btn-primary" onClick={handleStart}>
                   <Play size={14} fill="currentColor" />
-                  {paused ? "Resume" : phase === "work" ? "Start focus" : `Start ${phase === "short" ? "short" : "long"} break`}
+                  {phase === "work" ? "Start focus" : `Start ${phase === "short" ? "short" : "long"} break`}
                 </button>
+              ) : paused ? (
+                <>
+                  <button type="button" className="pm-btn pm-btn-primary" onClick={handleStart}>
+                    <Play size={14} fill="currentColor" /> Resume
+                  </button>
+                  <button
+                    type="button"
+                    className="pm-btn pm-btn-ghost"
+                    onClick={handleReset}
+                    aria-label="Reset timer"
+                    title="Reset timer"
+                  >
+                    <RotateCcw size={14} /> Reset
+                  </button>
+                </>
               ) : (
                 <>
                   <button type="button" className="pm-btn pm-btn-primary" onClick={handlePause}>
