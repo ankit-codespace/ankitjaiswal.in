@@ -1213,26 +1213,17 @@ export default function Pomodoro() {
                           className={`pm-preset ${active ? "pm-preset-on" : ""}`}
                           onClick={() => setWorkPreset(min)}
                         >
-                          <span>{min}m</span>
-                          <span className="pm-preset-dot" />
+                          {active && (
+                            <motion.span
+                              layoutId="activePresetBackground"
+                              className="pm-preset-active-bg"
+                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                            />
+                          )}
+                          <span className="pm-preset-label">{min}m</span>
                         </button>
                       );
                     })}
-                  </div>
-                  <div className="pm-custom">
-                    <input
-                      type="number"
-                      min="1"
-                      max="9999"
-                      value={settings.workMin}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val) && val >= 1 && val <= 9999) {
-                          setWorkPreset(val);
-                        }
-                      }}
-                    />
-                    <span>min</span>
                   </div>
                 </div>
               ) : (
@@ -2213,67 +2204,65 @@ function PomodoroStyles() {
          Apple Music's filter row. Sits ~24px tall so it sits BELOW the
          hero green pill in visual weight (not above). */
       .pm-presets-row {
-        display: flex; flex-wrap: wrap; align-items: center;
-        justify-content: center; gap: 10px;
+        display: flex; align-items: center;
+        justify-content: center;
         font-family: ${tokens.font.body};
       }
       .pm-presets {
         display: inline-flex; align-items: center;
         background: var(--bg2);
         border: 1px solid var(--b0);
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 3px;
-        gap: 0;
+        gap: 2px;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+      }
+      body.pm-light-mode .pm-presets {
+        background: rgba(22, 22, 21, 0.04);
+        border-color: rgba(22, 22, 21, 0.06);
       }
       .pm-preset {
         appearance: none; background: transparent; border: 0; cursor: pointer;
         position: relative;
-        padding: 5px 12px 7px;
-        border-radius: 7px;
+        padding: 6px 14px 7px;
+        border-radius: 9px;
         color: ${tokens.text.quiet};
         font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em;
         font-variant-numeric: tabular-nums;
         transition: color 140ms;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+      }
+      .pm-preset-label {
+        position: relative;
+        z-index: 2;
+      }
+      .pm-preset-active-bg {
+        position: absolute;
+        inset: 0;
+        border-radius: 9px;
+        background: var(--bg0);
+        box-shadow: 
+          0 1px 2px rgba(0, 0, 0, 0.04), 
+          0 0 0 1px rgba(0, 0, 0, 0.01),
+          inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        z-index: 1;
+      }
+      body.pm-light-mode .pm-preset-active-bg {
+        background: #ffffff;
+        box-shadow: 
+          0 1px 2px rgba(13, 17, 23, 0.05),
+          0 0 0 1px rgba(13, 17, 23, 0.02),
+          inset 0 1px 0 rgba(255, 255, 255, 1);
       }
       .pm-preset:hover:not(:disabled) { color: ${tokens.text.primary}; }
       .pm-preset:focus-visible { outline: 1.5px solid var(--b3); outline-offset: 2px; }
-      .pm-preset-dot {
-        position: absolute;
-        left: 50%; bottom: 1px;
-        width: 3px; height: 3px;
-        border-radius: 50%;
-        background: transparent;
-        transform: translateX(-50%);
-        transition: background 140ms;
-      }
-      .pm-preset-on { color: ${tokens.text.primary}; }
-      .pm-preset-on .pm-preset-dot { background: ${tokens.text.primary}; }
-
-      /* Custom: lives outside the segmented pill. No container — just
-         a quiet number input with a "min" suffix. Borrowed from how
-         Linear shows arbitrary value inputs alongside enum selectors. */
-      .pm-custom {
-        display: inline-flex; align-items: center; gap: 4px;
-        font-family: ${tokens.font.body};
-      }
-      .pm-custom input {
-        appearance: none; background: transparent;
-        border: 0; border-bottom: 1px dashed var(--b1);
-        outline: none;
+      .pm-preset-on {
         color: ${tokens.text.primary};
-        font-family: ${tokens.font.body};
-        font-size: 12.5px; font-weight: 500;
-        padding: 4px 2px; width: 58px; text-align: center;
-        font-variant-numeric: tabular-nums;
-        transition: border-color 140ms, color 140ms;
+        font-weight: 600;
       }
-      .pm-custom input::placeholder { color: ${tokens.text.quiet}; }
-      .pm-custom input:hover { border-bottom-color: var(--b2); }
-      .pm-custom input:focus { border-bottom-color: var(--b3); color: var(--t1); }
-      .pm-custom input::-webkit-outer-spin-button,
-      .pm-custom input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-      .pm-custom input[type=number] { -moz-appearance: textfield; }
-      .pm-custom span { font-size: 12px; color: var(--t3); font-weight: 500; }
 
       /* Controls */
       .pm-controls {
