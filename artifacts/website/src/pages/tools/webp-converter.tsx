@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
+import JSZip from "jszip";
 import {
   Settings as SettingsIcon, Clipboard, Plus, Check, X,
   Download, Trash2, Sliders, Maximize2, Layers, FileImage
@@ -123,21 +124,23 @@ interface PersistedSettings {
   quality: number;     // 1–100
   maxWidth: string;    // "" or "1920"
   lossless: boolean;
+  autoDownload: boolean;
 }
 
 function loadSettings(): PersistedSettings {
-  if (typeof window === "undefined") return { quality: 80, maxWidth: "", lossless: false };
+  if (typeof window === "undefined") return { quality: 80, maxWidth: "", lossless: false, autoDownload: true };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return { quality: 80, maxWidth: "", lossless: false };
+    if (!raw) return { quality: 80, maxWidth: "", lossless: false, autoDownload: true };
     const parsed = JSON.parse(raw);
     return {
       quality: Math.max(1, Math.min(100, Number(parsed.quality) || 80)),
       maxWidth: typeof parsed.maxWidth === "string" ? parsed.maxWidth : "",
       lossless: !!parsed.lossless,
+      autoDownload: parsed.autoDownload !== undefined ? !!parsed.autoDownload : true,
     };
   } catch {
-    return { quality: 80, maxWidth: "", lossless: false };
+    return { quality: 80, maxWidth: "", lossless: false, autoDownload: true };
   }
 }
 
@@ -159,10 +162,11 @@ export default function WebPConverter() {
   const [quality, setQuality] = useState<number>(initialSettings.quality);
   const [maxWidth, setMaxWidth] = useState<string>(initialSettings.maxWidth);
   const [lossless, setLossless] = useState<boolean>(initialSettings.lossless);
+  const [autoDownload, setAutoDownload] = useState<boolean>(initialSettings.autoDownload);
 
   useEffect(() => {
-    saveSettings({ quality, maxWidth, lossless });
-  }, [quality, maxWidth, lossless]);
+    saveSettings({ quality, maxWidth, lossless, autoDownload });
+  }, [quality, maxWidth, lossless, autoDownload]);
 
   // ── UI state ──
   const [isDragOver, setIsDragOver] = useState(false);
@@ -170,6 +174,8 @@ export default function WebPConverter() {
   const [results, setResults] = useState<ResultItem[]>([]);
   const [isConverting, setIsConverting] = useState(false);
   const [toast, setToast] = useState<ToastState>({ message: "", type: "success", visible: false });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
@@ -275,6 +281,42 @@ export default function WebPConverter() {
     document.body.removeChild(a);
   }, []);
 
+  const downloadZip = useCallback(async () => {
+    if (!results.length) return;
+    try {
+      showToast("Generating ZIP...", "success");
+      const zip = new JSZip();
+      for (const r of results) {
+        const response = await fetch(r.webpUrl);
+        const blob = await response.blob();
+        zip.file(r.webpName, blob);
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      triggerDownload(url, "converted-images.zip");
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      showToast("ZIP downloaded", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Could not generate ZIP", "error");
+    }
+  }, [results, triggerDownload, showToast]);
+
+  const finishEditing = useCallback((id: string, newName: string) => {
+    if (!newName.trim()) {
+      setEditingId(null);
+      return;
+    }
+    let name = newName.trim();
+    if (!name.toLowerCase().endsWith(".webp")) {
+      name = name + ".webp";
+    }
+    setResults((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, webpName: name } : x))
+    );
+    setEditingId(null);
+  }, []);
+
   const processFiles = useCallback(
     async (files: File[] | FileList) => {
       const arr = Array.from(files);
@@ -290,7 +332,9 @@ export default function WebPConverter() {
         const r = await convertFile(f, ("name" in f && f.name) || "pasted-image");
         if (r) {
           newResults.push(r);
-          triggerDownload(r.webpUrl, r.webpName);
+          if (autoDownload) {
+            triggerDownload(r.webpUrl, r.webpName);
+          }
           successCount++;
         } else {
           showToast(`Could not convert ${("name" in f && f.name) || "file"}`, "error");
@@ -298,10 +342,13 @@ export default function WebPConverter() {
       }
       if (newResults.length) setResults((prev) => [...newResults, ...prev]);
       setIsConverting(false);
-      if (successCount === 1) showToast("Converted & downloaded", "success");
-      else if (successCount > 1) showToast(`Converted ${successCount} images`, "success");
+      if (successCount === 1) {
+        showToast(autoDownload ? "Converted & downloaded" : "Converted successfully", "success");
+      } else if (successCount > 1) {
+        showToast(autoDownload ? `Converted & downloaded ${successCount} images` : `Converted ${successCount} images`, "success");
+      }
     },
-    [convertFile, showToast, triggerDownload]
+    [convertFile, showToast, triggerDownload, autoDownload]
   );
 
   // ── results-queue actions ──
@@ -574,9 +621,48 @@ export default function WebPConverter() {
               </button>
             </div>
 
+            {/* Auto-download toggle */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 12.5, color: "var(--t2)", fontFamily: "var(--s)" }}>Auto-download</div>
+                <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 2, fontFamily: "var(--s)" }}>Download files after conversion</div>
+              </div>
+              <button
+                onClick={() => setAutoDownload((v) => !v)}
+                role="switch"
+                aria-checked={autoDownload}
+                aria-label="Auto-download mode"
+                style={{
+                  position: "relative",
+                  width: 40, height: 22,
+                  borderRadius: 999,
+                  background: autoDownload ? "var(--t1)" : "var(--bg4)",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background 0.18s ease",
+                  padding: 0,
+                }}
+              >
+                <motion.span
+                  layout
+                  transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                  style={{
+                    position: "absolute",
+                    top: 3,
+                    left: autoDownload ? 21 : 3,
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    background: autoDownload ? "var(--bg0)" : "var(--t1)",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                  }}
+                />
+              </button>
+            </div>
+
             <div style={{ borderTop: "1px solid var(--b0)", paddingTop: 12 }}>
               <button
-                onClick={() => { setQuality(80); setMaxWidth(""); setLossless(false); }}
+                onClick={() => { setQuality(80); setMaxWidth(""); setLossless(false); setAutoDownload(true); }}
                 style={{
                   fontSize: 11.5,
                   color: "var(--t3)",
@@ -1074,6 +1160,16 @@ export default function WebPConverter() {
                 Converted · {results.length}
               </span>
               <div style={{ display: "flex", gap: 8 }}>
+                {results.length > 1 && (
+                  <button
+                    onClick={downloadZip}
+                    className="btn btn-pri"
+                    style={{ padding: "4px 10px", fontSize: 11, background: "var(--t1)", color: "#0D0D0C", fontWeight: 600 }}
+                  >
+                    <Download size={11} style={{ marginRight: 4 }} />
+                    Download ZIP
+                  </button>
+                )}
                 <button
                   onClick={downloadAll}
                   className="btn btn-sec"
@@ -1122,7 +1218,54 @@ export default function WebPConverter() {
                           }}
                         />
                       </div>
-                      <span className="rname">{r.webpName}</span>
+                      {editingId === r.id ? (
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onBlur={() => finishEditing(r.id, editName)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") finishEditing(r.id, editName);
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                          autoFocus
+                          style={{
+                            background: "var(--bg0)",
+                            border: "1px solid var(--b2)",
+                            borderRadius: 6,
+                            padding: "2px 8px",
+                            fontSize: 12,
+                            fontFamily: "var(--s)",
+                            color: "var(--t1)",
+                            outline: "none",
+                            width: "240px",
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        <span
+                          className="rname"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingId(r.id);
+                            setEditName(r.webpName);
+                          }}
+                          style={{
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                          title="Click to rename"
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--t2)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--t1)"; }}
+                        >
+                          {r.webpName}
+                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.35, flexShrink: 0 }}>
+                            <path d="M1.5 8.5v2h2l6-6-2-2-6 6zm7-7l2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                      )}
                     </div>
                     <div className="rstatus">
                       <div className="rsdot" />
@@ -1143,7 +1286,7 @@ export default function WebPConverter() {
                         {smaller ? "-" : "+"}{pct}%
                       </span>
                     </div>
-                    <div className="sblk">
+                    <div className="sblk" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right" }}>
                       <span className="slbl">Converted</span>
                       <span className={`sval ${smaller ? "ok" : "warn"}`}>{formatBytes(r.newSize)}</span>
                       <span className="ssub">WebP</span>

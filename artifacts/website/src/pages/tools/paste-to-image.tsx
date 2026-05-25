@@ -99,7 +99,7 @@ interface ToastState {
 }
 
 type Tool = "select" | "rectangle" | "circle" | "arrow" | "crop" | "blur";
-type Format = "jpeg" | "png" | "webp";
+type Format = "jpeg" | "png" | "webp" | "pdf";
 
 interface Annotation {
   type: "rectangle" | "circle" | "arrow" | "blur";
@@ -245,7 +245,7 @@ export default function PasteToImage() {
   const [copied, setCopied] = useState(false);
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
@@ -464,19 +464,23 @@ export default function PasteToImage() {
     const url = URL.createObjectURL(blob);
     const img = new Image();
     img.src = url;
-    
     try {
       await img.decode();
-      
       URL.revokeObjectURL(url);
       setAnnotations([]);
       setCropArea(null);
       setIsCropping(false);
-      
       pendingSetupRef.current.needsSetup = true;
       setImage(img);
       showToast("Image loaded!", "success");
-    } catch (error) {
+      // Auto-enter fullscreen when image is pasted
+      requestAnimationFrame(() => {
+        const container = editorContainerRef.current;
+        if (container && !document.fullscreenElement) {
+          container.requestFullscreen().catch(() => {/* ignore if blocked */});
+        }
+      });
+    } catch {
       URL.revokeObjectURL(url);
       showToast("Failed to load image", "error");
     }
@@ -486,19 +490,14 @@ export default function PasteToImage() {
     const handleGlobalPaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
-      
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
           const blob = items[i].getAsFile();
-          if (blob) {
-            loadImage(blob);
-            return;
-          }
+          if (blob) { loadImage(blob); return; }
         }
       }
       showToast("No image in clipboard", "error");
     };
-
     document.addEventListener("paste", handleGlobalPaste);
     return () => document.removeEventListener("paste", handleGlobalPaste);
   }, [loadImage, showToast]);
@@ -655,19 +654,15 @@ export default function PasteToImage() {
     
     newImg.decode().then(() => {
       if (image !== currentImage) return;
-      
-      setAnnotations([]);
       const container = containerRef.current;
       const containerWidth = container ? (container.clientWidth - 48) * 0.85 : cropWidth;
       const displayScale = Math.min(1, containerWidth / cropWidth);
       const newDisplayWidth = Math.floor(cropWidth * displayScale);
       const newDisplayHeight = Math.floor(cropHeight * displayScale);
-      
       setupCanvas(canvas, newDisplayWidth, newDisplayHeight);
       setDisplaySize({ width: newDisplayWidth, height: newDisplayHeight });
-      setCropArea(null);
-      setIsCropping(false);
-      setCurrentTool("select");
+      setAnnotations([]);
+      setCropArea(null); setIsCropping(false); setCurrentTool("select");
       setImage(newImg);
       showToast("Cropped!", "success");
     }).catch(() => {
@@ -691,40 +686,19 @@ export default function PasteToImage() {
 
   const transformImage = useCallback((transform: "flipH" | "flipV" | "rotateL" | "rotateR") => {
     if (!image) return;
-    
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    
     const isRotate = transform === "rotateL" || transform === "rotateR";
-    
-    if (isRotate) {
-      canvas.width = image.height;
-      canvas.height = image.width;
-    } else {
-      canvas.width = image.width;
-      canvas.height = image.height;
-    }
-    
+    if (isRotate) { canvas.width = image.height; canvas.height = image.width; }
+    else { canvas.width = image.width; canvas.height = image.height; }
     ctx.save();
-    
-    if (transform === "flipH") {
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-    } else if (transform === "flipV") {
-      ctx.translate(0, canvas.height);
-      ctx.scale(1, -1);
-    } else if (transform === "rotateR") {
-      ctx.translate(canvas.width, 0);
-      ctx.rotate(Math.PI / 2);
-    } else if (transform === "rotateL") {
-      ctx.translate(0, canvas.height);
-      ctx.rotate(-Math.PI / 2);
-    }
-    
+    if (transform === "flipH") { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+    else if (transform === "flipV") { ctx.translate(0, canvas.height); ctx.scale(1, -1); }
+    else if (transform === "rotateR") { ctx.translate(canvas.width, 0); ctx.rotate(Math.PI / 2); }
+    else if (transform === "rotateL") { ctx.translate(0, canvas.height); ctx.rotate(-Math.PI / 2); }
     ctx.drawImage(image, 0, 0);
     ctx.restore();
-    
     const newImage = new Image();
     newImage.onload = () => {
       setImage(newImage);
@@ -738,180 +712,100 @@ export default function PasteToImage() {
     setShowMoreMenu(false);
   }, [image]);
 
-  const downloadImage = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !image || displaySize.width === 0) return;
-
+  // ── Export helpers ──
+  const buildExportCanvas = (): HTMLCanvasElement => {
     const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = image.width;
-    exportCanvas.height = image.height;
-    const ctx = exportCanvas.getContext("2d");
-    if (!ctx) return;
-
-    const imageScale = image.width / displaySize.width;
-
-    ctx.drawImage(image, 0, 0);
-
+    exportCanvas.width = image!.width;
+    exportCanvas.height = image!.height;
+    const ctx = exportCanvas.getContext("2d")!;
+    const imageScale = image!.width / displaySize.width;
+    ctx.drawImage(image!, 0, 0);
     annotations.forEach(ann => {
       const scaledStroke = ann.strokeWidth * imageScale;
       ctx.strokeStyle = ann.color;
       ctx.lineWidth = scaledStroke;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-
-      const sx = ann.startX * image.width;
-      const sy = ann.startY * image.height;
-      const ex = ann.endX * image.width;
-      const ey = ann.endY * image.height;
-
+      const sx = ann.startX * image!.width, sy = ann.startY * image!.height;
+      const ex = ann.endX * image!.width, ey = ann.endY * image!.height;
       if (ann.type === "rectangle") {
         ctx.strokeRect(sx, sy, ex - sx, ey - sy);
       } else if (ann.type === "circle") {
-        const centerX = (sx + ex) / 2;
-        const centerY = (sy + ey) / 2;
-        const radiusX = Math.abs(ex - sx) / 2;
-        const radiusY = Math.abs(ey - sy) / 2;
         ctx.beginPath();
-        ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+        ctx.ellipse((sx + ex) / 2, (sy + ey) / 2, Math.abs(ex - sx) / 2, Math.abs(ey - sy) / 2, 0, 0, Math.PI * 2);
         ctx.stroke();
       } else if (ann.type === "arrow") {
         ctx.fillStyle = ann.color;
         const headLen = (10 + ann.strokeWidth * 2) * imageScale;
         const angle = Math.atan2(ey - sy, ex - sx);
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(ex, ey);
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ex, ey);
         ctx.lineTo(ex - headLen * Math.cos(angle - Math.PI / 6), ey - headLen * Math.sin(angle - Math.PI / 6));
         ctx.lineTo(ex - headLen * Math.cos(angle + Math.PI / 6), ey - headLen * Math.sin(angle + Math.PI / 6));
-        ctx.closePath();
-        ctx.fill();
+        ctx.closePath(); ctx.fill();
       } else if (ann.type === "blur") {
-        const blurX = Math.min(sx, ex);
-        const blurY = Math.min(sy, ey);
-        const blurW = Math.abs(ex - sx);
-        const blurH = Math.abs(ey - sy);
-        if (blurW > 0 && blurH > 0) {
-          ctx.save();
-          ctx.filter = "blur(12px)";
-          ctx.beginPath();
-          ctx.rect(blurX, blurY, blurW, blurH);
-          ctx.clip();
-          ctx.drawImage(image, 0, 0, image.width, image.height);
+        const bx = Math.min(sx, ex), by = Math.min(sy, ey);
+        const bw = Math.abs(ex - sx), bh = Math.abs(ey - sy);
+        if (bw > 0 && bh > 0) {
+          ctx.save(); ctx.filter = "blur(12px)";
+          ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip();
+          ctx.drawImage(image!, 0, 0, image!.width, image!.height);
           ctx.restore();
         }
       }
     });
-
-    const mimeType = `image/${format}`;
-    const ext = format === "jpeg" ? "jpg" : format;
-    const filename = `${customFilename}.${ext}`;
-    
-    exportCanvas.toBlob(
-      (blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          showToast(`Saved as ${filename}`, "success");
-          if (document.fullscreenElement) document.exitFullscreen();
-        }
-      },
-      mimeType,
-      format === "png" ? undefined : quality
-    );
+    return exportCanvas;
   };
 
-  const copyToClipboard = useCallback(async () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !image || displaySize.width === 0) return;
+  const downloadImage = useCallback(() => {
+    if (!image || displaySize.width === 0) return;
+    const ext = format === "jpeg" ? "jpg" : format;
+    const filename = `${customFilename}.${ext}`;
 
-    const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = image.width;
-    exportCanvas.height = image.height;
-    const ctx = exportCanvas.getContext("2d");
-    if (!ctx) return;
-
-    const imageScale = image.width / displaySize.width;
-
-    ctx.drawImage(image, 0, 0);
-
-    annotations.forEach(ann => {
-      const scaledStroke = ann.strokeWidth * imageScale;
-      ctx.strokeStyle = ann.color;
-      ctx.lineWidth = scaledStroke;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      const sx = ann.startX * image.width;
-      const sy = ann.startY * image.height;
-      const ex = ann.endX * image.width;
-      const ey = ann.endY * image.height;
-
-      if (ann.type === "rectangle") {
-        ctx.strokeRect(sx, sy, ex - sx, ey - sy);
-      } else if (ann.type === "circle") {
-        const centerX = (sx + ex) / 2;
-        const centerY = (sy + ey) / 2;
-        const radiusX = Math.abs(ex - sx) / 2;
-        const radiusY = Math.abs(ey - sy) / 2;
-        ctx.beginPath();
-        ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (ann.type === "arrow") {
-        ctx.fillStyle = ann.color;
-        const headLen = (10 + ann.strokeWidth * 2) * imageScale;
-        const angle = Math.atan2(ey - sy, ex - sx);
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(ex, ey);
-        ctx.lineTo(ex - headLen * Math.cos(angle - Math.PI / 6), ey - headLen * Math.sin(angle - Math.PI / 6));
-        ctx.lineTo(ex - headLen * Math.cos(angle + Math.PI / 6), ey - headLen * Math.sin(angle + Math.PI / 6));
-        ctx.closePath();
-        ctx.fill();
-      } else if (ann.type === "blur") {
-        const blurX = Math.min(sx, ex);
-        const blurY = Math.min(sy, ey);
-        const blurW = Math.abs(ex - sx);
-        const blurH = Math.abs(ey - sy);
-        if (blurW > 0 && blurH > 0) {
-          ctx.save();
-          ctx.filter = "blur(12px)";
-          ctx.beginPath();
-          ctx.rect(blurX, blurY, blurW, blurH);
-          ctx.clip();
-          ctx.drawImage(image, 0, 0, image.width, image.height);
-          ctx.restore();
-        }
-      }
-    });
-
-    try {
-      exportCanvas.toBlob(async (blob) => {
-        if (blob) {
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob })
-          ]);
-          setCopied(true);
-          if (document.fullscreenElement) document.exitFullscreen();
-          if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-          copiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
-        }
-      }, "image/png");
-    } catch {
-      showToast("Failed to copy", "error");
+    if (format === "pdf") {
+      (async () => {
+        const { jsPDF } = await import("jspdf");
+        const dataUrl = buildExportCanvas().toDataURL("image/png");
+        const pdf = new jsPDF({
+          orientation: image.width > image.height ? "l" : "p",
+          unit: "px",
+          format: [image.width, image.height],
+        });
+        pdf.addImage(dataUrl, "PNG", 0, 0, image.width, image.height);
+        pdf.save(filename);
+        showToast(`Saved as ${filename}`, "success");
+        if (document.fullscreenElement) document.exitFullscreen();
+      })();
+      return;
     }
-  }, [image, annotations, showToast, displaySize]);
+
+    buildExportCanvas().toBlob(blob => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`Saved as ${filename}`, "success");
+      if (document.fullscreenElement) document.exitFullscreen();
+    }, `image/${format}`, format === "png" ? undefined : quality);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [image, annotations, format, quality, customFilename, displaySize, showToast]);
+
+  const copyToClipboard = useCallback(async () => {
+    if (!image || displaySize.width === 0) return;
+    try {
+      buildExportCanvas().toBlob(async blob => {
+        if (!blob) return;
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        setCopied(true);
+        if (document.fullscreenElement) document.exitFullscreen();
+        if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+        copiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+      }, "image/png");
+    } catch { showToast("Failed to copy", "error"); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [image, annotations, displaySize, showToast]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1124,15 +1018,16 @@ export default function PasteToImage() {
       tagline="Paste, annotate, blur, crop — download in seconds"
       backHref="/tools"
       backLabel="Tools"
-      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
+      bgColor="transparent"
     >
       <main ref={mainRef} className="flex-1 flex flex-col items-center px-4 pt-6 pb-8" style={{ background: "transparent" }}>
         <div className="w-full max-w-5xl">
-          <div className="backdrop-blur-[24px] bg-[rgba(15,18,25,0.7)] border border-white/[0.08] rounded-[20px] overflow-hidden shadow-[0_40px_100px_-25px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.01),inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-            <div className="relative px-6 py-3 border-b border-white/[0.04]">
+          <div style={{ background: "#161615", border: "1px solid #252523", borderRadius: 10, overflow: "hidden" }}>
+            <div className="relative px-5 py-3" style={{ borderBottom: "1px solid #252523" }}>
               <div className="flex items-center justify-between gap-4">
                 <div
-                  className="text-[11px] font-medium tracking-[0.12em] uppercase text-white/55 truncate"
+                  className="text-[10px] font-medium tracking-[0.14em] uppercase truncate"
+                  style={{ color: "#3E3E3B" }}
                   aria-hidden={!image}
                 >
                   {image ? "Editor" : "Paste image to begin"}
@@ -1143,12 +1038,9 @@ export default function PasteToImage() {
                     setShowSettings(!showSettings);
                     setShowMoreMenu(false);
                   }}
-                  className={`p-2 rounded-lg transition-all duration-200 shrink-0 ${
-                    showSettings
-                      ? "bg-[#4F7DFF]/10 text-[#4F7DFF]"
-                      : "text-white/30 hover:text-white/60 hover:bg-white/5"
-                  }`}
-                  title="Output settings (format, quality)"
+                  className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0"
+                  style={showSettings ? { background: "#222221", color: "#F0EDE8" } : { color: "#3E3E3B" }}
+                  title="Output settings"
                   aria-label="Output settings"
                 >
                   <Settings className="h-4 w-4" />
@@ -1163,22 +1055,23 @@ export default function PasteToImage() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute top-full right-6 mt-2 z-50 w-64 bg-[#151820] border border-white/10 rounded-xl p-5 shadow-2xl"
+                    className="absolute top-full right-5 mt-2 z-50 w-56 border rounded-[10px] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
+                    style={{ background: "#1C1C1B", borderColor: "#2E2E2C" }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="space-y-5">
                       <div>
-                        <span className="text-sm text-white/60 block mb-3">Format</span>
-                        <div className="flex gap-2">
-                          {(["jpeg", "png", "webp"] as Format[]).map((f) => (
+                        <span className="text-[10px] font-medium tracking-[0.12em] uppercase block mb-2.5" style={{ color: "#3E3E3B" }}>Format</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(["jpeg", "png", "webp", "pdf"] as Format[]).map((f) => (
                             <button
                               key={f}
                               onClick={() => setFormat(f)}
-                              className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium uppercase transition-all ${
-                                format === f
-                                  ? "bg-[#4F7DFF] text-white"
-                                  : "bg-white/5 text-white/50 hover:bg-white/10"
-                              }`}
+                              className="py-1.5 px-2.5 rounded-[7px] text-[11px] font-medium tracking-[0.08em] uppercase transition-all duration-[140ms]"
+                              style={format === f
+                                ? { background: "#F0EDE8", color: "#0F0F0E" }
+                                : { background: "#222221", color: "#7A7874", border: "1px solid #2E2E2C" }
+                              }
                             >
                               {f === "jpeg" ? "JPG" : f.toUpperCase()}
                             </button>
@@ -1186,11 +1079,11 @@ export default function PasteToImage() {
                         </div>
                       </div>
 
-                      {format !== "png" && (
+                      {format !== "png" && format !== "pdf" && (
                         <div>
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="text-sm text-white/60">Quality</span>
-                            <span className="text-sm font-mono text-[#4F7DFF]">{Math.round(quality * 100)}%</span>
+                          <div className="flex justify-between items-center mb-2.5">
+                            <span className="text-[11px] font-medium" style={{ color: "#7A7874" }}>Quality</span>
+                            <span className="text-[12px] font-medium tabular-nums" style={{ color: "#F0EDE8" }}>{Math.round(quality * 100)}%</span>
                           </div>
                           <input
                             type="range"
@@ -1199,11 +1092,8 @@ export default function PasteToImage() {
                             step="0.05"
                             value={quality}
                             onChange={(e) => setQuality(parseFloat(e.target.value))}
-                            className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer
-                              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                              [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
-                              [&::-webkit-slider-thumb]:hover:bg-[#4F7DFF] [&::-webkit-slider-thumb]:transition-colors
-                              [&::-webkit-slider-thumb]:shadow-md"
+                            className="w-full appearance-none cursor-pointer rounded-full"
+                            style={{ height: 2, background: `linear-gradient(to right,#F0EDE8 ${(quality - 0.5) * 200}%,#2E2E2C ${(quality - 0.5) * 200}%)` }}
                           />
                         </div>
                       )}
@@ -1217,28 +1107,28 @@ export default function PasteToImage() {
               {!image ? (
                 <div
                   onClick={handleZoneClick}
-                  className="group relative rounded-[14px] border border-dashed border-white/[0.12] bg-white/[0.01] hover:border-white/[0.28] hover:bg-white/[0.025] cursor-pointer transition-all duration-300 ease-out py-16 px-8 flex flex-col items-center justify-center text-center"
+                  className="group relative rounded-[10px] border border-dashed cursor-pointer transition-all duration-[220ms] py-14 px-8 flex flex-col items-center justify-center text-center"
+                  style={{ borderColor: "#3A3A37" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#4A4A46")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "#3A3A37")}
                 >
-                  <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/55 mb-4 group-hover:text-white group-hover:bg-white/[0.06] group-hover:border-white/[0.18] group-hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="w-11 h-11 rounded-[10px] flex items-center justify-center mb-5" style={{ background: "#1C1C1B", border: "1px solid #2E2E2C", color: "#3E3E3B" }}>
                     <Clipboard className="h-5 w-5" strokeWidth={1.5} />
                   </div>
-                  <div className="font-semibold text-[15px] tracking-tight text-white/[0.95] mb-1.5">
+                  <div className="font-medium text-[15px] tracking-[-0.01em] mb-1.5" style={{ color: "#F0EDE8" }}>
                     Click anywhere to paste or press Ctrl+V
                   </div>
-                  <div className="text-xs text-white/45 leading-normal">
+                  <div className="text-[13px] leading-relaxed" style={{ color: "#3E3E3B" }}>
                     Supports PNG, JPG, WebP and more
                   </div>
                 </div>
               ) : (
-                <div 
+                <div
                   ref={editorContainerRef}
-                  className={`space-y-4 ${
-                    isFullscreen 
-                      ? "bg-[#0A0C10] p-6 flex flex-col h-full overflow-hidden" 
-                      : ""
-                  }`}
+                  className={`space-y-3 ${isFullscreen ? "p-6 flex flex-col h-full overflow-hidden" : ""}`}
+                  style={isFullscreen ? { background: "#0F0F0E" } : {}}
                 >
-                  <div ref={toolbarRef} className="flex flex-wrap items-center gap-1.5 p-2 bg-white/[0.02] border border-white/[0.04] rounded-xl">
+                  <div ref={toolbarRef} className="flex flex-wrap items-center gap-1 p-1.5 rounded-[10px]" style={{ background: "#1C1C1B", border: "1px solid #252523" }}>
                     <div className="flex gap-0.5 shrink-0">
                       {tools.map((tool) => (
                         <button
@@ -1250,11 +1140,11 @@ export default function PasteToImage() {
                               setCropArea(null);
                             }
                           }}
-                          className={`p-2 rounded-lg transition-all ${
-                            currentTool === tool.id
-                              ? "bg-[#4F7DFF] text-white"
-                              : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                          }`}
+                          className="p-1.5 rounded-[7px] transition-all duration-[140ms]"
+                          style={currentTool === tool.id
+                            ? { background: "#282826", color: "#F0EDE8" }
+                            : { color: "#3E3E3B" }
+                          }
                           title={tool.label}
                         >
                           <tool.icon className="h-4 w-4" />
@@ -1266,11 +1156,11 @@ export default function PasteToImage() {
                             e.stopPropagation();
                             setShowMoreMenu(!showMoreMenu);
                           }}
-                          className={`p-2 rounded-lg transition-all ${
-                            showMoreMenu 
-                              ? "bg-[#4F7DFF]/20 text-[#4F7DFF]" 
-                              : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                          }`}
+                          className="p-1.5 rounded-[7px] transition-all duration-[140ms]"
+                          style={showMoreMenu
+                            ? { background: "#222221", color: "#7A7874" }
+                            : { color: "#3E3E3B" }
+                          }
                           title="More options"
                         >
                           <MoreVertical className="h-4 w-4" />
@@ -1283,19 +1173,26 @@ export default function PasteToImage() {
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, y: -8, scale: 0.96 }}
                               transition={{ duration: 0.15, ease: "easeOut" }}
-                              className="absolute top-full left-0 mt-2 z-50 bg-[#151820] border border-white/10 rounded-xl py-2 shadow-2xl min-w-[160px]"
+                              className="absolute top-full left-0 mt-2 z-50 border rounded-[10px] py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55)] min-w-[168px]"
+                              style={{ background: "#1C1C1B", borderColor: "#2E2E2C" }}
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button
                                 onClick={() => transformImage("flipH")}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] transition-all duration-[140ms]"
+                              style={{ color: "#7A7874" }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <FlipHorizontal className="h-4 w-4" />
                                 Flip Horizontal
                               </button>
                               <button
                                 onClick={() => transformImage("flipV")}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] transition-all duration-[140ms]"
+                              style={{ color: "#7A7874" }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <FlipVertical className="h-4 w-4" />
                                 Flip Vertical
@@ -1303,14 +1200,20 @@ export default function PasteToImage() {
                               <div className="h-px bg-white/10 my-1" />
                               <button
                                 onClick={() => transformImage("rotateL")}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] transition-all duration-[140ms]"
+                              style={{ color: "#7A7874" }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <RotateCcw className="h-4 w-4" />
                                 Rotate Left
                               </button>
                               <button
                                 onClick={() => transformImage("rotateR")}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] transition-all duration-[140ms]"
+                              style={{ color: "#7A7874" }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <RotateCw className="h-4 w-4" />
                                 Rotate Right
@@ -1321,15 +1224,15 @@ export default function PasteToImage() {
                       </div>
                     </div>
 
-                    <div className="w-px h-5 bg-white/10 shrink-0" />
+                    <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
                     <div className="flex gap-0.5 shrink-0">
                       {COLORS.map((color) => (
                         <button
                           key={color}
                           onClick={() => setCurrentColor(color)}
-                          className={`w-5 h-5 rounded-full transition-all ${
-                            currentColor === color ? "ring-2 ring-white ring-offset-1 ring-offset-[#0D0F14]" : ""
+                          className={`w-5 h-5 rounded-full transition-all duration-[140ms] ${
+                            currentColor === color ? "ring-1 ring-[#F0EDE8] ring-offset-1 ring-offset-[#1C1C1B]" : ""
                           }`}
                           style={{ backgroundColor: color }}
                           title={color}
@@ -1337,18 +1240,18 @@ export default function PasteToImage() {
                       ))}
                     </div>
 
-                    <div className="w-px h-5 bg-white/10 shrink-0" />
+                    <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
                     <div className="flex gap-0.5 shrink-0" title="Stroke Width">
                       {([2, 4, 6] as StrokeWidth[]).map((w) => (
                         <button
                           key={w}
                           onClick={() => setStrokeWidth(w)}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                            strokeWidth === w
-                              ? "bg-[#4F7DFF] text-white"
-                              : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                          }`}
+                          className="w-7 h-7 rounded-[7px] flex items-center justify-center transition-all duration-[140ms]"
+                          style={strokeWidth === w
+                            ? { background: "#282826", color: "#F0EDE8" }
+                            : { color: "#3E3E3B" }
+                          }
                           title={w === 2 ? "Thin" : w === 4 ? "Medium" : "Thick"}
                         >
                           <div 
@@ -1359,12 +1262,13 @@ export default function PasteToImage() {
                       ))}
                     </div>
 
-                    <div className="w-px h-5 bg-white/10 shrink-0" />
+                    <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
                     <button
                       onClick={undo}
                       disabled={annotations.length === 0}
-                      className="p-2 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-all disabled:opacity-30 shrink-0"
+                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] disabled:opacity-25 shrink-0"
+                      style={{ color: "#3E3E3B" }}
                       title="Undo"
                     >
                       <Undo2 className="h-4 w-4" />
@@ -1372,7 +1276,10 @@ export default function PasteToImage() {
 
                     <button
                       onClick={clearAll}
-                      className="p-2 rounded-lg text-red-400/70 hover:text-red-400 hover:bg-red-400/10 transition-all shrink-0"
+                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0"
+                      style={{ color: "#C4483E" }}
+                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "rgba(196,72,62,0.08)")}
+                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "transparent")}
                       title="Clear"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1383,7 +1290,8 @@ export default function PasteToImage() {
                     {isCropping && cropArea && cropArea.w > 10 && (
                       <button
                         onClick={applyCrop}
-                        className="px-3 py-1.5 rounded-lg bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-all shrink-0"
+                        className="px-3 py-1.5 rounded-[7px] text-[12px] font-medium transition-all duration-[140ms] shrink-0"
+                        style={{ background: "#52C47A", color: "#0F0F0E" }}
                       >
                         Apply Crop
                       </button>
@@ -1391,11 +1299,11 @@ export default function PasteToImage() {
 
                     <button
                       onClick={copyToClipboard}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 shrink-0 ${
-                        copied
-                          ? "bg-green-500/10 border border-green-500/30 text-green-400"
-                          : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                      }`}
+                      className="px-3 py-1.5 rounded-[7px] text-[12px] font-medium transition-all duration-[140ms] flex items-center gap-1.5 shrink-0 border"
+                      style={copied
+                        ? { background: "rgba(82,196,122,0.07)", borderColor: "rgba(82,196,122,0.2)", color: "#52C47A" }
+                        : { background: "#1C1C1B", borderColor: "#2E2E2C", color: "#7A7874" }
+                      }
                       title="Copy to clipboard (Ctrl+C)"
                     >
                       {copied ? (
@@ -1422,7 +1330,10 @@ export default function PasteToImage() {
 
                     <button
                       onClick={toggleFullscreen}
-                      className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all shrink-0"
+                      className="p-1.5 rounded-[7px] transition-all duration-[140ms] shrink-0 border"
+                      style={{ background: "#1C1C1B", borderColor: "#2E2E2C", color: "#3E3E3B" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.borderColor = "#3A3A37"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#3E3E3B"; (e.currentTarget as HTMLElement).style.borderColor = "#2E2E2C"; }}
                       title={isFullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen (F11)"}
                     >
                       {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -1438,15 +1349,16 @@ export default function PasteToImage() {
                       <canvas
                         ref={canvasRef}
                         onMouseDown={handleMouseDown}
-                        className={`rounded-lg border-2 border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.6),0_32px_80px_rgba(0,0,0,0.5)] ${
+                        className={`rounded-[7px] ${
                           currentTool !== "select" ? "cursor-crosshair" : ""
                         }`}
+                        style={{ border: "1px solid #2E2E2C", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
                       />
                     </div>
                   </div>
 
-                  <div className="text-center text-xs text-white/30 flex items-center justify-center gap-1">
-                    <span>{format.toUpperCase()} • {format !== "png" ? `${Math.round(quality * 100)}% quality` : "Lossless"} • </span>
+                  <div className="text-center text-[11px] flex items-center justify-center gap-1" style={{ color: "#3E3E3B" }}>
+                    <span>{format === "jpeg" ? "JPG" : format.toUpperCase()} · {format === "png" ? "Lossless" : format === "pdf" ? "PDF export" : `${Math.round(quality * 100)}% quality`} · </span>
                     {isEditingFilename ? (
                       <input
                         ref={filenameInputRef}
@@ -1459,7 +1371,8 @@ export default function PasteToImage() {
                             setIsEditingFilename(false);
                           }
                         }}
-                        className="bg-white/10 border border-white/20 rounded px-1.5 py-0.5 text-white/70 w-24 text-center focus:outline-none focus:border-[#4F7DFF]/50"
+                        className="px-1.5 py-0.5 rounded text-center focus:outline-none w-24"
+                        style={{ background: "#1C1C1B", border: "1px solid #3A3A37", color: "#7A7874", fontSize: 11 }}
                         autoFocus
                       />
                     ) : (
@@ -1468,7 +1381,10 @@ export default function PasteToImage() {
                           setIsEditingFilename(true);
                           setTimeout(() => filenameInputRef.current?.select(), 0);
                         }}
-                        className="text-[#4F7DFF]/70 hover:text-[#4F7DFF] transition-colors cursor-pointer underline underline-offset-2 decoration-dotted"
+                        className="cursor-pointer transition-colors duration-[140ms] underline underline-offset-2 decoration-dotted text-[11px]"
+                        style={{ color: "#7A7874" }}
+                        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#F0EDE8")}
+                        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "#7A7874")}
                         title="Click to edit filename"
                       >
                         {customFilename}
@@ -1482,7 +1398,7 @@ export default function PasteToImage() {
           </div>
 
           {!image && (
-            <p className="text-center text-xs text-white/20 mt-4">
+            <p className="text-center text-[11px] mt-4" style={{ color: "#3E3E3B" }}>
               Works with screenshots, copied images, and more
             </p>
           )}
@@ -1620,12 +1536,13 @@ export default function PasteToImage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full border shadow-2xl backdrop-blur-md
-              flex items-center gap-3 text-sm font-medium
-              ${toast.type === "success" 
-                ? "bg-[#0D0F14]/95 border-[#4F7DFF]/40 text-[#4F7DFF]" 
-                : "bg-[#0D0F14]/95 border-red-500/40 text-red-400"
+            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-[7px] border
+              flex items-center gap-2.5 text-[11px] font-medium
+              ${toast.type === "success"
+                ? "text-[#52C47A]"
+                : "text-[#C4483E]"
               }`}
+            style={{ background: "#222221", borderColor: toast.type === "success" ? "rgba(82,196,122,0.18)" : "rgba(196,72,62,0.22)", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" }}
           >
             {toast.type === "success" ? (
               <Check className="h-4 w-4" />
@@ -1643,7 +1560,7 @@ export default function PasteToImage() {
             ? { key: "size", label: `${image.naturalWidth}×${image.naturalHeight}` }
             : { key: "status", label: "Paste an image to begin", accent: "muted" },
           { key: "fmt", label: format.toUpperCase() },
-          ...(image
+          ...(image && format !== "pdf"
             ? [{ key: "q", label: `Quality ${Math.round(quality * 100)}` } as ToolStatusStat]
             : []),
           ...(annotations.length > 0

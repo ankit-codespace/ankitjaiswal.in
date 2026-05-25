@@ -802,6 +802,13 @@ html, body { overflow-x: clip; max-width: 100%; }
    horizontal scrollbar appears.
 ──────────────────────────────────────────────────────────────────────────── */
 
+.notepad-ruled {
+  --np-rule-color: rgba(255, 255, 255, 0.16);
+}
+.surface-light .notepad-ruled {
+  --np-rule-color: rgba(0, 0, 0, 0.18);
+}
+
 /* Base: position context + zero margins for every direct block child */
 .notepad-ruled .notepad-editor > *:not(img) {
   position: relative;
@@ -836,30 +843,29 @@ html, body { overflow-x: clip; max-width: 100%; }
   transform: translateX(-50%);
   width: 100vw;
   height: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 1px solid var(--np-rule-color);
   pointer-events: none;
 }
-.surface-light .notepad-ruled .notepad-editor > img + *::before {
-  border-top-color: rgba(0, 0, 0, 0.18);
-}
 
-/* Full-width rule line via ::after — dark theme */
+/* Full-width repeating rule lines via ::after — draws a line under EVERY text line, including soft-wrapped lines */
 .notepad-ruled .notepad-editor > *::after {
   content: "";
   position: absolute;
+  top: 0;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 100vw;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.16);
   pointer-events: none;
+  background-image: linear-gradient(to bottom, transparent calc(100% - 1px), var(--np-rule-color) 1px);
+  background-size: 100% calc(var(--np-lh) * 1em);
+  background-repeat: repeat-y;
 }
 
 /* List containers: no rule of their own (each <li> draws its own) */
 .notepad-ruled .notepad-editor > ul::after,
 .notepad-ruled .notepad-editor > ol::after {
-  display: none;
+  display: none !important;
 }
 .notepad-ruled .notepad-editor > ul,
 .notepad-ruled .notepad-editor > ol {
@@ -867,7 +873,7 @@ html, body { overflow-x: clip; max-width: 100%; }
   padding-bottom: 0 !important;
 }
 
-/* Each list item = one visual line → its own full-width rule */
+/* Each list item = one visual line → its own repeating full-width rule */
 .notepad-ruled .notepad-editor li {
   position: relative;
   margin-top: 0 !important;
@@ -878,20 +884,103 @@ html, body { overflow-x: clip; max-width: 100%; }
 .notepad-ruled .notepad-editor li::after {
   content: "";
   position: absolute;
+  top: 0;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 100vw;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.16);
   pointer-events: none;
+  background-image: linear-gradient(to bottom, transparent calc(100% - 1px), var(--np-rule-color) 1px);
+  background-size: 100% calc(var(--np-lh) * 1em);
+  background-repeat: repeat-y;
 }
 
-/* ── Light theme ─────────────────────────────────────────────────────────── */
-.surface-light .notepad-ruled .notepad-editor > *::after,
-.surface-light .notepad-ruled .notepad-editor li::after {
-  background: rgba(0, 0, 0, 0.18);
+/* ── TipTap Table Styling ────────────────────────────────────────────────── */
+.notepad-editor .tableWrapper {
+  overflow-x: auto;
+  margin: 1.5rem 0;
 }
+
+.notepad-editor table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100% !important;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.surface-light .notepad-editor table {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.notepad-editor th,
+.notepad-editor td {
+  min-width: 1em;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.surface-light .notepad-editor th,
+.surface-light .notepad-editor td {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.notepad-editor th {
+  font-weight: 600;
+  text-align: left;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.surface-light .notepad-editor th {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Selected cell styling */
+.notepad-editor .selectedCell:after {
+  background: color-mix(in srgb, var(--np-accent, #10B981) 12%, transparent);
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+/* Column resizer handles */
+.notepad-editor .column-resize-handle {
+  background-color: var(--np-accent, #10B981);
+  bottom: -2px;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
+  z-index: 20;
+  pointer-events: auto;
+  cursor: col-resize;
+}
+
+.notepad-editor .resize-cursor {
+  cursor: col-resize;
+}
+
+/* Bypass ruled lines for tables and all children within tables */
+.notepad-ruled .notepad-editor > .tableWrapper::after,
+.notepad-ruled .notepad-editor > .tableWrapper *::after,
+.notepad-ruled .notepad-editor table::after,
+.notepad-ruled .notepad-editor table *::after {
+  display: none !important;
+}
+
+.notepad-ruled .notepad-editor > .tableWrapper,
+.notepad-ruled .notepad-editor table {
+  margin: 1.5rem 0 !important;
+}
+
+
 
 /* ── LOCKED DESIGN SYSTEM RESETS & UTILITIES ────────────────────────── */
 
