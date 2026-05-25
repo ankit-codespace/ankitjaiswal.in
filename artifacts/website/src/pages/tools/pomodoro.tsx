@@ -67,6 +67,13 @@ interface Settings {
   notifications: boolean;
   autoStartBreak: boolean;
   autoStartWork: boolean;
+  dailyTargetSessions: number;
+}
+
+interface CompletedSession {
+  id: string;
+  timestamp: number;
+  durationMin: number;
 }
 
 interface Stats {
@@ -75,12 +82,16 @@ interface Stats {
   todaySessions: number;
   lifetimeFocusMs: number;
   lifetimeSessions: number;
-  /** Rolling 30-day history keyed by YYYY-MM-DD with focus milliseconds. */
   history: Record<string, number>;
+  currentStreak: number;
+  maxStreak: number;
+  lastActiveDate: string; // YYYY-MM-DD
+  completedSessionsToday?: CompletedSession[];
 }
 
 const SETTINGS_KEY = "ankit:pomodoro:settings:v1";
 const STATS_KEY = "ankit:pomodoro:stats:v1";
+const STATS_BACKUP_KEY = "ankit:pomodoro:stats:backup:v1";
 
 const DEFAULT_SETTINGS: Settings = {
   workMin: 25,
@@ -91,6 +102,7 @@ const DEFAULT_SETTINGS: Settings = {
   notifications: false,
   autoStartBreak: true,
   autoStartWork: false,
+  dailyTargetSessions: 4,
 };
 
 function todayKey(): string {
@@ -118,12 +130,29 @@ function saveSettings(s: Settings): void {
 
 /** Roll today's bucket into history if `prev.date` is no longer today.
  *  Pure function — safe to call from setState reducers AND from loadStats.
- *  Critical for the cross-midnight bug: previously this only ran on
- *  loadStats(), so a session that completed after midnight added to
- *  yesterday's bucket *and* yesterday never got archived. */
+ *  Also resets currentStreak if they missed the day before today. */
 function rolloverIfNeeded(prev: Stats): Stats {
   const today = todayKey();
   if (prev.date === today) return prev;
+
+  // Calculate if the streak is broken (i.e. did they focus yesterday?)
+  let currentStreak = prev.currentStreak || 0;
+  const lastActive = prev.lastActiveDate;
+  if (lastActive) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const ym = String(yesterday.getMonth() + 1).padStart(2, "0");
+    const yd = String(yesterday.getDate()).padStart(2, "0");
+    const yesterdayStr = `${yesterday.getFullYear()}-${ym}-${yd}`;
+
+    // If they were not active today and not active yesterday, reset streak
+    if (lastActive !== today && lastActive !== yesterdayStr) {
+      currentStreak = 0;
+    }
+  } else {
+    currentStreak = 0;
+  }
+
   const history = { ...(prev.history || {}) };
   if (prev.date && prev.todayFocusMs > 0) {
     // Merge in case history already has an entry for that day (multi-tab).
@@ -139,6 +168,8 @@ function rolloverIfNeeded(prev: Stats): Stats {
     todayFocusMs: 0,
     todaySessions: 0,
     history: trimmed,
+    currentStreak,
+    completedSessionsToday: [],
   };
 }
 
@@ -150,22 +181,60 @@ function loadStats(): Stats {
     lifetimeFocusMs: 0,
     lifetimeSessions: 0,
     history: {},
+    currentStreak: 0,
+    maxStreak: 0,
+    lastActiveDate: "",
+    completedSessionsToday: [],
   };
   if (typeof window === "undefined") return empty;
+  
+  // Try main key first
   try {
     const raw = localStorage.getItem(STATS_KEY);
-    if (!raw) return empty;
-    const parsed = JSON.parse(raw) as Stats;
-    // Defensive merge with empty so any missing fields (older shape) get defaults.
-    const merged: Stats = { ...empty, ...parsed, history: parsed.history || {} };
-    return rolloverIfNeeded(merged);
-  } catch {
-    return empty;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Stats;
+      if (parsed && typeof parsed === "object") {
+        const merged: Stats = {
+          ...empty,
+          ...parsed,
+          history: parsed.history || {},
+          completedSessionsToday: parsed.completedSessionsToday || [],
+        };
+        return rolloverIfNeeded(merged);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to parse main Pomodoro stats:", e);
   }
+
+  // Try backup key if main is absent or corrupt
+  try {
+    const rawBackup = localStorage.getItem(STATS_BACKUP_KEY);
+    if (rawBackup) {
+      const parsed = JSON.parse(rawBackup) as Stats;
+      if (parsed && typeof parsed === "object") {
+        const merged: Stats = {
+          ...empty,
+          ...parsed,
+          history: parsed.history || {},
+          completedSessionsToday: parsed.completedSessionsToday || [],
+        };
+        return rolloverIfNeeded(merged);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to parse backup Pomodoro stats:", e);
+  }
+
+  return empty;
 }
 
 function saveStats(s: Stats): void {
-  try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch { /* noop */ }
+  try {
+    const raw = JSON.stringify(s);
+    localStorage.setItem(STATS_KEY, raw);
+    localStorage.setItem(STATS_BACKUP_KEY, raw);
+  } catch { /* noop */ }
 }
 
 function fmtMMSS(totalMs: number): string {
@@ -183,13 +252,22 @@ function fmtFocusTime(ms: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function thirtyDayAvg(stats: Stats): number {
-  const vals = Object.values(stats.history);
-  // Include today as an entry so the average isn't artificially low on day 1.
-  const todayMs = stats.todayFocusMs;
-  const all = [...vals, todayMs].filter((v) => v > 0);
-  if (all.length === 0) return 0;
-  return all.reduce((a, b) => a + b, 0) / all.length;
+function fmtFocusTimeLive(ms: number, isActive: boolean): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const totalMin = Math.floor(totalSeconds / 60);
+
+  if (isActive) {
+    const s = totalSeconds % 60;
+    if (totalMin < 60) return `${totalMin}m ${s}s`;
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return `${h}h ${m}m ${s}s`;
+  }
+
+  if (totalMin < 60) return `${totalMin}m`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 /** Largest single-day focus, including today. */
@@ -199,15 +277,25 @@ function bestDayMs(stats: Stats): number {
   return all.reduce((max, v) => (v > max ? v : max), 0);
 }
 
-/** Lifetime focus divided by lifetime session count — average length per pomodoro. */
-function avgSessionMs(stats: Stats): number {
-  if (stats.lifetimeSessions <= 0) return 0;
-  return stats.lifetimeFocusMs / stats.lifetimeSessions;
-}
+const WORK_QUOTES = [
+  { text: "Focus is a matter of deciding what things you're not going to do.", author: "John Carmack" },
+  { text: "The successful warrior is the average man, with laser-like focus.", author: "Bruce Lee" },
+  { text: "Deep work is the superpower of the 21st century.", author: "Cal Newport" },
+  { text: "It is not that we have a short time to live, but that we waste a lot of it.", author: "Seneca" },
+  { text: "You do not rise to the level of your goals. You fall to the level of your systems.", author: "James Clear" },
+  { text: "One can fractionate days, but not focus.", author: "Naval Ravikant" },
+  { text: "Concentrate all your thoughts upon the work at hand. The sun's rays do not burn until brought to a focus.", author: "Alexander Graham Bell" },
+  { text: "Amateurs sit and wait for inspiration, the rest of us just get up and go to work.", author: "Stephen King" }
+];
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/* Component                                                                   */
-/* ────────────────────────────────────────────────────────────────────────── */
+const BREAK_QUOTES = [
+  { text: "Tension is who you think you should be. Relaxation is who you are.", author: "Lao Tzu" },
+  { text: "Breathe in, breathe out. Let go of the past, let go of the future.", author: "Thich Nhat Hanh" },
+  { text: "Muddy water is best cleared by leaving it alone.", author: "Alan Watts" },
+  { text: "The time to relax is when you don't have time for it.", author: "Sydney J. Harris" },
+  { text: "Almost everything will work again if you unplug it for a few minutes, including you.", author: "Anne Lamott" },
+  { text: "Rest is not idleness, and to lie sometimes on the grass under trees... is by no means a waste of time.", author: "John Lubbock" }
+];
 
 export default function Pomodoro() {
   const [location] = useLocation();
@@ -237,6 +325,63 @@ export default function Pomodoro() {
    *  ACTUAL duration that ran — not whatever workMin happens to be at
    *  completion time (in case the user changed it via Settings mid-session). */
   const currentWorkDurMsRef = useRef<number | null>(null);
+
+  const [currentQuote, setCurrentQuote] = useState<{ text: string; author: string } | null>(null);
+
+  useEffect(() => {
+    const list = phase === "work" ? WORK_QUOTES : BREAK_QUOTES;
+    const random = list[Math.floor(Math.random() * list.length)];
+    setCurrentQuote(random);
+  }, [phase]);
+
+  const [theme, setTheme] = useState<"system" | "light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return (localStorage.getItem("ankit:pomodoro:theme") as "system" | "light" | "dark") || "system";
+      } catch {
+        return "system";
+      }
+    }
+    return "system";
+  });
+
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem("ankit:pomodoro:theme", theme);
+    } catch { /* noop */ }
+
+    let cleanup: (() => void) | undefined;
+
+    if (theme === "system") {
+      const media = window.matchMedia("(prefers-color-scheme: light)");
+      setResolvedTheme(media.matches ? "light" : "dark");
+
+      const listener = (e: MediaQueryListEvent) => {
+        setResolvedTheme(e.matches ? "light" : "dark");
+      };
+      media.addEventListener("change", listener);
+      cleanup = () => media.removeEventListener("change", listener);
+    } else {
+      setResolvedTheme(theme);
+    }
+
+    return cleanup;
+  }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (resolvedTheme === "light") {
+      document.body.classList.add("pm-light-mode");
+    } else {
+      document.body.classList.remove("pm-light-mode");
+    }
+    return () => {
+      document.body.classList.remove("pm-light-mode");
+    };
+  }, [resolvedTheme]);
 
   // Persist settings & stats whenever they change
   useEffect(() => { saveSettings(settings); }, [settings]);
@@ -357,6 +502,46 @@ export default function Pomodoro() {
     setRunning(true);
   }, [settings.workMin, settings.shortMin, settings.longMin]);
 
+  const creditPartialFocus = useCallback((ms: number) => {
+    if (ms <= 1000) return; // Ignore brief ticks less than a second
+    setStats((prev) => {
+      const rolled = rolloverIfNeeded(prev);
+      const today = todayKey();
+      
+      // Calculate new streak
+      let newStreak = rolled.currentStreak || 0;
+      const lastActive = rolled.lastActiveDate;
+      
+      if (!lastActive) {
+        newStreak = 1;
+      } else if (lastActive === today) {
+        // Already active today
+      } else {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const ym = String(yesterday.getMonth() + 1).padStart(2, "0");
+        const yd = String(yesterday.getDate()).padStart(2, "0");
+        const yesterdayStr = `${yesterday.getFullYear()}-${ym}-${yd}`;
+        
+        if (lastActive === yesterdayStr) {
+          newStreak += 1;
+        } else {
+          newStreak = 1;
+        }
+      }
+      const newMaxStreak = Math.max(rolled.maxStreak || 0, newStreak);
+      
+      return {
+        ...rolled,
+        todayFocusMs: rolled.todayFocusMs + ms,
+        lifetimeFocusMs: rolled.lifetimeFocusMs + ms,
+        currentStreak: newStreak,
+        maxStreak: newMaxStreak,
+        lastActiveDate: today,
+      };
+    });
+  }, []);
+
   completeSegmentRef.current = () => {
     // Update stats on completed *work* segments
     if (phase === "work") {
@@ -365,15 +550,49 @@ export default function Pomodoro() {
       const credited = currentWorkDurMsRef.current ?? settings.workMin * 60_000;
       currentWorkDurMsRef.current = null;
       setStats((prev) => {
-        // Roll over inside the reducer so a session completing past
-        // midnight archives yesterday's bucket cleanly before adding to today.
         const rolled = rolloverIfNeeded(prev);
+        const today = todayKey();
+        
+        // Calculate new streak
+        let newStreak = rolled.currentStreak || 0;
+        const lastActive = rolled.lastActiveDate;
+        
+        if (!lastActive) {
+          newStreak = 1;
+        } else if (lastActive === today) {
+          // Already active today
+        } else {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const ym = String(yesterday.getMonth() + 1).padStart(2, "0");
+          const yd = String(yesterday.getDate()).padStart(2, "0");
+          const yesterdayStr = `${yesterday.getFullYear()}-${ym}-${yd}`;
+          
+          if (lastActive === yesterdayStr) {
+            newStreak += 1;
+          } else {
+            newStreak = 1;
+          }
+        }
+        const newMaxStreak = Math.max(rolled.maxStreak || 0, newStreak);
+        const durationMin = Math.round(credited / 60_000);
+        const newSession: CompletedSession = {
+          id: Math.random().toString(36).substring(2, 9),
+          timestamp: Date.now(),
+          durationMin,
+        };
+        const updatedSessions = [...(rolled.completedSessionsToday || []), newSession];
+
         return {
           ...rolled,
           todayFocusMs: rolled.todayFocusMs + credited,
           todaySessions: rolled.todaySessions + 1,
           lifetimeFocusMs: rolled.lifetimeFocusMs + credited,
           lifetimeSessions: rolled.lifetimeSessions + 1,
+          currentStreak: newStreak,
+          maxStreak: newMaxStreak,
+          lastActiveDate: today,
+          completedSessionsToday: updatedSessions,
         };
       });
       const nextPos = cyclePos + 1;
@@ -438,16 +657,24 @@ export default function Pomodoro() {
   }, [running, paused, endAt]);
 
   const handleReset = useCallback(() => {
+    if (phase === "work" && (running || paused)) {
+      creditPartialFocus(elapsedThisSessionMs);
+    }
+    currentWorkDurMsRef.current = null;
     setRunning(false);
     setPaused(false);
     setEndAt(null);
     setPausedRemainMs(null);
     setPhase("work");
     setCyclePos(0);
-  }, []);
+  }, [phase, running, paused, elapsedThisSessionMs, creditPartialFocus]);
 
   const handleSkip = useCallback(() => {
-    // Move to next phase WITHOUT crediting a partial session.
+    if (phase === "work" && (running || paused)) {
+      creditPartialFocus(elapsedThisSessionMs);
+    }
+    currentWorkDurMsRef.current = null;
+    // Move to next phase WITHOUT crediting a full completed session.
     if (phase === "work") {
       const isLong = cyclePos + 1 >= settings.longBreakAfter;
       setCyclePos(isLong ? 0 : cyclePos + 1);
@@ -458,7 +685,7 @@ export default function Pomodoro() {
       if (settings.autoStartWork) startSegment("work");
       else { setRunning(false); setPhase("work"); setEndAt(null); setPausedRemainMs(null); }
     }
-  }, [phase, cyclePos, settings.longBreakAfter, settings.autoStartBreak, settings.autoStartWork, startSegment]);
+  }, [phase, running, paused, elapsedThisSessionMs, creditPartialFocus, cyclePos, settings.longBreakAfter, settings.autoStartBreak, settings.autoStartWork, startSegment]);
 
   const setWorkPreset = useCallback((min: number) => {
     setSettings((s) => ({ ...s, workMin: min }));
@@ -685,6 +912,104 @@ export default function Pomodoro() {
   );
 
   /* ────────────────────── Render ────────────────────── */
+  const toggleThemeWithRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const currentTheme = resolvedTheme;
+    const nextTheme = currentTheme === "light" ? "dark" : "light";
+    
+    // 1. Get click coordinate
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = e.clientX || (rect.left + rect.width / 2);
+    const clientY = e.clientY || (rect.top + rect.height / 2);
+    
+    // 2. Create ripple div
+    const ripple = document.createElement("div");
+    ripple.className = "pm-theme-ripple";
+    
+    const nextBg = nextTheme === "light" ? "#fdfdfe" : "#0F0F0E";
+    
+    Object.assign(ripple.style, {
+      position: "fixed",
+      left: `${clientX}px`,
+      top: `${clientY}px`,
+      width: "0px",
+      height: "0px",
+      borderRadius: "50%",
+      transform: "translate(-50%, -50%)",
+      pointerEvents: "none",
+      zIndex: "999999",
+      background: nextBg,
+      transition: "width 0.7s cubic-bezier(0.86, 0, 0.07, 1), height 0.7s cubic-bezier(0.86, 0, 0.07, 1), opacity 0.2s ease",
+      opacity: "1"
+    });
+    
+    document.body.appendChild(ripple);
+    
+    // Force layout reflow
+    ripple.offsetWidth;
+    
+    // Calculate max viewport distance
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const maxDist = Math.max(
+      Math.hypot(clientX, clientY),
+      Math.hypot(w - clientX, clientY),
+      Math.hypot(clientX, h - clientY),
+      Math.hypot(w - clientX, h - clientY)
+    );
+    const size = maxDist * 2.2;
+    
+    // Expand ripple
+    ripple.style.width = `${size}px`;
+    ripple.style.height = `${size}px`;
+    
+    // 3. Update React theme state halfway through
+    setTimeout(() => {
+      setTheme(nextTheme);
+    }, 350);
+    
+    // 4. Clean up ripple
+    setTimeout(() => {
+      ripple.style.opacity = "0";
+      setTimeout(() => {
+        ripple.remove();
+      }, 200);
+    }, 700);
+  };
+
+  const headerActions = (
+    <button
+      type="button"
+      className={`pm-skeuo-toggle ${resolvedTheme}`}
+      onClick={toggleThemeWithRipple}
+      aria-label={`Toggle theme. Current: ${resolvedTheme}`}
+      title={`Theme: ${resolvedTheme}`}
+    >
+      <span className="pm-skeuo-track">
+        <span className="pm-skeuo-text pm-skeuo-text-light">LIGHT</span>
+        <span className="pm-skeuo-text pm-skeuo-text-dark">DARK</span>
+        <span className="pm-skeuo-thumb">
+          {resolvedTheme === "light" ? (
+            <svg viewBox="0 0 24 24" className="pm-toggle-icon pm-sun-icon" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="pm-toggle-icon pm-moon-icon" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </span>
+      </span>
+    </button>
+  );
+
   return (
     <ToolPage
       seoTitle={seo.title}
@@ -695,7 +1020,8 @@ export default function Pomodoro() {
       tagline="Focus in 25-minute sprints — privacy-first, in your browser"
       backHref="/tools"
       backLabel="Tools"
-      bgColor="radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.02) 40%, #07080a 80%)"
+      headerActions={headerActions}
+      bgColor="var(--pm-page-bg)"
     >
       <main className="pm-stage" ref={mainRef}>
         <div className="pm-grid">
@@ -744,6 +1070,14 @@ export default function Pomodoro() {
                 <div className="pm-status">{phaseHint}</div>
               </div>
             </div>
+
+            {/* Mindful Quote */}
+            {currentQuote && (
+              <div className="pm-quote-container">
+                <p className="pm-quote-text">“{currentQuote.text}”</p>
+                <span className="pm-quote-author">— {currentQuote.author}</span>
+              </div>
+            )}
 
             {/* Duration row: only shown when idle. Once a session starts,
                 mid-session duration changes don't make sense and the row
@@ -909,13 +1243,53 @@ export default function Pomodoro() {
               <span>Your progress</span>
             </div>
             <div className="pm-stats-grid">
-              <Stat value={fmtFocusTime(liveStats.todayFocusMs)} label="Focus today" />
-              <Stat value={String(stats.todaySessions)} label="Sessions today" />
-              <Stat value={fmtFocusTime(thirtyDayAvg(liveStats))} label="30-day avg" />
+              <Stat value={fmtFocusTimeLive(liveStats.todayFocusMs, running && phase === "work")} label="Focus today" />
+              <Stat value={`${stats.todaySessions} / ${settings.dailyTargetSessions}`} label="Daily goal">
+                <div className="pm-goal-dots" aria-label={`${stats.todaySessions} of ${settings.dailyTargetSessions} cycles complete`}>
+                  {Array.from({ length: settings.dailyTargetSessions }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`pm-goal-dot ${i < stats.todaySessions ? "complete" : ""}`}
+                    />
+                  ))}
+                </div>
+              </Stat>
+              <Stat value={`${stats.currentStreak || 0} d`} label="Active streak" />
+              <Stat value={fmtFocusTime(Object.values(liveStats.history).reduce((a, b) => a + b, 0) + liveStats.todayFocusMs)} label="30-day total" />
               <Stat value={fmtFocusTime(bestDayMs(liveStats))} label="Best day" />
-              <Stat value={fmtFocusTime(avgSessionMs(stats))} label="Avg session" />
-              <Stat value={fmtFocusTime(liveStats.lifetimeFocusMs)} label="Lifetime" />
+              <Stat value={fmtFocusTime(liveStats.lifetimeFocusMs)} label="Lifetime focus" />
             </div>
+
+            <div className="pm-timeline">
+              <div className="pm-timeline-head">Today's Timeline</div>
+              {liveStats.completedSessionsToday && liveStats.completedSessionsToday.length > 0 ? (
+                <div className="pm-timeline-list">
+                  {liveStats.completedSessionsToday.map((sess, idx) => {
+                    const dateObj = new Date(sess.timestamp);
+                    const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <div key={sess.id || idx} className="pm-timeline-item">
+                        <div className="pm-timeline-dot-wrapper">
+                          <div className="pm-timeline-dot" />
+                          {idx < liveStats.completedSessionsToday!.length - 1 && (
+                            <div className="pm-timeline-line" />
+                          )}
+                        </div>
+                        <div className="pm-timeline-content">
+                          <span className="pm-timeline-time">{timeStr}</span>
+                          <span className="pm-timeline-desc">{sess.durationMin}m sprint</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="pm-timeline-empty">
+                  No sprints logged today yet.
+                </div>
+              )}
+            </div>
+
             <p className="pm-stats-foot">
               Stored only in your browser. No account, no upload.
             </p>
@@ -990,6 +1364,12 @@ export default function Pomodoro() {
                   value={settings.longBreakAfter}
                   min={2} max={8}
                   onChange={(v) => setSettings((s) => ({ ...s, longBreakAfter: v }))}
+                />
+                <NumField
+                  label="Daily target"
+                  value={settings.dailyTargetSessions}
+                  min={1} max={12}
+                  onChange={(v) => setSettings((s) => ({ ...s, dailyTargetSessions: v }))}
                 />
               </div>
             </motion.div>
@@ -1122,11 +1502,12 @@ export default function Pomodoro() {
 
 /* ────────────────────── Subcomponents ────────────────────── */
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ value, label, children }: { value: string; label: string; children?: React.ReactNode }) {
   return (
     <div className="pm-stat">
       <div className="pm-stat-value">{value}</div>
       <div className="pm-stat-label">{label}</div>
+      {children}
     </div>
   );
 }
@@ -1178,6 +1559,263 @@ function NumField({
 function PomodoroStyles() {
   return (
     <style>{`
+      :root {
+        --pm-page-bg: radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.08) 0%, rgba(74, 222, 128, 0.02) 40%, var(--bg0) 80%);
+        --pm-work: var(--hi);
+        --pm-short: var(--ok);
+        --pm-long: var(--warn);
+      }
+
+      body.pm-light-mode {
+        /* SURFACES — warm-neutral light, desaturated green tint */
+        --bg0: #fdfdfe;     /* Pure white base color */
+        --bg1: #ffffff;     /* Solid white for clean card panels */
+        --bg2: #f2f2ef;     /* Secondary surfaces */
+        --bg3: #ebebe8;     /* Selected/elevated rows */
+        --bg4: #dcdcd6;     /* Hover state */
+
+        /* BORDERS — dark strokes at very low opacity to adapt to gradient background */
+        --b0: rgba(22, 22, 21, 0.08);
+        --b1: rgba(22, 22, 21, 0.14);
+        --b2: rgba(22, 22, 21, 0.20);
+        --b3: rgba(22, 22, 21, 0.35);
+
+        /* TYPOGRAPHY — deep warm-ink color for maximum readability and contrast */
+        --t1: #161615;      /* Primary text (almost black) */
+        --t2: #4a4a46;      /* Body text (dark grey) */
+        --t3: #7c7c75;      /* Muted text (grey) */
+        --t4: #a8a8a0;      /* Ghost text */
+
+        /* SEMANTIC OVERRIDES FOR LIGHT MODE */
+        --pm-work: #16a34a;  /* Vibrant yet organic green */
+        --pm-short: #0284c7; /* Deep ocean blue */
+        --pm-long: #d97706;  /* Warm amber */
+        --ok: #16a34a;
+        --warn: #d97706;
+
+        --pm-page-bg: transparent;
+      }
+
+      html:has(body.pm-light-mode) {
+        background-color: #fdfdfe !important;
+      }
+
+      body.pm-light-mode {
+        background-color: #fdfdfe !important;
+        background-image:
+          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%) !important;
+        background-attachment: fixed !important;
+      }
+
+      body.pm-light-mode .pm-card {
+        box-shadow: 0 10px 40px -15px rgba(22, 22, 21, 0.08),
+                    0 0 0 1px rgba(22, 22, 21, 0.02),
+                    inset 0 1px 0 0 rgba(255,255,255,0.8);
+      }
+
+      body.pm-light-mode .pm-btn-secondary {
+        background: rgba(0,0,0,0.04);
+        border-color: rgba(0,0,0,0.06);
+        color: rgba(22, 22, 21, 0.88);
+      }
+      body.pm-light-mode .pm-btn-secondary:hover {
+        background: rgba(0,0,0,0.07);
+      }
+
+      body.pm-light-mode .pm-btn-ghost {
+        color: rgba(22, 22, 21, 0.60);
+      }
+      body.pm-light-mode .pm-btn-ghost:hover {
+        color: rgba(22, 22, 21, 0.92);
+        background: rgba(0,0,0,0.04);
+      }
+
+      body.pm-light-mode .pm-icon-btn {
+        color: rgba(22, 22, 21, 0.50);
+      }
+      body.pm-light-mode .pm-icon-btn:hover {
+        color: rgba(22, 22, 21, 0.92);
+        background: rgba(0,0,0,0.05);
+      }
+      body.pm-light-mode .pm-icon-btn[aria-pressed="true"] {
+        color: rgba(22, 22, 21, 0.95);
+        background: rgba(0,0,0,0.08);
+      }
+
+      body.pm-light-mode .pm-overflow-menu {
+        background: rgba(253, 253, 252, 0.98);
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow:
+          0 1px 0 rgba(255,255,255,0.8) inset,
+          0 12px 32px rgba(0,0,0,0.08),
+          0 4px 12px rgba(0,0,0,0.04);
+      }
+
+      body.pm-light-mode .pm-menu-item {
+        color: rgba(22, 22, 21, 0.85);
+      }
+      body.pm-light-mode .pm-menu-item:hover:not(:disabled) {
+        background: rgba(22, 22, 21, 0.05);
+        color: var(--t1);
+      }
+      body.pm-light-mode .pm-menu-item svg {
+        color: rgba(22, 22, 21, 0.55);
+      }
+      body.pm-light-mode .pm-menu-item:hover:not(:disabled) svg {
+        color: var(--t1);
+      }
+      body.pm-light-mode .pm-menu-state {
+        color: rgba(22, 22, 21, 0.42);
+      }
+      body.pm-light-mode .pm-menu-divider {
+        background: rgba(22, 22, 21, 0.06);
+      }
+      body.pm-light-mode .pm-menu-hint {
+        color: rgba(22, 22, 21, 0.42);
+      }
+      body.pm-light-mode .pm-menu-hint kbd {
+        background: rgba(22, 22, 21, 0.05);
+        border: 1px solid rgba(22, 22, 21, 0.10);
+        color: rgba(22, 22, 21, 0.65);
+      }
+
+      body.pm-light-mode .pm-focus {
+        background: #fafaf9;
+      }
+      body.pm-light-mode .pm-focus-time {
+        color: #161615;
+      }
+      body.pm-light-mode .pm-focus-label {
+        color: rgba(22, 22, 21, 0.4);
+      }
+      body.pm-light-mode .pm-focus-exit {
+        color: rgba(22, 22, 21, 0.35);
+      }
+      body.pm-light-mode .pm-focus-exit:hover {
+        color: rgba(22, 22, 21, 0.95);
+        background: rgba(22, 22, 21, 0.05);
+      }
+      body.pm-light-mode .pm-focus-hint {
+        color: rgba(22, 22, 21, 0.4);
+      }
+      body.pm-light-mode .pm-focus-hint kbd {
+        background: rgba(22, 22, 21, 0.03);
+        border: 1px solid rgba(22, 22, 21, 0.08);
+        color: rgba(22, 22, 21, 0.6);
+      }
+
+      body.pm-light-mode .pm-popover {
+        background: #ffffff;
+        box-shadow: 0 32px 80px -20px rgba(22, 22, 21, 0.15);
+      }
+
+      /* Skeuomorphic Premium Toggle */
+      .pm-skeuo-toggle {
+        appearance: none;
+        background: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        display: inline-flex;
+        outline: none;
+        position: relative;
+        z-index: 1000;
+        vertical-align: middle;
+      }
+      .pm-skeuo-track {
+        display: block;
+        width: 82px;
+        height: 32px;
+        border-radius: 999px;
+        position: relative;
+        transition: background 0.3s ease, box-shadow 0.3s ease;
+      }
+      .pm-skeuo-text {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: var(--s);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        transition: opacity 0.3s ease, color 0.3s ease;
+        pointer-events: none;
+      }
+      .pm-skeuo-thumb {
+        position: absolute;
+        top: 3px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), background 0.3s ease, box-shadow 0.3s ease;
+      }
+      .pm-toggle-icon {
+        width: 14px;
+        height: 14px;
+        transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      }
+
+      /* Light Mode Specifics */
+      body.pm-light-mode .pm-skeuo-track {
+        background: #e4e4e7;
+        box-shadow: inset 2px 2px 5px rgba(22, 22, 21, 0.08), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+      }
+      body.pm-light-mode .pm-skeuo-thumb {
+        transform: translateX(3px);
+        background: #ffffff;
+        box-shadow: 1.5px 1.5px 4px rgba(22, 22, 21, 0.08), -1px -1px 3px rgba(255, 255, 255, 0.9);
+      }
+      body.pm-light-mode .pm-skeuo-text-light {
+        opacity: 0;
+      }
+      body.pm-light-mode .pm-skeuo-text-dark {
+        opacity: 1;
+        right: 12px;
+        color: rgba(22, 22, 21, 0.50);
+      }
+      body.pm-light-mode .pm-sun-icon {
+        color: #f59e0b;
+        transform: rotate(0deg);
+      }
+
+      /* Dark Mode Specifics */
+      body:not(.pm-light-mode) .pm-skeuo-track {
+        background: #141416;
+        box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4), inset -1px -1px 2px rgba(255, 255, 255, 0.03);
+      }
+      body:not(.pm-light-mode) .pm-skeuo-thumb {
+        transform: translateX(53px); /* 82 - 26 - 3 = 53 */
+        background: #232326;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4), -1px -1px 2px rgba(255, 255, 255, 0.03);
+      }
+      body:not(.pm-light-mode) .pm-skeuo-text-light {
+        opacity: 1;
+        left: 12px;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      body:not(.pm-light-mode) .pm-skeuo-text-dark {
+        opacity: 0;
+      }
+      body:not(.pm-light-mode) .pm-moon-icon {
+        color: #60a5fa;
+        transform: rotate(0deg);
+      }
+
+      /* Focus / hover state indicators */
+      .pm-skeuo-toggle:focus-visible .pm-skeuo-track {
+        outline: 2px solid var(--b3);
+        outline-offset: 2px;
+      }
+      .pm-skeuo-toggle:hover .pm-skeuo-thumb {
+        filter: brightness(1.05);
+      }
+
       /* Stage breathes from the top — productivity tools should never
          feel like the content is jammed under the header. 48px gives
          the timer room to feel like the focus of the page. */
@@ -1198,13 +1836,23 @@ function PomodoroStyles() {
       .pm-card {
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
-        background: rgba(15, 18, 25, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--bg1);
+        border: 1px solid var(--b0);
         border-radius: 20px;
         padding: 32px 24px;
         box-shadow: 0 40px 100px -25px rgba(0,0,0,0.85),
                     0 0 0 1px rgba(255,255,255,0.01),
                     inset 0 1px 0 0 rgba(255,255,255,0.05);
+        position: relative;
+      }
+      .pm-card::before {
+        content: "";
+        position: absolute; inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.022;
+        border-radius: inherit;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       }
       .pm-timer-card {
         display: flex; flex-direction: column; align-items: center; gap: 18px;
@@ -1223,13 +1871,13 @@ function PomodoroStyles() {
         display: inline-flex; align-items: center; gap: 6px;
         font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
         padding: 4px 10px; border-radius: 999px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.07);
-        color: rgba(255,255,255,0.78);
+        background: var(--bg2);
+        border: 1px solid var(--b0);
+        color: ${tokens.text.primary};
       }
-      .pm-phase-work svg { color: #FCD34D; opacity: 0.85; }
-      .pm-phase-short svg { color: #7DD3FC; opacity: 0.85; }
-      .pm-phase-long svg { color: #86EFAC; opacity: 0.85; }
+      .pm-phase-work svg { color: var(--pm-work); opacity: 0.85; }
+      .pm-phase-short svg { color: var(--pm-short); opacity: 0.85; }
+      .pm-phase-long svg { color: var(--pm-long); opacity: 0.85; }
 
       .pm-cycle-counter {
         font-size: 12px; color: ${tokens.text.quiet}; font-variant-numeric: tabular-nums;
@@ -1238,9 +1886,9 @@ function PomodoroStyles() {
       .pm-progress-dots { display: flex; gap: 8px; }
       .pm-dot {
         width: 8px; height: 8px; border-radius: 50%;
-        background: rgba(255,255,255,0.10); transition: background 200ms;
+        background: var(--bg3); transition: background 200ms;
       }
-      .pm-dot-on { background: #FCD34D; box-shadow: 0 0 0 3px rgba(250,204,21,0.10); }
+      .pm-dot-on { background: var(--ok); box-shadow: 0 0 0 3px var(--ok2); }
 
       /* Ring */
       .pm-ring-wrap {
@@ -1248,14 +1896,14 @@ function PomodoroStyles() {
         display: flex; align-items: center; justify-content: center;
       }
       .pm-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
-      .pm-ring-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 3; }
+      .pm-ring-bg { fill: none; stroke: var(--b0); stroke-width: 3; }
       .pm-ring-fg {
         fill: none; stroke-width: 3; stroke-linecap: round;
         transition: stroke-dashoffset 480ms cubic-bezier(0.22, 1, 0.36, 1), stroke 320ms;
       }
-      .pm-ring-fg-work { stroke: #FCD34D; }
-      .pm-ring-fg-short { stroke: #7DD3FC; }
-      .pm-ring-fg-long { stroke: #86EFAC; }
+      .pm-ring-fg-work { stroke: var(--pm-work); }
+      .pm-ring-fg-short { stroke: var(--pm-short); }
+      .pm-ring-fg-long { stroke: var(--pm-long); }
 
       .pm-ring-inner {
         position: absolute; inset: 0;
@@ -1294,8 +1942,8 @@ function PomodoroStyles() {
       }
       .pm-presets {
         display: inline-flex; align-items: center;
-        background: rgba(255,255,255,0.035);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--bg2);
+        border: 1px solid var(--b0);
         border-radius: 10px;
         padding: 3px;
         gap: 0;
@@ -1305,13 +1953,13 @@ function PomodoroStyles() {
         position: relative;
         padding: 5px 12px 7px;
         border-radius: 7px;
-        color: rgba(255,255,255,0.50);
+        color: ${tokens.text.quiet};
         font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em;
         font-variant-numeric: tabular-nums;
         transition: color 140ms;
       }
-      .pm-preset:hover:not(:disabled) { color: rgba(255,255,255,0.85); }
-      .pm-preset:focus-visible { outline: 1.5px solid rgba(255,255,255,0.35); outline-offset: 2px; }
+      .pm-preset:hover:not(:disabled) { color: ${tokens.text.primary}; }
+      .pm-preset:focus-visible { outline: 1.5px solid var(--b3); outline-offset: 2px; }
       .pm-preset-dot {
         position: absolute;
         left: 50%; bottom: 1px;
@@ -1321,8 +1969,8 @@ function PomodoroStyles() {
         transform: translateX(-50%);
         transition: background 140ms;
       }
-      .pm-preset-on { color: #16A34A; }
-      .pm-preset-on .pm-preset-dot { background: #16A34A; }
+      .pm-preset-on { color: ${tokens.text.primary}; }
+      .pm-preset-on .pm-preset-dot { background: ${tokens.text.primary}; }
 
       /* Custom: lives outside the segmented pill. No container — just
          a quiet number input with a "min" suffix. Borrowed from how
@@ -1333,22 +1981,22 @@ function PomodoroStyles() {
       }
       .pm-custom input {
         appearance: none; background: transparent;
-        border: 0; border-bottom: 1px dashed rgba(255,255,255,0.10);
+        border: 0; border-bottom: 1px dashed var(--b1);
         outline: none;
-        color: rgba(255,255,255,0.85);
+        color: ${tokens.text.primary};
         font-family: ${tokens.font.body};
         font-size: 12.5px; font-weight: 500;
         padding: 4px 2px; width: 58px; text-align: center;
         font-variant-numeric: tabular-nums;
         transition: border-color 140ms, color 140ms;
       }
-      .pm-custom input::placeholder { color: rgba(255,255,255,0.35); }
-      .pm-custom input:hover { border-bottom-color: rgba(255,255,255,0.20); }
-      .pm-custom input:focus { border-bottom-color: rgba(255,255,255,0.45); color: #fff; }
+      .pm-custom input::placeholder { color: ${tokens.text.quiet}; }
+      .pm-custom input:hover { border-bottom-color: var(--b2); }
+      .pm-custom input:focus { border-bottom-color: var(--b3); color: var(--t1); }
       .pm-custom input::-webkit-outer-spin-button,
       .pm-custom input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       .pm-custom input[type=number] { -moz-appearance: textfield; }
-      .pm-custom span { font-size: 12px; color: rgba(255,255,255,0.40); font-weight: 500; }
+      .pm-custom span { font-size: 12px; color: var(--t3); font-weight: 500; }
 
       /* Controls */
       .pm-controls {
@@ -1372,7 +2020,7 @@ function PomodoroStyles() {
       }
       .pm-btn:active { transform: translateY(0.5px); }
       .pm-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-      .pm-btn:focus-visible { outline: 1.5px solid rgba(255,255,255,0.45); outline-offset: 2px; }
+      .pm-btn:focus-visible { outline: 1.5px solid var(--b3); outline-offset: 2px; }
 
       /* Primary "go" — deeper green (#16A34A, Tailwind green-600). The
          premium-button discipline: NO colored halo (that's a Dribbble
@@ -1426,7 +2074,7 @@ function PomodoroStyles() {
         color: rgba(255,255,255,0.95);
         background: rgba(255,255,255,0.09);
       }
-      .pm-icon-btn:focus-visible { outline: 1.5px solid rgba(255,255,255,0.45); outline-offset: 2px; }
+      .pm-icon-btn:focus-visible { outline: 1.5px solid var(--b3); outline-offset: 2px; }
 
       /* ── Overflow menu (Linear / Notion / Things 3 pattern) ──
          Trigger sits absolute in the top-right corner of the timer card —
@@ -1509,8 +2157,8 @@ function PomodoroStyles() {
         display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
       }
       .pm-stat {
-        background: rgba(255, 255, 255, 0.015);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: var(--bg2);
+        border: 1px solid var(--b0);
         border-radius: 10px;
         padding: 10px 12px;
       }
@@ -1535,6 +2183,83 @@ function PomodoroStyles() {
         margin: 0;
       }
 
+      .pm-goal-dots {
+        display: flex; gap: 4px; margin-top: 6px;
+      }
+      .pm-goal-dot {
+        width: 12px; height: 3px; border-radius: 1px;
+        background: var(--b1);
+        transition: background-color 200ms;
+      }
+      .pm-goal-dot.complete {
+        background: var(--ok);
+        box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+      }
+      body.pm-light-mode .pm-goal-dot.complete {
+        background: #10b981;
+        box-shadow: none;
+      }
+
+      .pm-timeline {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--b1);
+      }
+      .pm-timeline-head {
+        font-family: ${tokens.font.body};
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+        color: ${tokens.text.quiet}; margin-bottom: 12px; font-weight: 600;
+      }
+      .pm-timeline-list {
+        display: flex; flex-direction: column; gap: 10px;
+      }
+      .pm-timeline-item {
+        display: flex; gap: 10px; align-items: flex-start;
+      }
+      .pm-timeline-dot-wrapper {
+        display: flex; flex-direction: column; align-items: center;
+        align-self: stretch; width: 8px;
+      }
+      .pm-timeline-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--ok); margin-top: 5px;
+        box-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
+      }
+      body.pm-light-mode .pm-timeline-dot {
+        background: #10b981;
+        box-shadow: none;
+      }
+      .pm-timeline-line {
+        width: 1px; flex: 1; background: var(--b1);
+        margin-top: 4px; margin-bottom: -10px;
+      }
+      .pm-timeline-content {
+        display: flex; align-items: center; gap: 8px; font-size: 12.5px; line-height: 1.3;
+      }
+      .pm-timeline-time {
+        color: ${tokens.text.primary}; font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+      .pm-timeline-desc {
+        color: ${tokens.text.quiet};
+      }
+      .pm-timeline-empty {
+        font-size: 12px; color: ${tokens.text.quiet}; font-style: italic; line-height: 1.4;
+      }
+
+      .pm-quote-container {
+        display: flex; flex-direction: column; align-items: center;
+        text-align: center; margin-top: 20px; max-width: 320px;
+      }
+      .pm-quote-text {
+        font-family: Georgia, serif; font-style: italic; font-size: 13.5px;
+        line-height: 1.45; color: ${tokens.text.quiet}; margin: 0 0 6px 0;
+      }
+      .pm-quote-author {
+        font-family: ${tokens.font.body}; font-size: 10.5px; font-weight: 500;
+        text-transform: uppercase; letter-spacing: 0.05em; color: ${tokens.text.kicker};
+      }
+
       /* Settings popover */
       .pm-overlay {
         position: fixed; inset: 0; background: rgba(0,0,0,0.55);
@@ -1544,8 +2269,8 @@ function PomodoroStyles() {
         position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
         width: min(440px, calc(100vw - 32px));
         max-height: calc(100vh - 64px); overflow: auto;
-        background: ${tokens.bg.card};
-        border: 1px solid ${tokens.border.default};
+        background: var(--bg1);
+        border: 1px solid var(--b0);
         border-radius: 18px;
         padding: 18px 18px 14px;
         box-shadow: 0 32px 80px -20px rgba(0,0,0,0.7);
@@ -1584,12 +2309,12 @@ function PomodoroStyles() {
         width: 14px; height: 14px; border-radius: 50%;
         background: #fff; transition: left 180ms cubic-bezier(0.22, 1, 0.36, 1);
       }
-      .pm-switch-on { background: #3D6BE8; border-color: #3D6BE8; }
+      .pm-switch-on { background: var(--ok); border-color: var(--ok); }
       .pm-switch-on .pm-switch-thumb { left: 18px; }
-      .pm-switch:focus-visible { outline: 2px solid #4F7DFF; outline-offset: 2px; }
+      .pm-switch:focus-visible { outline: 2px solid var(--b3); outline-offset: 2px; }
 
       .pm-numgrid {
-        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
         margin-top: 14px;
       }
       @media (max-width: 480px) { .pm-numgrid { grid-template-columns: 1fr; } }
@@ -1599,15 +2324,15 @@ function PomodoroStyles() {
       }
       .pm-num span { font-size: 11.5px; color: ${tokens.text.quiet}; }
       .pm-num input {
-        appearance: none; background: ${tokens.bg.chrome};
-        border: 1px solid ${tokens.border.default};
+        appearance: none; background: var(--bg2);
+        border: 1px solid var(--b0);
         border-radius: 8px;
         padding: 8px 10px; color: ${tokens.text.primary};
         font-family: inherit; font-size: 13px;
         font-variant-numeric: tabular-nums;
         outline: none; transition: border-color 160ms;
       }
-      .pm-num input:focus { border-color: #4F7DFF; }
+      .pm-num input:focus { border-color: var(--b3); }
 
       /* Distraction-free overlay */
       .pm-focus {
