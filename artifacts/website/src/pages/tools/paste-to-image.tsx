@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import {
-  Download, Check, X, Clipboard, Copy,
+  Download, Check, X, Clipboard, Copy, ChevronDown,
   Settings, Square, Circle, ArrowUpRight, Crop, Undo2, Trash2,
   Maximize2, Minimize2, Droplets, MoreVertical, FlipHorizontal, FlipVertical,
   RotateCw, RotateCcw, Type,
@@ -250,12 +250,27 @@ export default function PasteToImage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fontSize, setFontSize] = useState(20);
   const [activeTextPos, setActiveTextPos] = useState<{ x: number; y: number } | null>(null);
+  const [autoDownload, setAutoDownload] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("pti_auto_download") === "true";
+    }
+    return false;
+  });
+  const [shouldAutoDownload, setShouldAutoDownload] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("pti_auto_download", String(autoDownload));
+    }
+  }, [autoDownload]);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -495,6 +510,59 @@ export default function PasteToImage() {
       pendingSetupRef.current.needsSetup = true;
       setImage(img);
       showToast("Image loaded!", "success");
+      
+      // Auto-detect contrasting annotation color based on image luminance and hue
+      try {
+        const sampleCanvas = document.createElement("canvas");
+        const sampleCtx = sampleCanvas.getContext("2d");
+        if (sampleCtx) {
+          sampleCanvas.width = 50;
+          sampleCanvas.height = 50;
+          sampleCtx.drawImage(img, 0, 0, 50, 50);
+          const imgData = sampleCtx.getImageData(0, 0, 50, 50).data;
+          let totalR = 0, totalG = 0, totalB = 0, count = 0;
+          for (let i = 0; i < imgData.length; i += 4) {
+            const alpha = imgData[i + 3];
+            if (alpha > 50) {
+              totalR += imgData[i];
+              totalG += imgData[i + 1];
+              totalB += imgData[i + 2];
+              count++;
+            }
+          }
+          if (count > 0) {
+            const avgR = totalR / count;
+            const avgG = totalG / count;
+            const avgB = totalB / count;
+            const luminance = 0.299 * avgR + 0.587 * avgG + 0.114 * avgB;
+            
+            let detectedColor = "#FF3B30"; // Default to premium red
+            
+            if (luminance < 75) {
+              detectedColor = "#FFCC00"; // Neon yellow/amber contrasts great with dark/black
+            } else if (luminance > 220) {
+              detectedColor = "#FF3B30"; // Bright red pops on pure white
+            } else {
+              const maxVal = Math.max(avgR, avgG, avgB);
+              if (maxVal === avgR && avgR > avgG + 15 && avgR > avgB + 15) {
+                detectedColor = "#007AFF"; // Blue contrasts with red
+              } else if (maxVal === avgG && avgG > avgR + 15 && avgG > avgB + 15) {
+                detectedColor = "#FF3B30"; // Red contrasts with green
+              } else if (maxVal === avgB && avgB > avgR + 15 && avgB > avgG + 15) {
+                detectedColor = "#FFCC00"; // Yellow/Orange contrasts with blue
+              }
+            }
+            setCurrentColor(detectedColor);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to sample image color", err);
+      }
+
+      if (autoDownload) {
+        setShouldAutoDownload(true);
+      }
+
       // Auto-enter fullscreen when image is pasted
       requestAnimationFrame(() => {
         const container = editorContainerRef.current;
@@ -506,7 +574,7 @@ export default function PasteToImage() {
       URL.revokeObjectURL(url);
       showToast("Failed to load image", "error");
     }
-  }, [showToast]);
+  }, [showToast, autoDownload]);
 
   useEffect(() => {
     const handleGlobalPaste = (e: ClipboardEvent) => {
@@ -881,12 +949,13 @@ export default function PasteToImage() {
     return exportCanvas;
   };
 
-  const downloadImage = useCallback(() => {
+  const downloadImage = useCallback((overrideFormat?: Format) => {
     if (!image || displaySize.width === 0) return;
-    const ext = format === "jpeg" ? "jpg" : format;
+    const activeFormat = overrideFormat ?? format;
+    const ext = activeFormat === "jpeg" ? "jpg" : activeFormat;
     const filename = `${customFilename}.${ext}`;
 
-    if (format === "pdf") {
+    if (activeFormat === "pdf") {
       (async () => {
         const { jsPDF } = await import("jspdf");
         const dataUrl = buildExportCanvas().toDataURL("image/png");
@@ -912,7 +981,7 @@ export default function PasteToImage() {
       URL.revokeObjectURL(url);
       showToast(`Saved as ${filename}`, "success");
       if (document.fullscreenElement) document.exitFullscreen();
-    }, `image/${format}`, format === "png" ? undefined : quality);
+    }, `image/${activeFormat}`, activeFormat === "png" ? undefined : quality);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [image, annotations, format, quality, customFilename, displaySize, showToast]);
 
@@ -1111,6 +1180,26 @@ export default function PasteToImage() {
     }
     return undefined;
   }, [showMoreMenu]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target as Node)) {
+        setShowDownloadMenu(false);
+      }
+    };
+
+    if (showDownloadMenu) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+    return undefined;
+  }, [showDownloadMenu]);
+  useEffect(() => {
+    if (image && displaySize.width > 0 && shouldAutoDownload) {
+      setShouldAutoDownload(false);
+      downloadImage();
+    }
+  }, [image, displaySize, shouldAutoDownload, downloadImage]);
 
   const [location] = useLocation();
   const seo = useMemo(() => {
@@ -1434,6 +1523,26 @@ export default function PasteToImage() {
                             />
                           </div>
                         )}
+
+                        <div className="pt-3 border-t" style={{ borderColor: "#2E2E2C" }}>
+                          <label className="flex items-center justify-between cursor-pointer select-none">
+                            <span className="text-[11px] font-medium" style={{ color: "#7A7874" }}>Auto-download</span>
+                            <div className="relative flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={autoDownload}
+                                onChange={(e) => setAutoDownload(e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-8 h-4 rounded-full transition-colors duration-[140ms] peer-focus:outline-none"
+                                   style={{ background: autoDownload ? "#52C47A" : "#2E2E2C" }}
+                              />
+                              <div className="absolute top-[2px] left-[2px] w-3 h-3 bg-[#F0EDE8] rounded-full transition-transform duration-[140ms]"
+                                   style={{ transform: autoDownload ? "translateX(16px)" : "none" }}
+                              />
+                            </div>
+                          </label>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -1659,14 +1768,82 @@ export default function PasteToImage() {
                       )}
                     </button>
 
-                    <button
-                      onClick={downloadImage}
-                      className="btn-liquid shrink-0"
-                      style={{ padding: "5px 14px", fontSize: "12.5px", borderRadius: "8px" }}
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </button>
+                    <div className="relative flex items-center shrink-0">
+                      <button
+                        onClick={() => downloadImage()}
+                        className="btn-liquid font-medium"
+                        style={{
+                          padding: "5px 12px 5px 14px",
+                          fontSize: "12.5px",
+                          borderTopLeftRadius: "8px",
+                          borderBottomLeftRadius: "8px",
+                          borderTopRightRadius: "0px",
+                          borderBottomRightRadius: "0px",
+                          borderRight: "1px solid rgba(255,255,255,0.12)",
+                          height: "30px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDownloadMenu(!showDownloadMenu);
+                        }}
+                        className="btn-liquid"
+                        style={{
+                          padding: "5px 8px",
+                          borderTopLeftRadius: "0px",
+                          borderBottomLeftRadius: "0px",
+                          borderTopRightRadius: "8px",
+                          borderBottomRightRadius: "8px",
+                          height: "30px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        title="Choose format"
+                        aria-label="Choose format"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                      <AnimatePresence>
+                        {showDownloadMenu && (
+                          <motion.div
+                            ref={downloadMenuRef}
+                            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            className="absolute top-full right-0 mt-2 z-50 border rounded-[10px] py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55)] min-w-[140px]"
+                            style={{ background: "#1C1C1B", borderColor: "#2E2E2C" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {(["png", "jpeg", "webp", "pdf"] as Format[]).map((f) => (
+                              <button
+                                key={f}
+                                onClick={() => {
+                                  setFormat(f);
+                                  setShowDownloadMenu(false);
+                                  downloadImage(f);
+                                }}
+                                className="w-full flex items-center justify-between px-4 py-2 text-[12px] transition-all duration-[140ms] text-left"
+                                style={{ color: format === f ? "#F0EDE8" : "#7A7874" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = format === f ? "#F0EDE8" : "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                              >
+                                <span>{f === "jpeg" ? "JPG" : f.toUpperCase()}</span>
+                                <span className="text-[10px] opacity-40">.{f === "jpeg" ? "jpg" : f}</span>
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
 
                     <button
                       onClick={toggleFullscreen}
