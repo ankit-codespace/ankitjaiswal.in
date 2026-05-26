@@ -156,7 +156,7 @@ export function ToolStyles() {
       /* ── Author card (Option B - Editorial Card) ── */
       .tool-author-card {
         width: 100%;
-        max-width: 640px;
+        max-width: 760px;
         background: var(--bg1);
         border: 1px solid var(--b1);
         border-radius: var(--r);
@@ -244,6 +244,7 @@ export function ToolStyles() {
         color: var(--t2);
         line-height: 1.6;
         letter-spacing: .01em;
+        max-width: 560px;
       }
       .tool-author-card-bio em {
         font-style: italic;

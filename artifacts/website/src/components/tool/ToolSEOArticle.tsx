@@ -184,7 +184,7 @@ export function ToolAuthorCard({
 }) {
   const defaultBio = (
     <>
-      I build fast, useful web tools and help businesses become <em>impossible</em> to ignore in the age of AI search.
+      I build fast, useful web tools and help businesses become impossible to ignore in the age of AI search.
     </>
   );
 
@@ -196,9 +196,9 @@ export function ToolAuthorCard({
         </div>
         <div className="tool-author-card-content">
           <div className="tool-author-card-header">
-            <div className="tool-author-card-name">Ankit Jaiswal</div>
+            <div className="tool-author-card-name">Built by Ankit Jaiswal</div>
             <div className="tool-author-card-role">
-              <span>Web engineer · SEO specialist</span> · India
+              <span>Web engineer · SEO Strategist</span> · India
             </div>
           </div>
           <p className="tool-author-card-bio">
@@ -217,8 +217,8 @@ export function ToolAuthorCard({
               </svg>
             </a>
             <a href={SITE.social.linkedin} target="_blank" rel="noopener noreferrer me author" className="tool-author-card-icon-btn" aria-label="LinkedIn">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                <path d="M1.5 3.5A1.5 1.5 0 103 2a1.5 1.5 0 00-1.5 1.5zM1 5.5h2V14H1V5.5zm4.5 0H7v1.15h.027C7.42 5.9(8.19 5.35 9.33 5.35c2.25 0 2.67 1.48 2.67 3.41V14h-2v-4.8c0-.99-.02-2.26-1.38-2.26-1.38 0-1.59 1.08-1.59 2.19V14h-2V5.5z" fill="currentColor"/>
+              <svg width="13" height="13" viewBox="0 0 512 509.64" fill="none">
+                <path d="M204.97 197.54h64.69v33.16h.94c9.01-16.16 31.04-33.16 63.89-33.16 68.31 0 80.94 42.51 80.94 97.81v116.92h-67.46l-.01-104.13c0-23.81-.49-54.45-35.08-54.45-35.12 0-40.51 25.91-40.51 52.72v105.86h-67.4V197.54zm-38.23-65.09c0 19.36-15.72 35.08-35.08 35.08-19.37 0-35.09-15.72-35.09-35.08 0-19.37 15.72-35.08 35.09-35.08 19.36 0 35.08 15.71 35.08 35.08zm-70.17 65.09h70.17v214.73H96.57V197.54z" fill="currentColor"/>
               </svg>
             </a>
             <a href={`https://x.com/${SITE.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer me author" className="tool-author-card-icon-btn" aria-label="X">

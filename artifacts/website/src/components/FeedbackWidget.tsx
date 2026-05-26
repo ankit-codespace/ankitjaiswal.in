@@ -449,9 +449,9 @@ function FeedbackStyles() {
         align-items: center;
         gap: 18px;
         padding: 22px 26px;
-        border-radius: 16px;
-        background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%);
-        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: var(--r);
+        background: var(--bg1);
+        border: 1px solid var(--b1);
         flex-wrap: wrap;
         max-width: 760px;
         margin-left: auto;
@@ -461,13 +461,13 @@ function FeedbackStyles() {
         flex-shrink: 0;
         width: 40px;
         height: 40px;
-        border-radius: 10px;
+        border-radius: var(--rs);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(255,255,255,0.06);
-        color: rgba(255,255,255,0.78);
-        border: 1px solid rgba(255,255,255,0.10);
+        background: var(--bg3);
+        color: var(--t3);
+        border: 1px solid var(--b1);
       }
       .fb-inline-body {
         flex: 1;
@@ -477,13 +477,13 @@ function FeedbackStyles() {
         font-family: 'Sora', sans-serif;
         font-size: 16px;
         font-weight: 600;
-        color: #fff;
+        color: var(--t1);
         letter-spacing: -0.01em;
         margin-bottom: 4px;
       }
       .fb-inline-sub {
         font-size: 13.5px;
-        color: rgba(255,255,255,0.62);
+        color: var(--t2);
         line-height: 1.5;
       }
       .fb-inline-cta {
