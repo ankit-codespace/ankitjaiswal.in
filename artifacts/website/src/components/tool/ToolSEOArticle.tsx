@@ -234,8 +234,20 @@ export function ToolAuthorCard({
 export function ToolPrivacyBand({ heading, body }: { heading: string; body: string }) {
   return (
     <div className="tool-privacy">
-      <span className="tool-icon" style={{ marginBottom: 0, width: 44, height: 44 }}>
-        <Shield size={20} strokeWidth={1.6} />
+      <span className="tool-privacy-icon">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" />
+          <path d="M9 11L11 13L15 9" strokeWidth="2" />
+        </svg>
       </span>
       <div>
         <h2 style={{ fontFamily: tokens.font.display, fontWeight: 700, fontSize: 20, color: tokens.text.primary, margin: "0 0 12px", letterSpacing: "-0.01em" }}>

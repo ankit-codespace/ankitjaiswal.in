@@ -37,6 +37,7 @@ export function ToolStyles() {
         border: 1px solid rgba(255,255,255,0.07);
         color: #fff;
         margin-bottom: 16px;
+        flex-shrink: 0;
       }
 
       /* ── FAQ ── */
@@ -425,6 +426,16 @@ export function ToolStyles() {
         padding: 36px 40px;
         display: flex; gap: 24px; align-items: flex-start;
       }
+      .tool-privacy-icon {
+        flex-shrink: 0;
+        width: 44px; height: 44px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 12px;
+        background: rgba(82, 196, 122, 0.04);
+        border: 1px solid rgba(82, 196, 122, 0.15);
+        color: #52C47A;
+        transition: background .2s ease, border-color .2s ease;
+      }
       @media (max-width: 640px) {
         .tool-privacy { flex-direction: column; padding: 24px 18px; }
         .tool-step { padding: 16px; gap: 12px; }
@@ -720,6 +731,11 @@ export function ToolStyles() {
       body.pm-light-mode .tool-privacy {
         background: rgba(255, 255, 255, 0.5);
         border-color: var(--b0);
+      }
+      body.pm-light-mode .tool-privacy-icon {
+        background: rgba(34, 197, 94, 0.06);
+        border-color: rgba(34, 197, 94, 0.18);
+        color: #16a34a;
       }
 
       /* ── Unified Toast ── */
