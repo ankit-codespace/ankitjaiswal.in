@@ -907,7 +907,9 @@ export default function PasteToImage() {
         ctx.fillStyle = ann.color;
         const headLen = (10 + ann.strokeWidth * 2) * imageScale;
         const angle = Math.atan2(ey - sy, ex - sx);
-        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+        const lineEndX = ex - headLen * Math.cos(angle) * 0.7;
+        const lineEndY = ey - headLen * Math.sin(angle) * 0.7;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(lineEndX, lineEndY); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(ex, ey);
         ctx.lineTo(ex - headLen * Math.cos(angle - Math.PI / 6), ey - headLen * Math.sin(angle - Math.PI / 6));
         ctx.lineTo(ex - headLen * Math.cos(angle + Math.PI / 6), ey - headLen * Math.sin(angle + Math.PI / 6));
@@ -1815,26 +1817,28 @@ export default function PasteToImage() {
                       )}
                     </button>
 
-                    <div className="relative flex items-center shrink-0 btn-liquid btn-split-liquid">
-                      <button
-                        onClick={() => downloadImage()}
-                        className="btn-split-action font-medium"
-                      >
-                        <Download className="h-4 w-4" />
-                        Download
-                      </button>
-                      <div className="btn-split-sep" />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowDownloadMenu(!showDownloadMenu);
-                        }}
-                        className="btn-split-trigger"
-                        title="Choose format"
-                        aria-label="Choose format"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </button>
+                    <div className="relative shrink-0">
+                      <div className="relative flex items-center btn-liquid btn-split-liquid">
+                        <button
+                          onClick={() => downloadImage()}
+                          className="btn-split-action font-medium"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download
+                        </button>
+                        <div className="btn-split-sep" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDownloadMenu(!showDownloadMenu);
+                          }}
+                          className="btn-split-trigger"
+                          title="Choose format"
+                          aria-label="Choose format"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                      </div>
                       <AnimatePresence>
                         {showDownloadMenu && (
                           <motion.div
