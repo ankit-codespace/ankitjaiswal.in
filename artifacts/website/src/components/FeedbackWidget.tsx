@@ -453,7 +453,7 @@ function FeedbackStyles() {
         background: var(--bg1);
         border: 1px solid var(--b1);
         flex-wrap: wrap;
-        max-width: 760px;
+        max-width: 100%;
         margin-left: auto;
         margin-right: auto;
       }

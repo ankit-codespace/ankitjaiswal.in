@@ -2087,7 +2087,7 @@ export default function PasteToImage() {
           </div>
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolPrivacyBand
             heading="Private by default"
             body="The entire editor — paste handler, canvas renderer, blur filter, JPG/PNG/WebP encoder, download — runs in your browser. There is no upload endpoint, no analytics ping that includes the image, no clipboard logging. Disconnect from the internet after the page loads and the editor still works. That’s how it should be for screenshots of internal dashboards, financial data, or anything you wouldn’t paste into a public Discord."
@@ -2099,7 +2099,7 @@ export default function PasteToImage() {
           <ToolFAQ items={FAQS} />
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolAuthorCard />
         </ToolSection>
 
@@ -2108,7 +2108,7 @@ export default function PasteToImage() {
           <ToolRelatedTools items={RELATED} />
         </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="grid">
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>
