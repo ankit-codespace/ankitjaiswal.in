@@ -645,34 +645,39 @@ export default function YtThumbnail() {
           </div>
         </ToolSection>
 
-        <ToolPrivacyBand
-          heading="Your lookups stay between you and YouTube's CDN"
-          body="When you submit a URL, your browser fetches the thumbnail directly from i.ytimg.com — our server never sees the video ID, the URL, or the resulting image. Your 'Recent' bar lives in your own browser's localStorage and clears whenever you tell it to."
-        />
+        <ToolSection width="privacy">
+          <ToolPrivacyBand
+            heading="Your lookups stay between you and YouTube's CDN"
+            body="When you submit a URL, your browser fetches the thumbnail directly from i.ytimg.com — our server never sees the video ID, the URL, or the resulting image. Your 'Recent' bar lives in your own browser's localStorage and clears whenever you tell it to."
+          />
+        </ToolSection>
 
         <ToolSection>
           <SectionHeading kicker="FAQ" title="Frequently asked questions" />
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        <FeedbackInlineCard />
+        <ToolSection width="privacy">
+          <ToolAuthorCard />
+        </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="grid">
           <SectionHeading kicker="Other useful tools" title="More from the toolbox" />
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        <ToolAuthorCard />
+        <ToolSection>
+          <FeedbackInlineCard />
+        </ToolSection>
       </ToolSEOArticle>
 
       <AnimatePresence>
         {toast.visible && (
           <motion.div
-            initial={{ opacity: 0, y: 14, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 14, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-            className={`ytt-toast ytt-toast-${toast.type}`}
+            initial={{ opacity: 0, y: 14, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 14, x: "-50%" }}
+            className={`tool-toast tool-toast-${toast.type}`}
             role="status"
           >
             {toast.type === "success" ? <Check size={14} /> : <X size={14} />}
@@ -1101,23 +1106,6 @@ function YtThumbStyles() {
         cursor: not-allowed;
       }
 
-      /* Toast */
-      .ytt-toast {
-        position: fixed;
-        bottom: 32px; left: 50%; transform: translateX(-50%);
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: 10px 16px;
-        background: rgba(13, 17, 23, 0.94);
-        backdrop-filter: blur(8px);
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.10);
-        font-size: 13px;
-        color: ${tokens.text.primary};
-        z-index: 100;
-        box-shadow: 0 12px 40px -12px rgba(0,0,0,0.6);
-      }
-      .ytt-toast-error { border-color: rgba(255, 79, 79, 0.40); color: #FF8A8A; }
-      .ytt-toast-success { border-color: rgba(79, 125, 255, 0.40); color: #93B5FF; }
 
       @media (max-width: 540px) {
         .ytt-stage { padding: 20px 16px 40px; }

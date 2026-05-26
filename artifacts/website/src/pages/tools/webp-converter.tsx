@@ -1029,16 +1029,6 @@ export default function WebPConverter() {
         .rcard-foot { padding: 9px 16px; border-top: 1px solid var(--b0); display: flex; gap: 7px; }
         .btn-dl { flex: 1; justify-content: center; }
 
-        .toast {
-          position: fixed; bottom: 22px; left: 50%;
-          transform: translateX(-50%) translateY(56px); opacity: 0;
-          background: var(--bg3); border: 1px solid var(--b0);
-          border-radius: var(--rs); padding: 9px 16px;
-          font-family: var(--s); font-size: 11px;
-          transition: transform .22s, opacity .22s; z-index: 200; white-space: nowrap;
-          pointer-events: none;
-        }
-        .toast.on { transform: translateX(-50%) translateY(0); opacity: 1; }
       `}</style>
 
       {/* Hidden file input */}
@@ -1400,9 +1390,9 @@ export default function WebPConverter() {
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        {/* Inline feedback */}
-        <ToolSection>
-          <FeedbackInlineCard />
+        {/* Author card */}
+        <ToolSection width="privacy">
+          <ToolAuthorCard />
         </ToolSection>
 
         {/* Related tools */}
@@ -1411,19 +1401,27 @@ export default function WebPConverter() {
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        {/* Author card */}
-        <ToolSection width="privacy" marginBottom={140}>
-          <ToolAuthorCard />
+        {/* Inline feedback */}
+        <ToolSection>
+          <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>
 
       {/* ── Toast ── */}
-      <div className={`toast ${toast.visible ? "on" : ""}`} style={{
-        borderColor: toast.type === "success" ? "rgba(82,196,122,.28)" : "rgba(196,72,62,.28)",
-        color: toast.type === "success" ? "var(--ok)" : "var(--err)",
-      }}>
-        {toast.message}
-      </div>
+      <AnimatePresence>
+        {toast.visible && (
+          <motion.div
+            initial={{ opacity: 0, y: 14, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 14, x: "-50%" }}
+            className={`tool-toast tool-toast-${toast.type}`}
+            role="status"
+          >
+            {toast.type === "success" ? <Check size={14} /> : <X size={14} />}
+            <span>{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ToolStatusBar
         stats={[

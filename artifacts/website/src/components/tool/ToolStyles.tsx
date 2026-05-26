@@ -111,22 +111,22 @@ export function ToolStyles() {
 
       /* ── Footer link / social ── */
       .tool-footer {
-        background: #0A0C10;
-        border-top: 1px solid rgba(255,255,255,0.06);
-        padding: 40px 24px 56px;
+        background: var(--bg0);
+        border-top: 1px solid var(--b0);
+        padding: 48px 24px 64px;
         font-family: 'Inter', sans-serif;
+        --bg-social-icon-path: var(--bg0);
       }
       .tool-footer-link {
-        color: rgba(255,255,255,0.65);
+        color: var(--t2);
         text-decoration: none;
         transition: color .15s ease;
       }
-      .tool-footer-link:hover { color: #fff; }
+      .tool-footer-link:hover { color: var(--t1); }
       .tool-footer-link:focus-visible {
-        outline: none;
-        color: #fff;
-        box-shadow: 0 0 0 2px rgba(255,255,255,0.18);
-        border-radius: 4px;
+        outline: 2px solid rgba(240,237,232,.18);
+        outline-offset: 2px;
+        border-radius: var(--rs-xs);
       }
       .tool-social-link {
         display: inline-flex;
@@ -134,23 +134,23 @@ export function ToolStyles() {
         justify-content: center;
         width: 32px;
         height: 32px;
-        border-radius: 8px;
-        color: rgba(255,255,255,0.65);
+        border-radius: var(--rs);
+        color: var(--t2);
         background: transparent;
-        border: 1px solid rgba(255,255,255,0.10);
+        border: 1px solid var(--b1);
         transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
       }
       .tool-social-link:hover {
-        color: #fff;
-        background: rgba(255,255,255,0.06);
-        border-color: rgba(255,255,255,0.22);
+        color: var(--t1);
+        background: var(--bg3);
+        border-color: var(--b2);
         transform: translateY(-1px);
       }
       .tool-social-link:focus-visible {
-        outline: 2px solid rgba(255,255,255,0.55);
+        outline: 2px solid rgba(240,237,232,.18);
         outline-offset: 2px;
-        color: #fff;
       }
+
 
       /* ── Author card ── */
       /* ── Author card (Option B - Editorial Card) ── */
@@ -165,6 +165,7 @@ export function ToolStyles() {
         transition: border-color .2s;
         margin-left: auto;
         margin-right: auto;
+        --bg-social-icon-path: var(--bg1);
       }
       .tool-author-card:hover { border-color: var(--b2); }
 
@@ -719,6 +720,54 @@ export function ToolStyles() {
       body.pm-light-mode .tool-privacy {
         background: rgba(255, 255, 255, 0.5);
         border-color: var(--b0);
+      }
+
+      /* ── Unified Toast ── */
+      .tool-toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        background: #0f1115;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #f0ede8;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02);
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s, bottom 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        pointer-events: none;
+      }
+      .tool-status-bar-active .tool-toast {
+        bottom: 62px;
+      }
+      .tool-toast-success {
+        border-color: rgba(52, 211, 153, 0.22);
+        color: #34d399;
+      }
+      .tool-toast-error {
+        border-color: rgba(248, 113, 113, 0.25);
+        color: #f87171;
+      }
+      body.pm-light-mode .tool-toast {
+        background: #ffffff;
+        border-color: rgba(0, 0, 0, 0.08);
+        color: #1f2937;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
+      }
+      body.pm-light-mode .tool-toast-success {
+        border-color: rgba(22, 163, 74, 0.15);
+        color: #16a34a;
+      }
+      body.pm-light-mode .tool-toast-error {
+        border-color: rgba(220, 38, 38, 0.15);
+        color: #dc2626;
       }
 
     `}</style>

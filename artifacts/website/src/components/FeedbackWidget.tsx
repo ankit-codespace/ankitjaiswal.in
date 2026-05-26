@@ -493,7 +493,7 @@ function FeedbackStyles() {
         padding: 10px 18px;
         border-radius: 999px;
         background: #fff;
-        color: #0D1117;
+        color: #0F0F0E;
         font-size: 13px;
         font-weight: 500;
         font-family: inherit;
@@ -512,29 +512,29 @@ function FeedbackStyles() {
 
       /* Light-theme inline card — add .fb-inline-light to host */
       .fb-inline.fb-inline-light {
-        background: rgba(13,17,23,0.025);
-        border-color: rgba(13,17,23,0.08);
+        background: rgba(15,15,14,0.025);
+        border-color: rgba(15,15,14,0.08);
       }
       .fb-inline.fb-inline-light .fb-inline-icon {
-        background: rgba(13,17,23,0.04);
-        color: rgba(13,17,23,0.72);
-        border-color: rgba(13,17,23,0.10);
+        background: rgba(15,15,14,0.04);
+        color: rgba(15,15,14,0.72);
+        border-color: rgba(15,15,14,0.10);
       }
-      .fb-inline.fb-inline-light .fb-inline-title { color: #0D1117; }
-      .fb-inline.fb-inline-light .fb-inline-sub { color: rgba(13,17,23,0.62); }
+      .fb-inline.fb-inline-light .fb-inline-title { color: #0F0F0E; }
+      .fb-inline.fb-inline-light .fb-inline-sub { color: rgba(15,15,14,0.62); }
       .fb-inline.fb-inline-light .fb-inline-cta {
-        background: #0D1117;
+        background: #0F0F0E;
         color: #fff;
       }
       .fb-inline.fb-inline-light .fb-inline-cta:hover {
-        box-shadow: 0 6px 16px rgba(13,17,23,0.12);
+        box-shadow: 0 6px 16px rgba(15,15,14,0.12);
       }
 
       /* Modal */
       .fb-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(13, 17, 23, 0.55);
+        background: rgba(15, 15, 14, 0.55);
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
         display: flex;
@@ -573,12 +573,12 @@ function FeedbackStyles() {
         justify-content: center;
         background: transparent;
         border: none;
-        color: rgba(13,17,23,0.55);
+        color: rgba(15,15,14,0.55);
         cursor: pointer;
         transition: background .15s ease, color .15s ease;
       }
-      .fb-close:hover { background: rgba(13,17,23,0.06); color: #0D1117; }
-      .fb-close:focus-visible { outline: 2px solid #0D1117; outline-offset: 2px; }
+      .fb-close:hover { background: rgba(15,15,14,0.06); color: #0F0F0E; }
+      .fb-close:focus-visible { outline: 2px solid #0F0F0E; outline-offset: 2px; }
 
       .fb-form { display: flex; flex-direction: column; gap: 18px; }
 
@@ -586,12 +586,12 @@ function FeedbackStyles() {
         font-size: 20px;
         font-weight: 600;
         letter-spacing: -0.015em;
-        color: #0D1117;
+        color: #0F0F0E;
         margin: 0;
       }
       .fb-subtitle {
         font-size: 13.5px;
-        color: rgba(13,17,23,0.62);
+        color: rgba(15,15,14,0.62);
         margin: -10px 0 0;
         line-height: 1.5;
       }
@@ -599,7 +599,7 @@ function FeedbackStyles() {
       .fb-types {
         display: flex;
         gap: 6px;
-        background: rgba(13,17,23,0.04);
+        background: rgba(15,15,14,0.04);
         padding: 4px;
         border-radius: 10px;
       }
@@ -613,24 +613,24 @@ function FeedbackStyles() {
         border-radius: 7px;
         background: transparent;
         border: none;
-        color: rgba(13,17,23,0.62);
+        color: rgba(15,15,14,0.62);
         font-size: 13px;
         font-weight: 500;
         cursor: pointer;
         transition: background .15s ease, color .15s ease;
       }
-      .fb-type:hover { color: #0D1117; }
+      .fb-type:hover { color: #0F0F0E; }
       .fb-type-active {
         background: #fff;
-        color: #0D1117;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(13,17,23,0.06);
+        color: #0F0F0E;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(15,15,14,0.06);
       }
 
       .fb-field { display: flex; flex-direction: column; gap: 6px; position: relative; }
       .fb-label {
         font-size: 12px;
         font-weight: 500;
-        color: rgba(13,17,23,0.72);
+        color: rgba(15,15,14,0.72);
         letter-spacing: -0.005em;
       }
       .fb-required {
@@ -640,16 +640,16 @@ function FeedbackStyles() {
       }
       .fb-help {
         font-size: 11.5px;
-        color: rgba(13,17,23,0.45);
+        color: rgba(15,15,14,0.45);
         margin-top: 2px;
       }
       .fb-input, .fb-textarea {
         width: 100%;
         padding: 10px 12px;
         font-size: 14px;
-        color: #0D1117;
+        color: #0F0F0E;
         background: #fff;
-        border: 1px solid rgba(13,17,23,0.14);
+        border: 1px solid rgba(15,15,14,0.14);
         border-radius: 8px;
         font-family: inherit;
         line-height: 1.5;
@@ -659,15 +659,15 @@ function FeedbackStyles() {
       .fb-textarea { resize: vertical; min-height: 110px; }
       .fb-input:focus, .fb-textarea:focus {
         outline: none;
-        border-color: #0D1117;
-        box-shadow: 0 0 0 3px rgba(13,17,23,0.08);
+        border-color: #0F0F0E;
+        box-shadow: 0 0 0 3px rgba(15,15,14,0.08);
       }
       .fb-counter {
         position: absolute;
         right: 8px;
         bottom: 8px;
         font-size: 11px;
-        color: rgba(13,17,23,0.38);
+        color: rgba(15,15,14,0.38);
         pointer-events: none;
       }
 
@@ -692,20 +692,20 @@ function FeedbackStyles() {
       .fb-btn:active { transform: translateY(1px); }
       .fb-btn:disabled { opacity: 0.6; cursor: not-allowed; }
       .fb-btn-primary {
-        background: #0D1117;
+        background: #0F0F0E;
         color: #fff;
       }
-      .fb-btn-primary:hover:not(:disabled) { background: #1B2028; }
+      .fb-btn-primary:hover:not(:disabled) { background: #161615; }
       .fb-btn-ghost {
         background: transparent;
-        color: rgba(13,17,23,0.62);
+        color: rgba(15,15,14,0.62);
       }
-      .fb-btn-ghost:hover { background: rgba(13,17,23,0.06); color: #0D1117; }
+      .fb-btn-ghost:hover { background: rgba(15,15,14,0.06); color: #0F0F0E; }
       .fb-btn-secondary {
-        background: rgba(13,17,23,0.06);
-        color: #0D1117;
+        background: rgba(15,15,14,0.06);
+        color: #0F0F0E;
       }
-      .fb-btn-secondary:hover { background: rgba(13,17,23,0.10); }
+      .fb-btn-secondary:hover { background: rgba(15,15,14,0.10); }
 
       .fb-spinner {
         width: 12px;
@@ -738,12 +738,12 @@ function FeedbackStyles() {
       .fb-success-title {
         font-size: 18px;
         font-weight: 600;
-        color: #0D1117;
+        color: #0F0F0E;
         margin: 0;
       }
       .fb-success-body {
         font-size: 14px;
-        color: rgba(13,17,23,0.62);
+        color: rgba(15,15,14,0.62);
         margin: 0 0 8px;
         max-width: 320px;
         line-height: 1.55;

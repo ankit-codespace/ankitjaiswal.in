@@ -1650,24 +1650,30 @@ export default function Pomodoro() {
           </div>
         </ToolSection>
 
-        <ToolPrivacyBand
-          heading="Your stats stay on your device"
-          body="No account, no email, no upload. Daily focus minutes, lifetime hours, and settings live in your browser's localStorage and never travel anywhere. Clear your browser data and the slate is clean."
-        />
+        <ToolSection width="privacy">
+          <ToolPrivacyBand
+            heading="Your stats stay on your device"
+            body="No account, no email, no upload. Daily focus minutes, lifetime hours, and settings live in your browser's localStorage and never travel anywhere. Clear your browser data and the slate is clean."
+          />
+        </ToolSection>
 
         <ToolSection>
           <SectionHeading kicker="FAQ" title="Frequently asked questions" />
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        <FeedbackInlineCard />
+        <ToolSection width="privacy">
+          <ToolAuthorCard />
+        </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="grid">
           <SectionHeading kicker="Other useful tools" title="More from the toolbox" />
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        <ToolAuthorCard />
+        <ToolSection>
+          <FeedbackInlineCard />
+        </ToolSection>
       </ToolSEOArticle>
 
       <PomodoroStyles />

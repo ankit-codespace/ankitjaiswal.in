@@ -772,34 +772,39 @@ export default function DomainAge() {
           </div>
         </ToolSection>
 
-        <ToolPrivacyBand
-          heading="Your queries stay between you and the registry"
-          body="WHOIS lookups happen over a single API call from this server to the appropriate registry. Your IP isn't logged with the query, and your 'recent lookups' list lives only in your own browser's localStorage — clear it any time, or use private browsing for a clean slate."
-        />
+        <ToolSection width="privacy">
+          <ToolPrivacyBand
+            heading="Your queries stay between you and the registry"
+            body="WHOIS lookups happen over a single API call from this server to the appropriate registry. Your IP isn't logged with the query, and your 'recent lookups' list lives only in your own browser's localStorage — clear it any time, or use private browsing for a clean slate."
+          />
+        </ToolSection>
 
         <ToolSection>
           <SectionHeading kicker="FAQ" title="Frequently asked questions" />
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        <FeedbackInlineCard />
+        <ToolSection width="privacy">
+          <ToolAuthorCard />
+        </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="grid">
           <SectionHeading kicker="Other useful tools" title="More from the toolbox" />
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        <ToolAuthorCard />
+        <ToolSection>
+          <FeedbackInlineCard />
+        </ToolSection>
       </ToolSEOArticle>
 
       <AnimatePresence>
         {toast.visible && (
           <motion.div
-            initial={{ opacity: 0, y: 14, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 14, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-            className={`da-toast da-toast-${toast.type}`}
+            initial={{ opacity: 0, y: 14, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 14, x: "-50%" }}
+            className={`tool-toast tool-toast-${toast.type}`}
             role="status"
           >
             {toast.type === "success" ? <Check size={14} /> : <X size={14} />}
@@ -1206,26 +1211,6 @@ function DomainAgeStyles() {
         margin: 0;
       }
 
-      /* Toast */
-      .da-toast {
-        position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-        z-index: 60;
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: 10px 16px; border-radius: 999px;
-        font-size: 13px; font-weight: 500;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 12px 40px -10px rgba(0,0,0,0.6);
-      }
-      .da-toast-success {
-        background: rgba(13, 15, 20, 0.92);
-        border: 1px solid rgba(79, 125, 255, 0.35);
-        color: #93C5FD;
-      }
-      .da-toast-error {
-        background: rgba(13, 15, 20, 0.92);
-        border: 1px solid rgba(248, 113, 113, 0.4);
-        color: #FCA5A5;
-      }
 
       @media (max-width: 560px) {
         .da-stage { padding: 20px 16px 48px; }

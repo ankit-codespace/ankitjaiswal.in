@@ -3,6 +3,19 @@ import { Link, useLocation } from "wouter";
 import { Seo } from "@/components/Seo";
 import { SITE, PERSON_SAME_AS } from "@/lib/site";
 import { useFeedback, FeedbackInlineCard } from "@/components/FeedbackWidget";
+import {
+  ToolSEOArticle,
+  SectionHeading,
+  ToolSection,
+  ToolFAQ,
+  ToolRelatedTools,
+  ToolAuthorCard,
+  ToolPrivacyBand,
+  ToolHowToSteps,
+  ToolFeatureGrid,
+} from "@/components/tool/ToolSEOArticle";
+import { ToolFooter } from "@/components/tool/ToolFooter";
+import { tokens } from "@/components/tool/tokens";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -2323,479 +2336,70 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
   }, [onScrolledPastEditor]);
   return (
     <>
-      <style>{`
-        .nseo-card {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 14px;
-          padding: 22px 22px 20px;
-          transition: border-color .2s ease, background .2s ease, transform .2s ease;
-        }
-        .nseo-card:hover {
-          border-color: rgba(255,255,255,0.14);
-          background: rgba(255,255,255,0.035);
-        }
-        .nseo-icon {
-          width: 38px; height: 38px;
-          display: inline-flex; align-items: center; justify-content: center;
-          border-radius: 10px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.07);
-          color: #fff;
-          margin-bottom: 16px;
-        }
-        .nseo-faq {
-          border-bottom: 1px solid rgba(255,255,255,0.07);
-        }
-        .nseo-faq:first-child { border-top: 1px solid rgba(255,255,255,0.07); }
-        .nseo-faq summary {
-          list-style: none;
-          cursor: pointer;
-          display: flex; align-items: center; justify-content: space-between;
-          gap: 16px;
-          padding: 20px 4px;
-          font-family: 'Sora', sans-serif;
-          font-size: 15.5px;
-          font-weight: 500;
-          color: rgba(255,255,255,0.92);
-          outline: none;
-          user-select: none;
-        }
-        .nseo-faq summary::-webkit-details-marker { display: none; }
-        .nseo-faq summary:hover { color: #fff; }
-        .nseo-faq summary:focus-visible {
-          color: #fff;
-          box-shadow: 0 0 0 2px rgba(255,255,255,0.18);
-          border-radius: 6px;
-        }
-        .nseo-related:focus-visible {
-          outline: none;
-          border-color: rgba(255,255,255,0.32);
-          box-shadow: 0 0 0 2px rgba(255,255,255,0.18);
-        }
-        .nseo-footer-link:focus-visible {
-          outline: none;
-          color: #fff;
-          box-shadow: 0 0 0 2px rgba(255,255,255,0.18);
-          border-radius: 4px;
-        }
-        .nseo-faq .nseo-faq-chevron {
-          flex-shrink: 0;
-          transition: transform .2s ease;
-          color: rgba(255,255,255,0.4);
-        }
-        .nseo-faq[open] .nseo-faq-chevron { transform: rotate(180deg); color: rgba(255,255,255,0.7); }
-        .nseo-faq-answer {
-          padding: 0 4px 22px;
-          font-size: 14.5px;
-          line-height: 1.75;
-          color: rgba(255,255,255,0.62);
-          max-width: 680px;
-        }
-        .nseo-related {
-          display: flex; align-items: center; justify-content: space-between;
-          gap: 12px;
-          padding: 18px 20px;
-          border-radius: 12px;
-          border: 1px solid rgba(255,255,255,0.07);
-          background: rgba(255,255,255,0.02);
-          text-decoration: none;
-          color: #fff;
-          transition: border-color .15s ease, background .15s ease, transform .15s ease;
-        }
-        .nseo-related:hover {
-          border-color: rgba(255,255,255,0.18);
-          background: rgba(255,255,255,0.045);
-          transform: translateY(-1px);
-        }
-        .nseo-related .nseo-related-arrow {
-          color: rgba(255,255,255,0.35);
-          transition: color .15s ease, transform .15s ease;
-        }
-        .nseo-related:hover .nseo-related-arrow {
-          color: #fff;
-          transform: translate(2px, -2px);
-        }
-        .nseo-footer-link {
-          color: rgba(255,255,255,0.55);
-          text-decoration: none;
-          transition: color .15s ease;
-        }
-        .nseo-footer-link:hover { color: #fff; }
-
-        /* Social icon links — square hit target, subtle ring on hover/focus
-           to feel like a real interactive control without breaking the
-           minimal, monochrome footer aesthetic. */
-        .nseo-social-link {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          color: rgba(255,255,255,0.55);
-          background: transparent;
-          border: 1px solid rgba(255,255,255,0.10);
-          transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
-        }
-        .nseo-social-link:hover {
-          color: #fff;
-          background: rgba(255,255,255,0.06);
-          border-color: rgba(255,255,255,0.22);
-          transform: translateY(-1px);
-        }
-        .nseo-social-link:focus-visible {
-          outline: 2px solid rgba(255,255,255,0.55);
-          outline-offset: 2px;
-          color: #fff;
-        }
-
-        /* Author card — premium byline that pairs with Person JSON-LD */
-        .nseo-author-card {
-          position: relative;
-          border-radius: 20px;
-          padding: 1px;
-          background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.08) 100%);
-          overflow: hidden;
-        }
-        .nseo-author-card::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: 20px;
-          background: radial-gradient(120% 100% at 0% 0%, rgba(120, 130, 255, 0.10), transparent 60%);
-          pointer-events: none;
-        }
-        .nseo-author-card-inner {
-          position: relative;
-          display: flex;
-          align-items: flex-start;
-          gap: 24px;
-          padding: 28px 30px;
-          border-radius: 19px;
-          background: linear-gradient(180deg, #0E1117 0%, #0A0C10 100%);
-        }
-        @media (max-width: 540px) {
-          .nseo-author-card-inner {
-            padding: 22px;
-            gap: 18px;
-          }
-        }
-        .nseo-author-avatar {
-          flex-shrink: 0;
-          width: 64px;
-          height: 64px;
-          border-radius: 16px;
-          overflow: hidden;
-          background: linear-gradient(135deg, #2C2CF3 0%, #1A1AC4 100%);
-          box-shadow:
-            0 0 0 1px rgba(255,255,255,0.10),
-            0 12px 28px -10px rgba(0,0,0,0.55);
-        }
-        .nseo-author-avatar img {
-          display: block;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: center;
-        }
-        .nseo-author-actions {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-        .nseo-author-cta {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 16px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.14);
-          color: #fff;
-          font-size: 13px;
-          font-weight: 500;
-          font-family: 'Inter', sans-serif;
-          text-decoration: none;
-          transition: background .18s ease, border-color .18s ease, transform .18s ease;
-        }
-        .nseo-author-cta:hover {
-          background: rgba(255,255,255,0.10);
-          border-color: rgba(255,255,255,0.24);
-          transform: translateY(-1px);
-        }
-        .nseo-author-cta:focus-visible {
-          outline: 2px solid rgba(255,255,255,0.55);
-          outline-offset: 2px;
-        }
-        .nseo-author-socials {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        /* Long-form prose */
-        .nseo-prose p {
-          font-size: 16px;
-          line-height: 1.8;
-          color: rgba(255,255,255,0.7);
-          margin: 0 0 22px;
-        }
-        .nseo-prose p:last-child { margin-bottom: 0; }
-        .nseo-prose strong { color: #fff; font-weight: 600; }
-
-        /* Numbered "how to" steps */
-        .nseo-step {
-          display: flex;
-          gap: 18px;
-          padding: 20px 22px;
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 14px;
-          transition: border-color .2s ease, background .2s ease;
-        }
-        .nseo-step:hover {
-          border-color: rgba(255,255,255,0.14);
-          background: rgba(255,255,255,0.035);
-        }
-        .nseo-step-num {
-          flex-shrink: 0;
-          width: 30px; height: 30px;
-          display: inline-flex; align-items: center; justify-content: center;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.1);
-          font-family: 'Sora', sans-serif;
-          font-size: 13px; font-weight: 600;
-          color: #fff;
-        }
-        .nseo-step-title {
-          font-family: 'Sora', sans-serif;
-          font-weight: 700; font-size: 15.5px;
-          color: #fff; margin: 4px 0 6px;
-          letter-spacing: -0.005em;
-        }
-        .nseo-step-body {
-          font-size: 14px;
-          line-height: 1.65;
-          color: rgba(255,255,255,0.62);
-          margin: 0;
-        }
-
-        /* Keyboard shortcuts + comparison tables */
-        .nseo-table {
-          width: 100%;
-          border-collapse: separate;
-          border-spacing: 0;
-          font-size: 13.5px;
-          color: rgba(255,255,255,0.72);
-        }
-        .nseo-table th {
-          text-align: left;
-          font-family: 'Sora', sans-serif;
-          font-weight: 600;
-          font-size: 11px;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: rgba(255,255,255,0.5);
-          padding: 14px 16px;
-          border-bottom: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.025);
-        }
-        .nseo-table td {
-          padding: 13px 16px;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-          line-height: 1.55;
-        }
-        .nseo-table tr:last-child td { border-bottom: none; }
-        .nseo-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
-        .nseo-table-wrap {
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 14px;
-          overflow: hidden;
-          background: rgba(255,255,255,0.015);
-        }
-        .nseo-kbd {
-          display: inline-block;
-          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-          font-size: 12.5px;
-          padding: 3px 8px;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.12);
-          border-radius: 6px;
-          color: #fff;
-          white-space: nowrap;
-        }
-        .nseo-shortcut-group-title {
-          font-family: 'Sora', sans-serif;
-          font-weight: 600;
-          font-size: 12px;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: rgba(255,255,255,0.45);
-          margin: 32px 0 12px;
-        }
-        .nseo-shortcut-group-title:first-child { margin-top: 0; }
-        .nseo-compare-table-wrap { overflow-x: auto; }
-        .nseo-compare-table th + th,
-        .nseo-compare-table td + td { text-align: center; }
-        .nseo-compare-table td:first-child { color: #fff; font-weight: 500; }
-        .nseo-compare-yes { color: rgba(140, 230, 170, 0.95); font-weight: 500; }
-        .nseo-compare-no  { color: rgba(255,255,255,0.4); }
-
-        /* Tips */
-        .nseo-tip {
-          display: flex; gap: 16px;
-          padding: 22px;
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 14px;
-          transition: border-color .2s ease, background .2s ease;
-        }
-        .nseo-tip:hover {
-          border-color: rgba(255,255,255,0.14);
-          background: rgba(255,255,255,0.035);
-        }
-
-        /* Privacy band */
-        .nseo-privacy {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 18px;
-          padding: 36px 40px;
-          display: flex; gap: 24px; align-items: flex-start;
-        }
-        @media (max-width: 640px) {
-          .nseo-privacy { flex-direction: column; padding: 28px 24px; }
-          .nseo-step { padding: 18px; gap: 14px; }
-          .nseo-table th, .nseo-table td { padding: 11px 12px; font-size: 12.5px; }
-        }
-      `}</style>
-
-      <article
-        className="notepad-seo"
-        style={{
-          background: "#0A0C10",
-          color: "rgba(255,255,255,0.78)",
-          padding: "120px 24px 0",
-          borderTop: "1px solid rgba(255,255,255,0.04)",
-          fontFamily: "Inter, sans-serif",
-        }}
-      >
-        {/* Sentinel for the bottom status bar — when this scrolls above the
-            viewport the IntersectionObserver hides the editor's status strip.
-            Sits inline at 1px tall at the very top of the SEO article so it
-            never visually disrupts the layout. */}
-        <div ref={seoSentinelRef} aria-hidden="true" style={{ height: 1, width: "100%" }} />
-
-        {/* ── HERO STRIP ── */}
-        <header style={{ maxWidth: 760, margin: "0 auto 96px", textAlign: "center" }}>
-          <p style={{
-            fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase",
-            color: "rgba(255,255,255,0.38)", marginBottom: 22, fontWeight: 500,
-          }}>
-            About this tool
-          </p>
-          <h1 style={{
-            fontFamily: "'Sora', sans-serif", fontWeight: 800,
-            fontSize: "clamp(28px, 4.5vw, 44px)", lineHeight: 1.1,
-            color: "#fff", margin: "0 0 22px", letterSpacing: "-0.02em",
-          }}>
-            {seo.h1}
-          </h1>
-          <p style={{
-            fontSize: 17, lineHeight: 1.6, color: "rgba(255,255,255,0.66)",
-            margin: "0 auto", maxWidth: 580,
-          }}>
-            {seo.intro}
-          </p>
-          <p style={{
-            fontSize: 12, color: "rgba(255,255,255,0.36)",
-            marginTop: 18, fontFamily: "'Sora', sans-serif",
-            letterSpacing: "0.04em",
-          }}>
+      <div ref={seoSentinelRef} aria-hidden="true" style={{ height: 1, width: "100%" }} />
+      <ToolSEOArticle
+        eyebrow="About this tool"
+        h1={seo.h1}
+        intro={seo.intro}
+        metaLine={
+          <>
             Updated {NOTEPAD_LAST_UPDATED_HUMAN} · By{" "}
-            <Link href="/" className="nseo-footer-link" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <Link href="/" className="tool-footer-link" style={{ color: "var(--t3)" }}>
               Ankit Jaiswal
             </Link>
-          </p>
-        </header>
-
+          </>
+        }
+      >
         {/* ── WHAT IS (definition) ── */}
-        <section style={{ maxWidth: 760, margin: "0 auto 120px" }}>
+        <ToolSection>
           <SectionHeading kicker="The basics" title={seo.whatIsTitle} />
-          <div className="nseo-prose">
+          <div className="tool-prose">
             {seo.whatIsBody.map((para, i) => (
               <p key={i}>{para}</p>
             ))}
           </div>
-        </section>
+        </ToolSection>
 
         {/* ── FEATURE CARDS ── */}
-        <section style={{ maxWidth: 1040, margin: "0 auto 120px" }}>
+        <ToolSection width="grid">
           <SectionHeading kicker="Features" title="Everything you need, nothing you don't" />
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 14,
-          }}>
-            {NOTEPAD_FEATURES.map((f) => {
-              const Icon = f.icon;
-              return (
-                <div key={f.title} className="nseo-card">
-                  <span className="nseo-icon"><Icon size={18} strokeWidth={1.6} /></span>
-                  <h3 style={{
-                    fontFamily: "'Sora', sans-serif", fontWeight: 700,
-                    fontSize: 16, color: "#fff", margin: "0 0 8px",
-                    letterSpacing: "-0.005em",
-                  }}>{f.title}</h3>
-                  <p style={{
-                    fontSize: 13.5, lineHeight: 1.6, color: "rgba(255,255,255,0.6)",
-                    margin: 0,
-                  }}>{f.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+          <ToolFeatureGrid items={NOTEPAD_FEATURES} />
+        </ToolSection>
 
         {/* ── HOW TO USE (numbered steps) ── */}
-        <section style={{ maxWidth: 760, margin: "0 auto 120px" }}>
+        <ToolSection>
           <SectionHeading kicker="Step by step" title={seo.howToTitle} />
           <p style={{
-            fontSize: 15.5, lineHeight: 1.65, color: "rgba(255,255,255,0.6)",
+            fontSize: 15.5, lineHeight: 1.65, color: "var(--t2)",
             margin: "-12px 0 32px",
           }}>
             {seo.howToIntro}
           </p>
-          <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
-            {seo.howToSteps.map((step, i) => (
-              <li key={i} id={`step-${i + 1}`} className="nseo-step">
-                <span className="nseo-step-num">{i + 1}</span>
-                <div>
-                  <h3 className="nseo-step-title">{step.title}</h3>
-                  <p className="nseo-step-body">{step.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+          <ToolHowToSteps steps={seo.howToSteps} />
+        </ToolSection>
 
         {/* ── KEYBOARD SHORTCUTS ── */}
-        <section style={{ maxWidth: 760, margin: "0 auto 120px" }}>
+        <ToolSection>
           <SectionHeading kicker="Reference" title="Keyboard shortcuts" />
           <p style={{
-            fontSize: 15.5, lineHeight: 1.65, color: "rgba(255,255,255,0.6)",
+            fontSize: 15.5, lineHeight: 1.65, color: "var(--t2)",
             margin: "-12px 0 32px",
           }}>
-            Every formatting action has a shortcut. Mac uses <span className="nseo-kbd">Cmd</span>; Windows and Linux use <span className="nseo-kbd">Ctrl</span>.
+            Every formatting action has a shortcut. Mac uses <kbd className="tool-kbd">Cmd</kbd>; Windows and Linux use <kbd className="tool-kbd">Ctrl</kbd>.
           </p>
           {NOTEPAD_SHORTCUTS.map((group) => (
-            <div key={group.group}>
-              <p className="nseo-shortcut-group-title">{group.group}</p>
-              <div className="nseo-table-wrap">
-                <table className="nseo-table">
+            <div key={group.group} style={{ marginBottom: 32 }}>
+              <div className="tool-shortcut-group-title" style={{
+                fontFamily: tokens.font.display,
+                fontWeight: 600,
+                fontSize: 12,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "var(--t3)",
+                margin: "32px 0 12px",
+              }}>{group.group}</div>
+              <div className="tool-table-wrap">
+                <table className="tool-table">
                   <thead>
                     <tr>
                       <th style={{ width: "45%" }}>Shortcut</th>
@@ -2805,7 +2409,7 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
                   <tbody>
                     {group.rows.map((r) => (
                       <tr key={r.keys}>
-                        <td><span className="nseo-kbd">{r.keys}</span></td>
+                        <td><kbd className="tool-kbd">{r.keys}</kbd></td>
                         <td>{r.action}</td>
                       </tr>
                     ))}
@@ -2814,47 +2418,25 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
               </div>
             </div>
           ))}
-        </section>
+        </ToolSection>
 
         {/* ── USE CASES ── */}
-        <section style={{ maxWidth: 1040, margin: "0 auto 120px" }}>
+        <ToolSection width="grid">
           <SectionHeading kicker="Use cases" title="Built for the way you actually work" />
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 14,
-          }}>
-            {NOTEPAD_USE_CASES.map((u) => {
-              const Icon = u.icon;
-              return (
-                <div key={u.title} className="nseo-card" style={{ padding: "26px 24px 24px" }}>
-                  <span className="nseo-icon"><Icon size={18} strokeWidth={1.6} /></span>
-                  <h3 style={{
-                    fontFamily: "'Sora', sans-serif", fontWeight: 700,
-                    fontSize: 17, color: "#fff", margin: "0 0 10px",
-                    letterSpacing: "-0.005em",
-                  }}>{u.title}</h3>
-                  <p style={{
-                    fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.64)",
-                    margin: 0,
-                  }}>{u.copy}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+          <ToolFeatureGrid items={NOTEPAD_USE_CASES} />
+        </ToolSection>
 
         {/* ── COMPARISON TABLE ── */}
-        <section style={{ maxWidth: 1040, margin: "0 auto 120px" }}>
+        <ToolSection width="grid">
           <SectionHeading kicker="How it compares" title="This notepad vs other popular options" />
           <p style={{
-            fontSize: 15.5, lineHeight: 1.65, color: "rgba(255,255,255,0.6)",
+            fontSize: 15.5, lineHeight: 1.65, color: "var(--t2)",
             margin: "-12px 0 32px", maxWidth: 700,
           }}>
             A quick side-by-side with the most common alternatives — Notepad++ on Windows, Google Docs in the browser, and Apple Notes on Mac and iOS.
           </p>
-          <div className="nseo-table-wrap nseo-compare-table-wrap">
-            <table className="nseo-table nseo-compare-table">
+          <div className="tool-table-wrap" style={{ overflowX: "auto" }}>
+            <table className="tool-table tool-compare-table">
               <thead>
                 <tr>
                   {NOTEPAD_COMPARISON_HEADERS.map((h, i) => (
@@ -2869,7 +2451,7 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
                       const isYes = ci > 0 && /^Yes(\b|$)/.test(cell);
                       const isNo  = ci > 0 && /^No(\b|$)/.test(cell);
                       return (
-                        <td key={ci} className={isYes ? "nseo-compare-yes" : isNo ? "nseo-compare-no" : undefined}>
+                        <td key={ci} className={isYes ? "tool-compare-yes" : isNo ? "tool-compare-no" : undefined}>
                           {cell}
                         </td>
                       );
@@ -2879,10 +2461,10 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
               </tbody>
             </table>
           </div>
-        </section>
+        </ToolSection>
 
         {/* ── TIPS & TRICKS ── */}
-        <section style={{ maxWidth: 1040, margin: "0 auto 120px" }}>
+        <ToolSection width="grid">
           <SectionHeading kicker="Tips & tricks" title="Get more out of the editor" />
           <div style={{
             display: "grid",
@@ -2892,18 +2474,18 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
             {NOTEPAD_TIPS.map((tip) => {
               const Icon = tip.icon;
               return (
-                <div key={tip.title} className="nseo-tip">
-                  <span className="nseo-icon" style={{ marginBottom: 0 }}>
+                <div key={tip.title} className="tool-tip" style={{ display: "flex", gap: 16, padding: 22 }}>
+                  <span className="tool-icon" style={{ marginBottom: 0 }}>
                     <Icon size={18} strokeWidth={1.6} />
                   </span>
                   <div>
                     <h3 style={{
-                      fontFamily: "'Sora', sans-serif", fontWeight: 700,
-                      fontSize: 15, color: "#fff", margin: "4px 0 6px",
+                      fontFamily: tokens.font.display, fontWeight: 700,
+                      fontSize: 15, color: tokens.text.primary, margin: "4px 0 6px",
                       letterSpacing: "-0.005em",
                     }}>{tip.title}</h3>
                     <p style={{
-                      fontSize: 13.5, lineHeight: 1.65, color: "rgba(255,255,255,0.6)",
+                      fontSize: 13.5, lineHeight: 1.65, color: "var(--t2)",
                       margin: 0,
                     }}>{tip.body}</p>
                   </div>
@@ -2911,309 +2493,49 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
               );
             })}
           </div>
-        </section>
+        </ToolSection>
 
         {/* ── PRIVACY EXPLAINER ── */}
-        <section style={{ maxWidth: 920, margin: "0 auto 120px" }}>
-          <div className="nseo-privacy">
-            <span className="nseo-icon" style={{ marginBottom: 0, width: 44, height: 44 }}>
-              <Shield size={20} strokeWidth={1.6} />
-            </span>
-            <div>
-              <h2 style={{
-                fontFamily: "'Sora', sans-serif", fontWeight: 700,
-                fontSize: 20, color: "#fff", margin: "0 0 12px",
-                letterSpacing: "-0.01em",
-              }}>
-                Your notes never leave your device
-              </h2>
-              <p style={{
-                fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.66)",
-                margin: 0,
-              }}>
-                This editor stores everything in your browser's local storage. There's no server-side database, no analytics inside the editor, no third-party scripts reading your text. When you export to PDF, DOCX, Markdown or HTML, the conversion runs in your browser and the file downloads directly to your device — your text is never uploaded. Clearing your browser data clears your notes; nothing is recoverable from anywhere else, because nothing was ever sent anywhere else.
-              </p>
-            </div>
-          </div>
-        </section>
+        <ToolSection width="privacy">
+          <ToolPrivacyBand
+            heading="Your notes never leave your device"
+            body="This editor stores everything in your browser's local storage. There's no server-side database, no analytics inside the editor, no third-party scripts reading your text. When you export to PDF, DOCX, Markdown or HTML, the conversion runs in your browser and the file downloads directly to your device — your text is never uploaded. Clearing your browser data clears your notes; nothing is recoverable from anywhere else, because nothing was ever sent anywhere else."
+          />
+        </ToolSection>
 
         {/* ── FAQ ── */}
-        <section style={{ maxWidth: 760, margin: "0 auto 120px" }}>
+        <ToolSection>
           <SectionHeading kicker="FAQ" title="Frequently asked questions" />
-          <div>
-            {NOTEPAD_FAQS.map((f) => (
-              <details key={f.q} className="nseo-faq">
-                <summary>
-                  <span>{f.q}</span>
-                  <ChevronDown size={16} strokeWidth={1.8} className="nseo-faq-chevron" />
-                </summary>
-                <p className="nseo-faq-answer">{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
+          <ToolFAQ items={NOTEPAD_FAQS} />
+        </ToolSection>
 
-        {/* ── INLINE FEEDBACK CARD ── High-intent capture: users land here
-            after they've actually used the tool, formed an opinion, and read
-            the FAQ. Replaced the always-floating sticky widget. */}
-        <section style={{ maxWidth: 760, margin: "0 auto 96px" }}>
-          <FeedbackInlineCard />
-        </section>
+        {/* ── AUTHOR CARD ── */}
+        <ToolSection>
+          <SectionHeading kicker="About the maker" title="Who built this" />
+          <ToolAuthorCard
+            bio={
+              <>
+                I build fast, useful web tools and help businesses become impossible to ignore in the age of AI search. This notepad is the one I use every day.
+              </>
+            }
+          />
+        </ToolSection>
 
         {/* ── RELATED TOOLS ── */}
-        <section style={{ maxWidth: 1040, margin: "0 auto 120px" }}>
+        <ToolSection width="grid">
           <SectionHeading kicker="More tools" title="Other free, privacy-first tools" />
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 12,
-          }}>
-            {RELATED_TOOLS.map((t) => (
-              <Link key={t.href} href={t.href} className="nseo-related">
-                <div style={{ minWidth: 0 }}>
-                  <div style={{
-                    fontFamily: "'Sora', sans-serif", fontSize: 14.5,
-                    fontWeight: 600, marginBottom: 4, color: "#fff",
-                  }}>{t.name}</div>
-                  <div style={{
-                    fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.5,
-                  }}>{t.desc}</div>
-                </div>
-                <ArrowUpRight size={16} strokeWidth={1.8} className="nseo-related-arrow" />
-              </Link>
-            ))}
-          </div>
-        </section>
-        {/* ── AUTHOR CARD ── Visible E-E-A-T proof on every notepad pageview.
-            Tells humans (and AI crawlers) "this tool was made by a real,
-            verifiable person." Pairs with the Person JSON-LD already in the
-            page head for a redundant, machine-+-human-readable byline. ─── */}
-        <section style={{ maxWidth: 760, margin: "0 auto 120px" }}>
-          <SectionHeading kicker="About the maker" title="Who built this" />
-          <div className="nseo-author-card">
-            <div className="nseo-author-card-inner">
-              <div className="nseo-author-avatar">
-                <img
-                  src={SITE.avatar}
-                  alt="Ankit Jaiswal"
-                  width={64}
-                  height={64}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontFamily: "'Sora', sans-serif",
-                  fontWeight: 700,
-                  fontSize: 18,
-                  color: "#fff",
-                  letterSpacing: "-0.01em",
-                  marginBottom: 4,
-                }}>
-                  Ankit Jaiswal
-                </div>
-                <div style={{
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.55)",
-                  marginBottom: 14,
-                  fontWeight: 400,
-                }}>
-                  Independent web engineer · SEO specialist · India
-                </div>
-                <p style={{
-                  fontSize: 14.5,
-                  lineHeight: 1.65,
-                  color: "rgba(255,255,255,0.72)",
-                  margin: "0 0 18px",
-                  maxWidth: "52ch",
-                }}>
-                  I build fast, useful web tools and help businesses become impossible to ignore in the age of AI search. This notepad is the one I use every day.
-                </p>
-                <div className="nseo-author-actions">
-                  <Link href="/about" className="nseo-author-cta">
-                    More about Ankit
-                    <ArrowUpRight size={14} strokeWidth={2} />
-                  </Link>
-                  <div className="nseo-author-socials" role="list">
-                    <a
-                      href={SITE.social.github}
-                      target="_blank"
-                      rel="noopener noreferrer me author"
-                      className="nseo-social-link"
-                      aria-label="Ankit Jaiswal on GitHub"
-                      title="GitHub"
-                    >
-                      <GitHubIcon size={16} />
-                    </a>
-                    <a
-                      href={SITE.social.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer me author"
-                      className="nseo-social-link"
-                      aria-label="Ankit Jaiswal on LinkedIn"
-                      title="LinkedIn"
-                    >
-                      <LinkedInIcon size={16} />
-                    </a>
-                    <a
-                      href={`https://x.com/${SITE.twitter.replace(/^@/, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer me author"
-                      className="nseo-social-link"
-                      aria-label="Ankit Jaiswal on X (Twitter)"
-                      title="X (Twitter)"
-                    >
-                      <XIcon size={15} />
-                    </a>
-                    <a
-                      href={SITE.social.threads}
-                      target="_blank"
-                      rel="noopener noreferrer me author"
-                      className="nseo-social-link"
-                      aria-label="Ankit Jaiswal on Threads"
-                      title="Threads"
-                    >
-                      <ThreadsIcon size={16} />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </article>
+          <ToolRelatedTools items={RELATED_TOOLS} />
+        </ToolSection>
+
+        {/* ── INLINE FEEDBACK CARD ── */}
+        <ToolSection>
+          <FeedbackInlineCard />
+        </ToolSection>
+      </ToolSEOArticle>
 
       {/* ── FOOTER BAND ── */}
-      <footer style={{
-        background: "#0A0C10",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-        padding: "40px 24px 56px",
-        fontFamily: "Inter, sans-serif",
-      }}>
-        <div style={{
-          maxWidth: 1040, margin: "0 auto",
-          display: "flex", flexWrap: "wrap", alignItems: "center",
-          justifyContent: "space-between", gap: 20,
-          fontSize: 13, color: "rgba(255,255,255,0.42)",
-        }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              Built by{" "}
-              <Link href="/" className="nseo-footer-link" style={{ fontWeight: 500 }}>
-                Ankit Jaiswal
-              </Link>
-              . Free to use. No account required.
-            </div>
-            {/* Social proof row — gives Google a visible hint matching the
-                JSON-LD Person.sameAs entity graph (GitHub + LinkedIn). */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <a
-                href={SITE.social.github}
-                target="_blank"
-                rel="noopener noreferrer me author"
-                className="nseo-social-link"
-                aria-label="Ankit Jaiswal on GitHub"
-                title="GitHub — see the code"
-              >
-                <GitHubIcon size={17} />
-              </a>
-              <a
-                href={SITE.social.linkedin}
-                target="_blank"
-                rel="noopener noreferrer me author"
-                className="nseo-social-link"
-                aria-label="Ankit Jaiswal on LinkedIn"
-                title="LinkedIn — connect with Ankit"
-              >
-                <LinkedInIcon size={17} />
-              </a>
-              <a
-                href={`https://x.com/${SITE.twitter.replace(/^@/, "")}`}
-                target="_blank"
-                rel="noopener noreferrer me author"
-                className="nseo-social-link"
-                aria-label="Ankit Jaiswal on X (Twitter)"
-                title="X — follow Ankit"
-              >
-                <XIcon size={15} />
-              </a>
-              <a
-                href={SITE.social.threads}
-                target="_blank"
-                rel="noopener noreferrer me author"
-                className="nseo-social-link"
-                aria-label="Ankit Jaiswal on Threads"
-                title="Threads — follow Ankit"
-              >
-                <ThreadsIcon size={16} />
-              </a>
-            </div>
-          </div>
-          <nav style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
-            <Link href="/" className="nseo-footer-link">Home</Link>
-            <Link href="/work" className="nseo-footer-link">Work</Link>
-            <Link href="/tools" className="nseo-footer-link">Tools</Link>
-            <Link href="/online-notepad" className="nseo-footer-link">Online Notepad</Link>
-            <Link href="/text-to-pdf" className="nseo-footer-link">Text to PDF</Link>
-          </nav>
-        </div>
-      </footer>
+      <ToolFooter />
     </>
   );
 });
-
-// ── Brand SVG icons for social links ─────────────────────────────────────────
-// Lucide doesn't ship logo glyphs (trademark reasons). Inlined SVGs keep the
-// premium feel consistent with our minimal aesthetic and avoid pulling in a
-// second icon library. Paths are the official simple-icons.org marks
-// (CC0-licensed) at viewBox 24 24, currentColor for theme inheritance.
-function GitHubIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.88-1.54-3.88-1.54-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.39.97.01 1.95.14 2.87.39 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.67.8.55C20.71 21.39 24 17.08 24 12 24 5.65 18.85.5 12 .5Z" />
-    </svg>
-  );
-}
-function LinkedInIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.55V9h3.57v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0Z" />
-    </svg>
-  );
-}
-function XIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
-}
-function ThreadsIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 192 192" fill="currentColor" aria-hidden="true">
-      <path d="M141.537 88.988a66.667 66.667 0 0 0-2.518-1.143c-1.482-27.307-16.403-43.046-41.434-43.206-.121-.001-.241-.001-.362-.001-14.978 0-27.435 6.396-35.095 18.036l13.781 9.452c5.72-8.679 14.694-10.529 21.32-10.529.084 0 .168 0 .251.001 8.25.053 14.479 2.452 18.516 7.131 2.937 3.405 4.902 8.111 5.886 14.05-7.41-1.26-15.424-1.65-23.994-1.158-24.146 1.39-39.668 15.473-38.626 35.046.529 9.931 5.473 18.474 13.926 24.052 7.146 4.713 16.349 7.018 25.916 6.495 12.63-.692 22.538-5.501 29.451-14.291 5.255-6.682 8.578-15.343 10.064-26.281 6.097 3.679 10.617 8.519 13.114 14.336 4.245 9.892 4.492 26.143-8.764 39.388-11.616 11.605-25.575 16.626-46.675 16.78-23.408-.174-41.108-7.682-52.626-22.317C39.502 137.343 33.92 116.728 33.71 96c.21-20.728 5.792-41.343 16.612-55.014C61.84 26.35 79.54 18.842 102.948 18.668c23.572.175 41.581 7.719 53.534 22.418 5.86 7.21 10.286 16.378 13.232 27.252l16.916-4.518c-3.58-13.385-9.218-24.918-16.85-34.299C154.557 12.275 132.882 2.215 102.952 2c-.04 0-.08 0-.12 0-29.886.215-51.342 10.305-66.292 28.79C20.962 47.515 13.085 71.064 12.842 95.964l.001.036v.036c.243 24.9 8.12 48.449 23.7 65.176 14.95 18.485 36.406 28.575 66.292 28.79.04 0 .08 0 .12 0 26.572-.183 45.314-7.121 60.749-22.601 20.197-20.224 19.607-45.583 13.045-61.137-4.704-11.13-13.654-20.176-25.881-26.176-.43-.211-.43-.211-.66-.32 1.92-9.08 6.16-15.04 10.69-19.46-7.62-4.84-13.31-7.5-21.07-9.39-2.25-3.13-4.94-6-8.04-8.55-9.31-7.69-22.27-11.92-37.61-12.13-15.39-.21-29.1 5.21-37.32 14.86-.61.71-1.18 1.45-1.72 2.21l13.78 9.45c.49-.69.99-1.36 1.55-1.99 5.48-6.45 14.78-9.91 24.51-9.81 9.69.13 17.86 3.02 23.78 7.4l.05.04c-.48-2.32-1.51-4.6-3.14-6.71l.01-.01ZM98.61 138.63c-3.78.21-7.78-.46-11.41-1.95-4.91-2.02-7.37-5.07-7.6-9.43-.31-5.83 4.06-12.4 19.16-13.27 1.74-.1 3.47-.15 5.18-.15 5.81 0 11.27.6 16.42 1.74-1.93 11.86-9.16 22.56-21.75 23.06Z" />
-    </svg>
-  );
-}
-
-function SectionHeading({ kicker, title }: { kicker: string; title: string }) {
-  return (
-    <div style={{ marginBottom: 36 }}>
-      <p style={{
-        fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase",
-        color: "rgba(255,255,255,0.38)", margin: "0 0 12px", fontWeight: 500,
-      }}>
-        {kicker}
-      </p>
-      <h2 style={{
-        fontFamily: "'Sora', sans-serif", fontWeight: 700,
-        fontSize: "clamp(22px, 3vw, 28px)", lineHeight: 1.2,
-        color: "#fff", margin: 0, letterSpacing: "-0.015em",
-      }}>
-        {title}
-      </h2>
-    </div>
-  );
-}
 

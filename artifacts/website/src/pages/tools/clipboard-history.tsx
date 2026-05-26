@@ -843,18 +843,13 @@ export default function ClipboardHistory() {
           <motion.div
             role="status"
             aria-live="polite"
-            initial={{ opacity: 0, y: 16, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
-            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full border shadow-2xl backdrop-blur-md
-              flex items-center gap-3 text-sm font-medium
-              ${toast.type === "success"
-                ? "bg-[#0D0F14]/95 border-white/20 text-white"
-                : "bg-[#0D0F14]/95 border-red-500/40 text-red-300"}`}
+            initial={{ opacity: 0, y: 14, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 14, x: "-50%" }}
+            className={`tool-toast tool-toast-${toast.type}`}
           >
-            {toast.type === "success" ? <Check size={15} /> : <X size={15} />}
-            {toast.message}
+            {toast.type === "success" ? <Check size={14} /> : <X size={14} />}
+            <span>{toast.message}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -970,16 +965,16 @@ export default function ClipboardHistory() {
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="privacy">
+          <ToolAuthorCard />
+        </ToolSection>
+
+        <ToolSection width="grid">
           <SectionHeading kicker="Other tools" title="Tools that pair well with this one" />
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        <ToolSection marginBottom={64}>
-          <ToolAuthorCard />
-        </ToolSection>
-
-        <ToolSection marginBottom={120}>
+        <ToolSection>
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>

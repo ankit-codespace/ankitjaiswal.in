@@ -102,7 +102,7 @@ export function SectionHeading({
 /** Width-constrained section wrapper — mirrors notepad's three width tiers. */
 export function ToolSection({
   width = "prose",
-  marginBottom = 120,
+  marginBottom = 140,
   children,
 }: {
   width?: "prose" | "grid" | "privacy" | number;
@@ -212,19 +212,13 @@ export function ToolAuthorCard({
               </svg>
             </Link>
             <a href={SITE.social.github} target="_blank" rel="noopener noreferrer me author" className="tool-author-card-icon-btn" aria-label="GitHub">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M8 1a7 7 0 00-2.212 13.647c.35.064.48-.151.48-.337v-1.18c-1.947.424-2.357-.94-2.357-.94-.318-.81-.776-1.025-.776-1.025-.635-.433.048-.425.048-.425.701.05 1.07.72 1.07.72.623 1.068 1.634.76 2.032.581.063-.452.244-.76.443-.935-1.554-.177-3.188-.777-3.188-3.46 0-.764.274-1.388.72-1.878-.072-.177-.312-.888.07-1.85 0 0 .586-.188 1.921.716A6.685 6.685 0 018 4.978c.593.003 1.19.08 1.747.234 1.334-.904 1.919-.715 1.919-.715.383.961.143 1.672.07 1.849.448.49.72 1.114.72 1.878 0 2.69-1.637 3.282-3.196 3.455.251.217.474.643.474 1.297v1.921c0 .188.128.405.483.337A7.001 7.001 0 008 1z" fill="currentColor"/>
-              </svg>
+              <GitHubIcon size={14} />
             </a>
             <a href={SITE.social.linkedin} target="_blank" rel="noopener noreferrer me author" className="tool-author-card-icon-btn" aria-label="LinkedIn">
-              <svg width="13" height="13" viewBox="0 0 512 509.64" fill="none">
-                <path d="M204.97 197.54h64.69v33.16h.94c9.01-16.16 31.04-33.16 63.89-33.16 68.31 0 80.94 42.51 80.94 97.81v116.92h-67.46l-.01-104.13c0-23.81-.49-54.45-35.08-54.45-35.12 0-40.51 25.91-40.51 52.72v105.86h-67.4V197.54zm-38.23-65.09c0 19.36-15.72 35.08-35.08 35.08-19.37 0-35.09-15.72-35.09-35.08 0-19.37 15.72-35.08 35.09-35.08 19.36 0 35.08 15.71 35.08 35.08zm-70.17 65.09h70.17v214.73H96.57V197.54z" fill="currentColor"/>
-              </svg>
+              <LinkedInIcon size={14} />
             </a>
             <a href={`https://x.com/${SITE.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer me author" className="tool-author-card-icon-btn" aria-label="X">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                <path d="M1 1l5.5 7.5L1 15h1.5l4.5-5.5L11.5 15H15l-5.7-7.8L14.5 1H13l-4.2 5.1L5 1H1z" fill="currentColor"/>
-              </svg>
+              <XIcon size={13} />
             </a>
           </div>
         </div>

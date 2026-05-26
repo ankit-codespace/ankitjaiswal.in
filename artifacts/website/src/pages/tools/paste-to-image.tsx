@@ -2095,16 +2095,16 @@ export default function PasteToImage() {
           <ToolFAQ items={FAQS} />
         </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="privacy">
+          <ToolAuthorCard />
+        </ToolSection>
+
+        <ToolSection width="grid">
           <SectionHeading kicker="Related tools" title="Other tools by Ankit" />
           <ToolRelatedTools items={RELATED} />
         </ToolSection>
 
-        <ToolSection marginBottom={56}>
-          <ToolAuthorCard />
-        </ToolSection>
-
-        <ToolSection marginBottom={120}>
+        <ToolSection>
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>
@@ -2112,24 +2112,18 @@ export default function PasteToImage() {
       <AnimatePresence>
         {toast.visible && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-[7px] border
-              flex items-center gap-2.5 text-[11px] font-medium
-              ${toast.type === "success"
-                ? "text-[#52C47A]"
-                : "text-[#C4483E]"
-              }`}
-            style={{ background: "#222221", borderColor: toast.type === "success" ? "rgba(82,196,122,0.18)" : "rgba(196,72,62,0.22)", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" }}
+            initial={{ opacity: 0, y: 14, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 14, x: "-50%" }}
+            className={`tool-toast tool-toast-${toast.type}`}
+            role="status"
           >
             {toast.type === "success" ? (
-              <Check className="h-4 w-4" />
+              <Check size={14} />
             ) : (
-              <X className="h-4 w-4" />
+              <X size={14} />
             )}
-            {toast.message}
+            <span>{toast.message}</span>
           </motion.div>
         )}
       </AnimatePresence>
