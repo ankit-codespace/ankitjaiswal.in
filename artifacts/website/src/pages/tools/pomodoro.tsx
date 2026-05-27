@@ -1993,7 +1993,13 @@ function PomodoroStyles() {
       }
 
       body.pm-light-mode .pm-focus {
-        background: #fafaf9;
+        background-color: #fafaf9;
+        background-image:
+          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(52, 211, 153, 0.30) 0%, transparent 60%) !important;
+        background-size: 100% 100vh, 100% 100vh, 100% 100vh !important;
+        background-repeat: no-repeat !important;
       }
       body.pm-light-mode .pm-focus-time {
         color: #161615;
