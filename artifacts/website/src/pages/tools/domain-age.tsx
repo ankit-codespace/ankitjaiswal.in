@@ -886,8 +886,8 @@ function DomainAgeStyles() {
       .da-card {
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
-        background: rgba(15, 18, 25, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--bg1);
+        border: 1px solid var(--b0);
         border-radius: 20px;
         padding: 28px 24px;
         box-shadow: 0 40px 100px -25px rgba(0,0,0,0.85),
@@ -903,8 +903,8 @@ function DomainAgeStyles() {
         transition: border-color 160ms, background 160ms;
       }
       .da-input-wrap:focus-within {
-        border-color: #4F7DFF;
-        background: rgba(79, 125, 255, 0.04);
+        border-color: var(--b2);
+        background: var(--bg2);
       }
       .da-input-icon {
         position: absolute; left: 14px; color: ${tokens.text.quiet}; pointer-events: none;
@@ -913,7 +913,7 @@ function DomainAgeStyles() {
         width: 100%; background: transparent; border: 0; outline: 0;
         padding: 13px 38px 13px 40px;
         font-size: 14px; color: ${tokens.text.primary};
-        font-family: ${tokens.font.mono};
+        font-family: ${tokens.font.body};
         letter-spacing: 0;
       }
       .da-input::placeholder { color: ${tokens.text.quiet}; }
@@ -928,19 +928,19 @@ function DomainAgeStyles() {
       .da-submit {
         display: inline-flex; align-items: center; gap: 8px;
         padding: 0 18px; height: 46px; min-width: 110px;
-        background: #4F7DFF;
-        color: white; border: 0; border-radius: 12px;
+        background: var(--t1);
+        color: #0d0d0c; border: 0; border-radius: 12px;
         font-size: 14px; font-weight: 600; cursor: pointer;
-        transition: filter 160ms, transform 80ms;
+        transition: background 160ms, transform 80ms;
         justify-content: center;
       }
-      .da-submit:hover { filter: brightness(1.06); }
+      .da-submit:hover { background: var(--ac); }
       .da-submit:active { transform: translateY(1px); }
       .da-submit:disabled { opacity: 0.6; cursor: progress; }
       .da-spin {
         width: 14px; height: 14px; border-radius: 50%;
-        border: 2px solid rgba(255,255,255,0.35);
-        border-top-color: white; animation: da-spin 0.7s linear infinite;
+        border: 2px solid rgba(13,17,23,0.3);
+        border-top-color: #0d0d0c; animation: da-spin 0.7s linear infinite;
       }
       @keyframes da-spin { to { transform: rotate(360deg); } }
 

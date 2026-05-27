@@ -58,7 +58,7 @@
 
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'DM Serif Display', serif;
-  --font-mono: Menlo, monospace;
+  --font-mono: 'Inter', sans-serif;
   --font-display: 'Sora', sans-serif;
   --font-label: 'Inter', sans-serif;
 
@@ -175,7 +175,7 @@
   /* FONTS */
   --d:   'Sora', sans-serif;
   --s:   'Inter', sans-serif;
-  --m:   ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --m:   'Inter', sans-serif;
   --tnr: 'Times New Roman', Times, serif;
 
   /* system focus ring — apply to all interactive elements */
@@ -606,7 +606,7 @@ html.lenis, html.lenis body {
 
 /* Code */
 .notepad-editor code {
-  font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+  font-family: 'Inter', sans-serif;
   background: rgba(255,255,255,0.08);
   padding: 0.12em 0.35em;
   border-radius: 3px;

@@ -388,7 +388,7 @@ export function ToolStyles() {
       }
       .tool-kbd {
         display: inline-block;
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-family: 'Inter', sans-serif;
         font-size: 12.5px;
         padding: 3px 8px;
         background: rgba(255,255,255,0.05);

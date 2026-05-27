@@ -2657,7 +2657,7 @@ function PomodoroStyles() {
         font-size: 11.5px; color: rgba(255,255,255,0.42);
       }
       .pm-menu-hint kbd {
-        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-family: 'Inter', sans-serif;
         font-size: 10.5px;
         padding: 1px 5px; border-radius: 4px;
         background: rgba(255,255,255,0.06);
@@ -2882,9 +2882,9 @@ function PomodoroStyles() {
       }
       .pm-rec-apply-btn {
         align-self: flex-start;
-        background: rgba(79, 125, 255, 0.12);
-        border: 1px solid rgba(79, 125, 255, 0.28);
-        color: #4F7DFF;
+        background: var(--bg2);
+        border: 1px solid var(--b1);
+        color: var(--t2);
         padding: 4px 10px;
         border-radius: 6px;
         font-size: 11.5px;
@@ -2893,7 +2893,9 @@ function PomodoroStyles() {
         transition: all 140ms;
       }
       .pm-rec-apply-btn:hover {
-        background: rgba(79, 125, 255, 0.2);
+        background: var(--bg3);
+        border-color: var(--b2);
+        color: var(--t1);
       }
 
       .pm-reset-btn {
@@ -2975,7 +2977,7 @@ function PomodoroStyles() {
         letter-spacing: 0.04em;
       }
       .pm-focus-hint kbd {
-        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-family: 'Inter', sans-serif;
         font-size: 10px;
         padding: 1px 5px; border-radius: 4px;
         background: rgba(255,255,255,0.05);

@@ -864,8 +864,8 @@ function YtThumbStyles() {
       .ytt-card {
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
-        background: rgba(15, 18, 25, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--bg1);
+        border: 1px solid var(--b0);
         border-radius: 20px;
         padding: 24px;
         box-shadow: 0 40px 100px -25px rgba(0,0,0,0.85),
@@ -881,8 +881,8 @@ function YtThumbStyles() {
         transition: border-color 160ms, background 160ms;
       }
       .ytt-input-wrap:focus-within {
-        border-color: #FF4F4F;
-        background: rgba(255, 79, 79, 0.04);
+        border-color: var(--b2);
+        background: var(--bg2);
       }
       .ytt-input-icon {
         position: absolute; left: 14px; color: ${tokens.text.quiet}; pointer-events: none;
@@ -906,8 +906,8 @@ function YtThumbStyles() {
         display: inline-flex; align-items: center; gap: 8px;
         padding: 0 18px;
         height: 46px;
-        background: #3D6BE8;
-        color: #fff;
+        background: var(--t1);
+        color: #0d0d0c;
         border: 0;
         border-radius: 12px;
         font-size: 14px;
@@ -916,10 +916,10 @@ function YtThumbStyles() {
         cursor: pointer;
         transition: background 160ms, transform 120ms;
       }
-      .ytt-submit:hover { background: #2F5CD9; }
+      .ytt-submit:hover { background: var(--ac); }
       .ytt-submit:active { transform: translateY(1px); }
       .ytt-submit:focus-visible {
-        outline: 2px solid #4F7DFF;
+        outline: 2px solid var(--b3);
         outline-offset: 2px;
       }
 
@@ -950,9 +950,9 @@ function YtThumbStyles() {
       }
       .ytt-format-pill:hover { color: ${tokens.text.primary}; border-color: rgba(255,255,255,0.18); }
       .ytt-format-pill-active {
-        background: rgba(79, 125, 255, 0.14);
-        color: #4F7DFF;
-        border-color: rgba(79, 125, 255, 0.34);
+        background: var(--t1);
+        color: #0d0d0c;
+        border-color: var(--t1);
       }
       .ytt-format-hint {
         font-size: 11px;
@@ -1042,16 +1042,16 @@ function YtThumbStyles() {
         display: inline-flex; align-items: center; gap: 4px;
         margin-left: 4px;
         padding: 2px 8px;
-        background: rgba(79, 125, 255, 0.10);
-        border: 1px solid rgba(79, 125, 255, 0.24);
+        background: var(--bg2);
+        border: 1px solid var(--b0);
         border-radius: 999px;
-        color: #4F7DFF;
+        color: var(--t2);
         font-family: ${tokens.font.body};
         font-size: 11px;
         text-decoration: none;
-        transition: background 140ms;
+        transition: background 140ms, color 140ms;
       }
-      .ytt-watch-link:hover { background: rgba(79, 125, 255, 0.18); }
+      .ytt-watch-link:hover { background: var(--bg3); color: var(--t1); }
       .ytt-download-all {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 7px 12px;
@@ -1064,7 +1064,7 @@ function YtThumbStyles() {
         cursor: pointer;
         transition: all 140ms;
       }
-      .ytt-download-all:hover { border-color: rgba(79, 125, 255, 0.42); color: #4F7DFF; }
+      .ytt-download-all:hover { border-color: var(--b2); color: var(--t1); background: var(--bg2); }
 
       /* Thumbnail grid */
       .ytt-grid {
@@ -1148,17 +1148,19 @@ function YtThumbStyles() {
         flex: 1;
         display: inline-flex; align-items: center; justify-content: center; gap: 6px;
         padding: 8px 10px;
-        background: rgba(79, 125, 255, 0.12);
-        border: 1px solid rgba(79, 125, 255, 0.28);
+        background: var(--bg3);
+        border: 1px solid var(--b1);
         border-radius: 8px;
-        color: #4F7DFF;
+        color: var(--t2);
         font-size: 12.5px;
         font-weight: 600;
         cursor: pointer;
-        transition: background 140ms;
+        transition: background 140ms, border-color 140ms, color 140ms;
       }
       .ytt-thumb-download:hover:not(:disabled) {
-        background: rgba(79, 125, 255, 0.20);
+        background: var(--bg4);
+        border-color: var(--b2);
+        color: var(--t1);
       }
       .ytt-thumb-download:disabled {
         opacity: 0.4;
