@@ -509,6 +509,7 @@ export default function PasteToImage() {
       setIsCropping(false);
       pendingSetupRef.current.needsSetup = true;
       setImage(img);
+      setCurrentTool("arrow");
       showToast("Image loaded!", "success");
       
       // Auto-detect contrasting annotation color based on image luminance and hue
@@ -1889,6 +1890,26 @@ export default function PasteToImage() {
                       : "py-8 mb-4"
                   }`}>
                     <div ref={canvasWrapperRef} className="relative">
+                      {image && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: -26,
+                            left: 0,
+                            fontSize: 10,
+                            fontFamily: "var(--m)",
+                            color: "var(--t3)",
+                            background: "rgba(255, 255, 255, 0.04)",
+                            border: "1px solid rgba(255, 255, 255, 0.08)",
+                            padding: "2px 8px",
+                            borderRadius: "5px",
+                            pointerEvents: "none",
+                            userSelect: "none"
+                          }}
+                        >
+                          {image.width} × {image.height} px
+                        </div>
+                      )}
                       <canvas
                         ref={canvasRef}
                         onMouseDown={handleMouseDown}
@@ -1897,7 +1918,7 @@ export default function PasteToImage() {
                             ? "cursor-text"
                             : currentTool !== "select" ? "cursor-crosshair" : ""
                         }`}
-                        style={{ border: "1px solid #2E2E2C", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
+                        style={{ border: "1.5px dashed rgba(255, 255, 255, 0.24)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
                       />
 
                       {/* Floating text input overlay — appears at click position when text tool active */}
