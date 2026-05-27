@@ -1452,7 +1452,21 @@ export default function Pomodoro() {
                       disabled={!running && cyclePos === 0 && remainingMs === phaseDurationMs}
                     >
                       <RotateCcw size={14} />
-                      <span>Reset timer</span>
+                      <span>Reset current session</span>
+                    </button>
+                    <button
+                      type="button" role="menuitem" className="pm-menu-item"
+                      onClick={() => {
+                        setSettings(DEFAULT_SETTINGS);
+                        if (!running) {
+                          setEndAt(null);
+                          setPausedRemainMs(null);
+                        }
+                        setShowOverflow(false);
+                      }}
+                    >
+                      <RotateCcw size={14} />
+                      <span>Reset settings to standard</span>
                     </button>
                     <button
                       type="button" role="menuitem" className="pm-menu-item"
@@ -2366,11 +2380,15 @@ function PomodoroStyles() {
         caret-color: var(--ok);
       }
       .pm-status-container {
-        position: relative;
+        position: absolute;
+        bottom: 48px;
+        left: 50%;
+        transform: translateX(-50%);
         height: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
+        white-space: nowrap;
       }
       .pm-status-label, .pm-status-scroll-label {
         font-family: ${tokens.font.body};
