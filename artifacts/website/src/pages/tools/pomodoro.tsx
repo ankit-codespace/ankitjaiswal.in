@@ -1553,13 +1553,20 @@ export default function Pomodoro() {
             />
             <motion.div
               key="popover"
-              className="pm-popover"
-              role="dialog" aria-modal="true" aria-labelledby="pm-settings-title"
-              initial={{ opacity: 0, y: 16, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 16, scale: 0.98 }}
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              className="pm-popover-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
             >
+              <motion.div
+                className="pm-popover"
+                role="dialog" aria-modal="true" aria-labelledby="pm-settings-title"
+                initial={{ y: 16, scale: 0.98 }}
+                animate={{ y: 0, scale: 1 }}
+                exit={{ y: 16, scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              >
               <div className="pm-popover-head">
                 <h3 id="pm-settings-title">Settings</h3>
                 <button type="button" className="pm-icon-btn" onClick={() => setShowSettings(false)} aria-label="Close">
@@ -1661,6 +1668,7 @@ export default function Pomodoro() {
               >
                 Reset to standard Pomodoro
               </button>
+              </motion.div>
             </motion.div>
           </>
         )}
@@ -2640,6 +2648,10 @@ function PomodoroStyles() {
       .pm-overflow-trigger {
         color: rgba(255,255,255,0.40);
       }
+      .pm-overflow-trigger:hover,
+      body.pm-light-mode .pm-overflow-trigger:hover {
+        background: transparent !important;
+      }
       .pm-overflow-menu {
         position: absolute; top: 100%; right: 0; margin-top: 6px;
         min-width: 240px;
@@ -2818,8 +2830,17 @@ function PomodoroStyles() {
         position: fixed; inset: 0; background: rgba(0,0,0,0.55);
         z-index: 60;
       }
+      .pm-popover-container {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 61;
+        pointer-events: none;
+      }
       .pm-popover {
-        position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        position: relative;
         width: min(440px, calc(100vw - 32px));
         max-height: calc(100vh - 64px); overflow: auto;
         background: var(--bg1);
@@ -2827,7 +2848,7 @@ function PomodoroStyles() {
         border-radius: 18px;
         padding: 18px 18px 14px;
         box-shadow: 0 32px 80px -20px rgba(0,0,0,0.7);
-        z-index: 61;
+        pointer-events: auto;
       }
       .pm-popover-head {
         display: flex; align-items: center; justify-content: space-between;
