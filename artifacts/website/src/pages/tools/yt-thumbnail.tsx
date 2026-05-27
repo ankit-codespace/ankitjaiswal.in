@@ -191,6 +191,18 @@ export default function YtThumbnail() {
   const [location] = useLocation();
   const seo = YT_SEO[location] ?? YT_SEO[CANONICAL];
 
+  const renderTitle = useCallback((titleText: string) => {
+    const words = titleText.split(" ");
+    if (words.length <= 1) return titleText;
+    const lastWord = words.pop();
+    return (
+      <>
+        {words.join(" ")}{" "}
+        <em>{lastWord}</em>
+      </>
+    );
+  }, []);
+
   const [input, setInput] = useState("");
   const [videoId, setVideoId] = useState<string | null>(null);
   const [results, setResults] = useState<ResultMap>(initialResults());
@@ -441,6 +453,12 @@ export default function YtThumbnail() {
       <Seo title={seo.title} description={seo.description} path={CANONICAL} jsonLd={jsonLd} />
 
       <main className="ytt-stage" ref={mainRef}>
+        <div className="hero">
+          <span className="eyebrow">{seo.eyebrow}</span>
+          <h1>{renderTitle(seo.h1)}</h1>
+          <p>{seo.intro}</p>
+        </div>
+
         <div className="ytt-card">
           <form onSubmit={handleSubmit} className="ytt-form">
             <div className="ytt-input-wrap">
@@ -779,10 +797,69 @@ function ThumbCard({
 function YtThumbStyles() {
   return (
     <style>{`
+      /* ── HERO ── */
+      .hero {
+        text-align: center;
+        max-width: 580px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin: 0 auto 32px;
+      }
+      .eyebrow {
+        font-family: ${tokens.font.body};
+        font-size: 10px;
+        color: ${tokens.text.quiet};
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        font-weight: 500;
+      }
+      .hero h1 {
+        font-family: ${tokens.font.display};
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: -.04em;
+        line-height: 1.1;
+        color: ${tokens.text.primary};
+      }
+      .hero h1 em {
+        font-style: italic;
+        font-family: var(--tnr);
+        font-size: 1.3em;
+        color: var(--hi);
+        letter-spacing: -.01em;
+        line-height: .9;
+        display: inline-block;
+        vertical-align: -.06em;
+        font-weight: normal;
+      }
+      .hero p {
+        font-size: 13.5px;
+        color: ${tokens.text.soft};
+        font-weight: 300;
+        line-height: 1.65;
+        letter-spacing: .01em;
+        max-width: 520px;
+        margin: 0 auto;
+      }
+      @media (max-width: 540px) {
+        .hero h1 {
+          font-size: 25px;
+        }
+        .hero h1 em {
+          font-size: 32px;
+          vertical-align: -.05em;
+        }
+        .hero p {
+          font-size: 12.5px;
+          line-height: 1.5;
+        }
+      }
+
       .ytt-stage {
         max-width: 880px;
         margin: 0 auto;
-        padding: 32px 24px 64px;
+        padding: 44px 24px 64px;
       }
       .ytt-card {
         backdrop-filter: blur(24px);
