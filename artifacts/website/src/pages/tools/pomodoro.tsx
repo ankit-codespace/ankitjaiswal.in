@@ -1909,23 +1909,11 @@ function PomodoroStyles() {
       body.pm-light-mode {
         --layout-bg: transparent !important;
         background-color: #fdfdfe !important;
-        background-image: none !important;
-        position: relative;
-      }
-
-      body.pm-light-mode::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 100vh;
-        z-index: -1;
-        pointer-events: none;
         background-image:
           radial-gradient(ellipse 100% 60% at 50% -10%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
           radial-gradient(ellipse 55% 80% at -5% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
           radial-gradient(ellipse 55% 80% at 105% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%) !important;
+        background-size: 100% 100vh, 100% 100vh, 100% 100vh !important;
         background-attachment: scroll !important;
         background-repeat: no-repeat !important;
       }
