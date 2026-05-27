@@ -704,13 +704,11 @@ export default function Pomodoro() {
       const isLong = cyclePos + 1 >= settings.longBreakAfter;
       setCyclePos(isLong ? 0 : cyclePos + 1);
       const next: Phase = isLong ? "long" : "short";
-      if (settings.autoStartBreak) startSegment(next);
-      else { setRunning(false); setPhase(next); setEndAt(null); setPausedRemainMs(null); }
+      startSegment(next);
     } else {
-      if (settings.autoStartWork) startSegment("work");
-      else { setRunning(false); setPhase("work"); setEndAt(null); setPausedRemainMs(null); }
+      startSegment("work");
     }
-  }, [phase, running, paused, elapsedThisSessionMs, creditPartialFocus, cyclePos, settings.longBreakAfter, settings.autoStartBreak, settings.autoStartWork, startSegment]);
+  }, [phase, running, paused, elapsedThisSessionMs, creditPartialFocus, cyclePos, settings.longBreakAfter, startSegment]);
 
   const setCurrentPhasePreset = useCallback((min: number) => {
     setSettings((s) => {
@@ -1158,10 +1156,24 @@ export default function Pomodoro() {
                 const tip = isLast
                   ? `Pomodoro ${i + 1} of ${total} — ${status}. Long break (${settings.longMin} min) after this one.`
                   : `Pomodoro ${i + 1} of ${total} — ${status}. Short break (${settings.shortMin} min) after.`;
+
+                let dotClass = "";
+                if (i < cyclePos) {
+                  dotClass = "pm-dot-complete";
+                } else if (i === cyclePos && phase === "work") {
+                  if (running && !paused) {
+                    dotClass = "pm-dot-active pm-dot-pulsing";
+                  } else {
+                    dotClass = "pm-dot-active";
+                  }
+                } else {
+                  dotClass = "pm-dot-pending";
+                }
+
                 return (
                   <span
                     key={i}
-                    className={`pm-dot ${i < cyclePos ? "pm-dot-on" : ""}`}
+                    className={`pm-dot ${dotClass}`}
                     title={tip}
                     aria-label={tip}
                   />
@@ -2096,9 +2108,38 @@ function PomodoroStyles() {
       .pm-progress-dots { display: flex; gap: 8px; }
       .pm-dot {
         width: 8px; height: 8px; border-radius: 50%;
-        background: var(--bg3); transition: background 200ms;
+        transition: background 200ms, box-shadow 200ms;
       }
-      .pm-dot-on { background: var(--ok); box-shadow: 0 0 0 3px var(--ok2); }
+      .pm-dot-complete {
+        background: var(--ok);
+        box-shadow: 0 0 0 3px rgba(82, 196, 122, 0.16);
+      }
+      .pm-dot-active {
+        background: var(--warn);
+        box-shadow: 0 0 0 3px rgba(200, 134, 58, 0.2);
+        --pulse-ring: rgba(200, 134, 58, 0.4);
+      }
+      body.pm-light-mode .pm-dot-active {
+        --pulse-ring: rgba(217, 119, 6, 0.4);
+      }
+      .pm-dot-pulsing {
+        animation: pm-pulse-ripple 1.6s infinite ease-in-out;
+      }
+      .pm-dot-pending {
+        background: var(--bg3);
+      }
+
+      @keyframes pm-pulse-ripple {
+        0% {
+          box-shadow: 0 0 0 0px var(--pulse-ring);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(200, 134, 58, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0px rgba(200, 134, 58, 0);
+        }
+      }
 
       /* Ring */
       .pm-ring-wrap {
