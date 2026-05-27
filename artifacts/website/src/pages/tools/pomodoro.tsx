@@ -277,6 +277,25 @@ function bestDayMs(stats: Stats): number {
   return all.reduce((max, v) => (v > max ? v : max), 0);
 }
 
+interface SmartRec {
+  shortMin: number;
+  longMin: number;
+  longBreakAfter: number;
+  label: string;
+}
+
+function getSmartRecommendation(workMin: number): SmartRec {
+  if (workMin <= 30) {
+    return { shortMin: 5, longMin: 15, longBreakAfter: 4, label: "Classic Pomodoro (25/5)" };
+  } else if (workMin <= 50) {
+    return { shortMin: 8, longMin: 20, longBreakAfter: 3, label: "Medium Focus (45/8)" };
+  } else if (workMin <= 90) {
+    return { shortMin: 10, longMin: 25, longBreakAfter: 2, label: "50/10 Deep Work Rule" };
+  } else {
+    return { shortMin: 15, longMin: 30, longBreakAfter: 2, label: "Ultradian Rhythm (90+ min)" };
+  }
+}
+
 const WORK_QUOTES = [
   { text: "Focus is a matter of deciding what things you're not going to do.", author: "John Carmack" },
   { text: "The successful warrior is the average man, with laser-like focus.", author: "Bruce Lee" },
@@ -1583,6 +1602,51 @@ export default function Pomodoro() {
                   onChange={(v) => setSettings((s) => ({ ...s, dailyTargetSessions: v }))}
                 />
               </div>
+
+              {(() => {
+                const rec = getSmartRecommendation(settings.workMin);
+                const isOptimal =
+                  settings.shortMin === rec.shortMin &&
+                  settings.longMin === rec.longMin &&
+                  settings.longBreakAfter === rec.longBreakAfter;
+                if (isOptimal) return null;
+                return (
+                  <div className="pm-rec-card">
+                    <div className="pm-rec-title">Recommended intervals:</div>
+                    <div className="pm-rec-desc">
+                      For a {settings.workMin}m Focus session, use {rec.shortMin}m short breaks and a {rec.longMin}m long break after {rec.longBreakAfter} sessions ({rec.label}).
+                    </div>
+                    <button
+                      type="button"
+                      className="pm-rec-apply-btn"
+                      onClick={() => {
+                        setSettings((s) => ({
+                          ...s,
+                          shortMin: rec.shortMin,
+                          longMin: rec.longMin,
+                          longBreakAfter: rec.longBreakAfter,
+                        }));
+                      }}
+                    >
+                      Apply intervals
+                    </button>
+                  </div>
+                );
+              })()}
+
+              <button
+                type="button"
+                className="pm-reset-btn"
+                onClick={() => {
+                  setSettings(DEFAULT_SETTINGS);
+                  if (!running) {
+                    setEndAt(null);
+                    setPausedRemainMs(null);
+                  }
+                }}
+              >
+                Reset to standard Pomodoro
+              </button>
             </motion.div>
           </>
         )}
@@ -2789,6 +2853,68 @@ function PomodoroStyles() {
         outline: none; transition: border-color 160ms;
       }
       .pm-num input:focus { border-color: var(--b3); }
+
+      /* Smart recommendations & Reset button */
+      .pm-rec-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-top: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        text-align: left;
+      }
+      .pm-rec-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: ${tokens.text.quiet};
+        font-weight: 600;
+      }
+      .pm-rec-desc {
+        font-size: 12px;
+        color: ${tokens.text.soft};
+        line-height: 1.45;
+      }
+      .pm-rec-apply-btn {
+        align-self: flex-start;
+        background: rgba(79, 125, 255, 0.12);
+        border: 1px solid rgba(79, 125, 255, 0.28);
+        color: #4F7DFF;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 140ms;
+      }
+      .pm-rec-apply-btn:hover {
+        background: rgba(79, 125, 255, 0.2);
+      }
+
+      .pm-reset-btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin-top: 16px;
+        background: transparent;
+        border: 1px dashed rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        color: ${tokens.text.soft};
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        cursor: pointer;
+        transition: all 180ms;
+      }
+      .pm-reset-btn:hover {
+        border-color: rgba(255, 255, 255, 0.3);
+        color: ${tokens.text.primary};
+        background: rgba(255, 255, 255, 0.02);
+      }
 
       /* Distraction-free overlay */
       .pm-focus {
