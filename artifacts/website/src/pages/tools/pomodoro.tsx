@@ -1888,7 +1888,9 @@ function PomodoroStyles() {
         --layout-bg: transparent !important;
         background-color: #fdfdfe !important;
         background-image:
-          radial-gradient(ellipse 100% 600px at 50% -50px, rgba(96, 165, 250, 0.15) 0%, transparent 100%) !important;
+          radial-gradient(ellipse 100% 60% at 50% -50px, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at -5% 350px, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at 105% 350px, rgba(96, 165, 250, 0.45) 0%, transparent 60%) !important;
         background-attachment: scroll !important;
         background-repeat: no-repeat !important;
       }
