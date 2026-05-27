@@ -7,11 +7,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ToolPage, ToolSEOArticle, ToolSection, SectionHeading, ToolStatusBar,
+  ToolPage, ToolSEOArticle, ToolSection, SectionHeading,
   ToolFAQ, ToolHowToSteps, ToolFeatureGrid, ToolRelatedTools,
   ToolAuthorCard, ToolPrivacyBand, FeedbackInlineCard, buildToolJsonLd,
   tokens, type ToolFAQItem, type RelatedTool, type ToolHowToStep,
-  type ToolFeature, type ToolStatusStat,
+  type ToolFeature,
 } from "@/components/tool";
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -343,6 +343,19 @@ export default function Pomodoro() {
     const random = list[Math.floor(Math.random() * list.length)];
     setCurrentQuote(random);
   }, [phase]);
+
+  // Smooth scroll logic: scroll mainRef into view when timer starts running
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    if (running) {
+      t = setTimeout(() => {
+        mainRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+    return () => {
+      if (t) clearTimeout(t);
+    };
+  }, [running]);
 
   const [theme, setTheme] = useState<"system" | "light" | "dark">(() => {
     if (typeof window !== "undefined") {
@@ -677,6 +690,8 @@ export default function Pomodoro() {
     setPausedRemainMs(null);
     setPhase("work");
     setCyclePos(0);
+    // Smooth scroll back to top of the page
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [phase, running, paused, elapsedThisSessionMs, creditPartialFocus]);
 
   const handleSkip = useCallback(() => {
@@ -1154,8 +1169,8 @@ export default function Pomodoro() {
               })}
             </div>
 
-            <div className="pm-phase-header">
-              {!running ? (
+            {!running && (
+              <div className="pm-phase-header">
                 <div className="pm-phase-tabs">
                   {[
                     { id: "work", label: "Focus" },
@@ -1172,12 +1187,8 @@ export default function Pomodoro() {
                     </button>
                   ))}
                 </div>
-              ) : (
-                <span className="pm-phase-active-label">
-                  {phase === "work" ? "Focusing" : phase === "short" ? "Short Break" : "Long Break"}
-                </span>
-              )}
-            </div>
+              </div>
+            )}
 
             <div
               ref={dialRef}
@@ -1678,18 +1689,7 @@ export default function Pomodoro() {
 
       <PomodoroStyles />
 
-      {/* Footer is purposely thin — the sidebar already shows today/sessions
-          above the fold, and the giant digits already show time remaining
-          when the timer is on screen. The footer earns its place only when
-          the user scrolls into the SEO article below; at that point its
-          single job is "is a session still running, and how long left?". */}
-      <ToolStatusBar
-        stats={[
-          { key: "phase", label: running ? `${phaseLabel}${paused ? " · paused" : ""}` : "Ready", accent: running && !paused ? undefined : "muted" },
-          { key: "rem", label: `${fmtMMSS(remainingMs)} left`, accent: running && !paused ? undefined : "muted" },
-        ]}
-        hideBelowRef={mainRef}
-      />
+
     </ToolPage>
   );
 }
@@ -2029,7 +2029,7 @@ function PomodoroStyles() {
       /* Stage breathes from the top — productivity tools should never
          feel like the content is jammed under the header. 48px gives
          the timer room to feel like the focus of the page. */
-      .pm-stage { max-width: 980px; margin: 0 auto; padding: 48px 24px 56px; }
+      .pm-stage { max-width: 980px; margin: 0 auto; padding: 24px 24px 40px; }
       .pm-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 264px;
@@ -2817,7 +2817,7 @@ function PomodoroStyles() {
 
       /* Phone tweaks */
       @media (max-width: 600px) {
-        .pm-stage { padding: 32px 16px 48px; }
+        .pm-stage { padding: 16px 16px 32px; }
         .pm-ring-wrap { width: 188px; height: 188px; }
         .pm-time { font-size: 48px; }
         .pm-stats-grid { grid-template-columns: 1fr 1fr; }
