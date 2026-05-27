@@ -1327,9 +1327,9 @@ export default function Pomodoro() {
                           >
                             <span className="pm-preset-label">{min}m</span>
                             {active && (
-                              <motion.span
-                                layoutId="activePresetDot"
-                                className="pm-preset-dot"
+                              <motion.div
+                                layoutId="activePresetBg"
+                                className="pm-preset-bg"
                                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
                               />
                             )}
@@ -2504,28 +2504,26 @@ function PomodoroStyles() {
       }
       .pm-presets {
         display: inline-flex; align-items: center;
-        background: var(--bg2);
-        border: 1px solid var(--b0);
-        border-radius: 12px;
-        padding: 3px;
-        gap: 2px;
-        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+        background: transparent;
+        border: none;
+        padding: 0;
+        gap: 4px;
+        box-shadow: none;
       }
       body.pm-light-mode .pm-presets {
-        background: rgba(22, 22, 21, 0.04);
-        border-color: rgba(22, 22, 21, 0.06);
+        background: transparent;
+        border: none;
       }
       .pm-preset {
         appearance: none; background: transparent; border: 0; cursor: pointer;
         position: relative;
-        padding: 6px 14px 10px;
-        border-radius: 9px;
+        padding: 5px 12px;
+        border-radius: 8px;
         color: ${tokens.text.quiet};
-        font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em;
+        font-size: 13px; font-weight: 500; letter-spacing: -0.005em;
         font-variant-numeric: tabular-nums;
         transition: color 140ms;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 1;
@@ -2534,16 +2532,15 @@ function PomodoroStyles() {
         position: relative;
         z-index: 2;
       }
-      .pm-preset-dot {
+      .pm-preset-bg {
         position: absolute;
-        bottom: 4px;
-        left: 50%;
-        width: 3.5px;
-        height: 3.5px;
-        border-radius: 50%;
-        background: ${tokens.text.primary};
-        transform: translateX(-50%);
-        z-index: 2;
+        inset: 0;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.07);
+        z-index: 1;
+      }
+      body.pm-light-mode .pm-preset-bg {
+        background: rgba(22, 22, 21, 0.05);
       }
       .pm-preset:hover:not(:disabled) { color: ${tokens.text.primary}; }
       .pm-preset:focus-visible { outline: 1.5px solid var(--b3); outline-offset: 2px; }
@@ -2804,7 +2801,8 @@ function PomodoroStyles() {
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 52px;
+        min-height: 28px;
+        margin-bottom: 4px;
       }
       .pm-quote-container {
         display: flex; flex-direction: column; align-items: center;
