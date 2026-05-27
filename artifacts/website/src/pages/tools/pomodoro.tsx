@@ -1910,9 +1910,9 @@ function PomodoroStyles() {
         --layout-bg: transparent !important;
         background-color: #fdfdfe !important;
         background-image:
-          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
-          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
-          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(52, 211, 153, 0.30) 0%, transparent 60%) !important;
+          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(34, 112, 93, 0.12) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(34, 112, 93, 0.22) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(34, 112, 93, 0.22) 0%, transparent 60%) !important;
         background-size: 100% 100vh, 100% 100vh, 100% 100vh !important;
         background-attachment: scroll !important;
         background-repeat: no-repeat !important;
@@ -1995,9 +1995,9 @@ function PomodoroStyles() {
       body.pm-light-mode .pm-focus {
         background-color: #fafaf9;
         background-image:
-          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
-          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
-          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(52, 211, 153, 0.30) 0%, transparent 60%) !important;
+          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(34, 112, 93, 0.12) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(34, 112, 93, 0.22) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(34, 112, 93, 0.22) 0%, transparent 60%) !important;
         background-size: 100% 100vh, 100% 100vh, 100% 100vh !important;
         background-repeat: no-repeat !important;
       }
