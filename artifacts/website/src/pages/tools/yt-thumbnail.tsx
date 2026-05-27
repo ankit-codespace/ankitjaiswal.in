@@ -645,7 +645,7 @@ export default function YtThumbnail() {
           </div>
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolPrivacyBand
             heading="Your lookups stay between you and YouTube's CDN"
             body="When you submit a URL, your browser fetches the thumbnail directly from i.ytimg.com — our server never sees the video ID, the URL, or the resulting image. Your 'Recent' bar lives in your own browser's localStorage and clears whenever you tell it to."
@@ -657,7 +657,7 @@ export default function YtThumbnail() {
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolAuthorCard />
         </ToolSection>
 
@@ -666,7 +666,7 @@ export default function YtThumbnail() {
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="grid">
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>

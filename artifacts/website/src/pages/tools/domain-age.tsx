@@ -772,7 +772,7 @@ export default function DomainAge() {
           </div>
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolPrivacyBand
             heading="Your queries stay between you and the registry"
             body="WHOIS lookups happen over a single API call from this server to the appropriate registry. Your IP isn't logged with the query, and your 'recent lookups' list lives only in your own browser's localStorage — clear it any time, or use private browsing for a clean slate."
@@ -784,7 +784,7 @@ export default function DomainAge() {
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolAuthorCard />
         </ToolSection>
 
@@ -793,7 +793,7 @@ export default function DomainAge() {
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="grid">
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>

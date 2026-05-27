@@ -2496,7 +2496,7 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
         </ToolSection>
 
         {/* ── PRIVACY EXPLAINER ── */}
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolPrivacyBand
             heading="Your notes never leave your device"
             body="This editor stores everything in your browser's local storage. There's no server-side database, no analytics inside the editor, no third-party scripts reading your text. When you export to PDF, DOCX, Markdown or HTML, the conversion runs in your browser and the file downloads directly to your device — your text is never uploaded. Clearing your browser data clears your notes; nothing is recoverable from anywhere else, because nothing was ever sent anywhere else."
@@ -2510,7 +2510,7 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
         </ToolSection>
 
         {/* ── AUTHOR CARD ── */}
-        <ToolSection>
+        <ToolSection width="grid">
           <SectionHeading kicker="About the maker" title="Who built this" />
           <ToolAuthorCard
             bio={
@@ -2528,7 +2528,7 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
         </ToolSection>
 
         {/* ── INLINE FEEDBACK CARD ── */}
-        <ToolSection>
+        <ToolSection width="grid">
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>

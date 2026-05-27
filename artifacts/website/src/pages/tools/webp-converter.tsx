@@ -1377,7 +1377,7 @@ export default function WebPConverter() {
         </ToolSection>
 
         {/* Privacy band */}
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolPrivacyBand
             heading="Your images never leave your device"
             body="Every conversion happens with the HTML5 Canvas API in your own browser. There is no server-side image pipeline. There are no analytics on your files. The only network call this page makes is to load itself — once that's done, you could disconnect from the internet and convert thousands of images. Open your browser's DevTools and watch the Network tab while you convert. You'll see nothing. That's the point."
@@ -1391,7 +1391,7 @@ export default function WebPConverter() {
         </ToolSection>
 
         {/* Author card */}
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolAuthorCard />
         </ToolSection>
 
@@ -1402,7 +1402,7 @@ export default function WebPConverter() {
         </ToolSection>
 
         {/* Inline feedback */}
-        <ToolSection>
+        <ToolSection width="grid">
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>

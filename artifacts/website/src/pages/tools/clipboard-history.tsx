@@ -953,7 +953,7 @@ export default function ClipboardHistory() {
           </div>
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolPrivacyBand
             heading="Your snippets stay on your device"
             body="There is no server-side database, no analytics that read your snippets, and no third-party scripts. Your snippets are stored in your browser's localStorage, scoped to ankitjaiswal.in. Clearing site data wipes them — that's why the export button exists. Importing a JSON file merges with what you have, deduped by content."
@@ -965,7 +965,7 @@ export default function ClipboardHistory() {
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolAuthorCard />
         </ToolSection>
 
@@ -974,7 +974,7 @@ export default function ClipboardHistory() {
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="grid">
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>

@@ -43,6 +43,7 @@ export function ToolSEOArticle({
       <ToolStyles />
       <article
         style={{
+          display: "flow-root",
           background: tokens.bg.page,
           color: tokens.text.body,
           padding: "120px 24px 0",
@@ -110,7 +111,11 @@ export function ToolSection({
   children: ReactNode;
 }) {
   const max =
-    typeof width === "number" ? width : width === "grid" ? tokens.width.grid : width === "privacy" ? tokens.width.privacy : tokens.width.prose;
+    typeof width === "number"
+      ? width
+      : width === "grid" || width === "privacy"
+      ? tokens.width.grid
+      : tokens.width.prose;
   return <section style={{ maxWidth: max, margin: `0 auto ${marginBottom}px` }}>{children}</section>;
 }
 

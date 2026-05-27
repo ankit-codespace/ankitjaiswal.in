@@ -1650,7 +1650,7 @@ export default function Pomodoro() {
           </div>
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolPrivacyBand
             heading="Your stats stay on your device"
             body="No account, no email, no upload. Daily focus minutes, lifetime hours, and settings live in your browser's localStorage and never travel anywhere. Clear your browser data and the slate is clean."
@@ -1662,7 +1662,7 @@ export default function Pomodoro() {
           <ToolFAQ items={faqs} />
         </ToolSection>
 
-        <ToolSection width="privacy">
+        <ToolSection width="grid">
           <ToolAuthorCard />
         </ToolSection>
 
@@ -1671,7 +1671,7 @@ export default function Pomodoro() {
           <ToolRelatedTools items={related} />
         </ToolSection>
 
-        <ToolSection>
+        <ToolSection width="grid">
           <FeedbackInlineCard />
         </ToolSection>
       </ToolSEOArticle>
@@ -1812,10 +1812,9 @@ function PomodoroStyles() {
         --layout-bg: transparent !important;
         background-color: #fdfdfe !important;
         background-image:
-          radial-gradient(ellipse 100% 60% at 50% -10%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
-          radial-gradient(ellipse 55% 80% at -5% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%),
-          radial-gradient(ellipse 55% 80% at 105% 50%, rgba(96, 165, 250, 0.45) 0%, transparent 60%) !important;
-        background-attachment: fixed !important;
+          radial-gradient(ellipse 100% 600px at 50% -50px, rgba(96, 165, 250, 0.15) 0%, transparent 100%) !important;
+        background-attachment: scroll !important;
+        background-repeat: no-repeat !important;
       }
 
       body.pm-light-mode .pm-card {
