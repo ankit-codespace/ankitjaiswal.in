@@ -1023,55 +1023,18 @@ html, body { overflow-x: clip; max-width: 100%; }
   transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
 }
 
-.notepad-tab-item:hover {
+.notepad-tab-item:not(.active):hover {
   background-color: rgba(255, 255, 255, 0.04) !important;
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
-.surface-light .notepad-tab-item:hover {
+.surface-light .notepad-tab-item:not(.active):hover {
   background-color: rgba(0, 0, 0, 0.03) !important;
   color: rgba(0, 0, 0, 0.85) !important;
 }
 
 .notepad-tab-item.active {
   box-shadow: none !important;
-}
-
-/* Chrome-like outward flaring base curves */
-.notepad-tab-item.active::before {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: -8px;
-  width: 8px;
-  height: 8px;
-  background: radial-gradient(
-    circle at 100% 100%,
-    var(--active-tab-bg) 6.4px,
-    var(--active-border-color) 6.8px,
-    var(--active-border-color) 8.0px,
-    transparent 8.4px
-  );
-  pointer-events: none;
-  z-index: 3;
-}
-
-.notepad-tab-item.active::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  right: -8px;
-  width: 8px;
-  height: 8px;
-  background: radial-gradient(
-    circle at 0 100%,
-    var(--active-tab-bg) 6.4px,
-    var(--active-border-color) 6.8px,
-    var(--active-border-color) 8.0px,
-    transparent 8.4px
-  );
-  pointer-events: none;
-  z-index: 3;
 }
 
 

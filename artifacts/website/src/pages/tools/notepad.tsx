@@ -1637,21 +1637,69 @@ export default function Notepad() {
                       ["--active-border-color" as any]: surfAccent,
                     }}
                   >
+                    {/* SVG Vector Background & Outline */}
                     {isActive && (
                       <div
                         style={{
                           position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: "calc(100% - 8px)",
-                          borderTop: `1px solid ${surfAccent}`,
-                          borderLeft: `1px solid ${surfAccent}`,
-                          borderRight: `1px solid ${surfAccent}`,
-                          borderRadius: "8px 8px 0 0",
+                          inset: 0,
                           pointerEvents: "none",
+                          zIndex: -1,
                         }}
-                      />
+                      >
+                        {/* Left Curve SVG */}
+                        <svg
+                          width="16"
+                          height="32"
+                          viewBox="0 0 16 32"
+                          fill="none"
+                          style={{ position: "absolute", left: -8, top: 0 }}
+                        >
+                          <path
+                            d="M 16 32 L 8 32 A 8 8 0 0 1 0 24 L 0 8 A 8 8 0 0 1 8 0 L 16 0 Z"
+                            fill={surfBg}
+                          />
+                          <path
+                            d="M 8 32 A 8 8 0 0 1 0 24 L 0 8 A 8 8 0 0 1 8 0 L 16 0"
+                            stroke={surfAccent}
+                            strokeWidth="1"
+                            fill="none"
+                          />
+                        </svg>
+
+                        {/* Middle Fill */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: 8,
+                            right: 8,
+                            top: 0,
+                            bottom: 0,
+                            background: surfBg,
+                            borderTop: `1px solid ${surfAccent}`,
+                          }}
+                        />
+
+                        {/* Right Curve SVG */}
+                        <svg
+                          width="16"
+                          height="32"
+                          viewBox="0 0 16 32"
+                          fill="none"
+                          style={{ position: "absolute", right: -8, top: 0 }}
+                        >
+                          <path
+                            d="M 0 32 L 0 0 L 8 0 A 8 8 0 0 1 16 8 L 16 24 A 8 8 0 0 1 8 32 Z"
+                            fill={surfBg}
+                          />
+                          <path
+                            d="M 0 0 L 8 0 A 8 8 0 0 1 16 8 L 16 24 A 8 8 0 0 1 8 32"
+                            stroke={surfAccent}
+                            strokeWidth="1"
+                            fill="none"
+                          />
+                        </svg>
+                      </div>
                     )}
                     {isActive ? (
                       <input
