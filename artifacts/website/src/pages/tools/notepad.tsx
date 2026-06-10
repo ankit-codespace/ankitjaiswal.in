@@ -1634,6 +1634,7 @@ export default function Notepad() {
                       marginBottom: isActive ? -1 : 0,
                       zIndex: isActive ? 2 : 1,
                       ["--active-tab-bg" as any]: surfBg,
+                      ["--active-border-color" as any]: surfAccent,
                     }}
                   >
                     {isActive && (
@@ -1643,9 +1644,12 @@ export default function Notepad() {
                           top: 0,
                           left: 0,
                           right: 0,
-                          height: 2,
-                          background: surfAccent,
+                          bottom: 8,
+                          borderTop: `1px solid ${surfAccent}`,
+                          borderLeft: `1px solid ${surfAccent}`,
+                          borderRight: `1px solid ${surfAccent}`,
                           borderRadius: "8px 8px 0 0",
+                          pointerEvents: "none",
                         }}
                       />
                     )}
