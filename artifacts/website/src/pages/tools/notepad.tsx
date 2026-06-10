@@ -17,6 +17,7 @@ import {
 import { ToolFooter } from "@/components/tool/ToolFooter";
 import { tokens } from "@/components/tool/tokens";
 import { useEditor, EditorContent } from "@tiptap/react";
+import { motion, AnimatePresence } from "framer-motion";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TipTapImage from "@tiptap/extension-image";
@@ -588,6 +589,20 @@ export default function Notepad() {
   const [hoveredCols, setHoveredCols] = useState(0);
   const [tableMenuLeft, setTableMenuLeft] = useState(0);
   const tableBtnRef = useRef<HTMLButtonElement>(null);
+
+  // --- Scroll Gate & Lock State ---
+  const [isSeoUnlocked, setIsSeoUnlocked] = useState(() => {
+    // Bot detection bypass to guarantee crawler indexing
+    if (typeof navigator !== "undefined") {
+      const isBot = /bot|google|baidu|bing|msn|duckduckgo|teoma|slurp|yandex/i.test(navigator.userAgent);
+      if (isBot) return true;
+    }
+    return false;
+  });
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isNearBottom, setIsNearBottom] = useState(false);
+  const scrollProgressRef = useRef(0);
+  const drainTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeDoc = useMemo(() => docs.find((d) => d.id === activeId) ?? docs[0], [docs, activeId]);
   const GCID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "";
@@ -1263,6 +1278,201 @@ export default function Notepad() {
   })();
 
 
+  // --- Scroll Gate & Lock Effects ---
+
+  // Detect if the user is near the bottom of the editor
+  useEffect(() => {
+    if (isSeoUnlocked) {
+      setIsNearBottom(false);
+      return;
+    }
+    const handleScroll = () => {
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+      const maxScroll = docHeight - winHeight;
+      // Trigger indicator within 24px of the bottom scroll limit
+      const near = scrollY >= maxScroll - 24 && maxScroll > 50;
+      setIsNearBottom(near);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isSeoUnlocked]);
+
+  // Handle relocking scroll gate when user scrolls back to the very top (scrollY === 0)
+  useEffect(() => {
+    if (!isSeoUnlocked) return;
+    const handleScrollRelock = () => {
+      if (window.scrollY === 0) {
+        setIsSeoUnlocked(false);
+        setScrollProgress(0);
+        scrollProgressRef.current = 0;
+        toast.message("Scroll gate locked", {
+          description: "Scroll to the bottom of the editor to unlock the guide again.",
+        });
+      }
+    };
+    window.addEventListener("scroll", handleScrollRelock, { passive: true });
+    return () => window.removeEventListener("scroll", handleScrollRelock);
+  }, [isSeoUnlocked]);
+
+  // Intercept scroll wheel, touch swipe, and key downs when locked at bottom of the page
+  useEffect(() => {
+    if (isSeoUnlocked) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+      const maxScroll = docHeight - winHeight;
+      const atBottom = scrollY >= maxScroll - 5;
+      if (!atBottom) return;
+
+      if (e.deltaY > 0) {
+        e.preventDefault(); // Stop native overscroll / elastic bounce
+
+        if (drainTimerRef.current) {
+          clearInterval(drainTimerRef.current);
+          drainTimerRef.current = null;
+        }
+
+        // Standardize step sizes across different scroll gears
+        const step = Math.min(20, Math.max(4, Math.abs(e.deltaY) * 0.08));
+        const nextProgress = Math.min(100, scrollProgressRef.current + step);
+        scrollProgressRef.current = nextProgress;
+        setScrollProgress(nextProgress);
+
+        if (nextProgress >= 100) {
+          unlockGate();
+        } else {
+          resetDrainTimer();
+        }
+      }
+    };
+
+    let touchStartY: number | null = null;
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (touchStartY === null) return;
+
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+      const maxScroll = docHeight - winHeight;
+      const atBottom = scrollY >= maxScroll - 5;
+      if (!atBottom) return;
+
+      const currentY = e.touches[0].clientY;
+      const deltaY = touchStartY - currentY; // Swiping UP scrolls down
+
+      if (deltaY > 0) {
+        e.preventDefault(); // Prevent default pull-up scroll bounce
+
+        if (drainTimerRef.current) {
+          clearInterval(drainTimerRef.current);
+          drainTimerRef.current = null;
+        }
+
+        const step = Math.min(12, deltaY * 0.2);
+        const nextProgress = Math.min(100, scrollProgressRef.current + step);
+        scrollProgressRef.current = nextProgress;
+        setScrollProgress(nextProgress);
+
+        touchStartY = currentY; // Track movement dynamically
+
+        if (nextProgress >= 100) {
+          unlockGate();
+        } else {
+          resetDrainTimer();
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      touchStartY = null;
+      resetDrainTimer();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+      const maxScroll = docHeight - winHeight;
+      const atBottom = scrollY >= maxScroll - 5;
+      if (!atBottom) return;
+
+      const isDownKey = e.key === "ArrowDown" || e.key === "PageDown" || (e.key === " " && !e.shiftKey);
+      if (isDownKey) {
+        e.preventDefault();
+
+        if (drainTimerRef.current) {
+          clearInterval(drainTimerRef.current);
+          drainTimerRef.current = null;
+        }
+
+        const step = e.key === "ArrowDown" ? 15 : 35;
+        const nextProgress = Math.min(100, scrollProgressRef.current + step);
+        scrollProgressRef.current = nextProgress;
+        setScrollProgress(nextProgress);
+
+        if (nextProgress >= 100) {
+          unlockGate();
+        } else {
+          resetDrainTimer();
+        }
+      }
+    };
+
+    const unlockGate = () => {
+      setIsSeoUnlocked(true);
+      setIsNearBottom(false);
+      setScrollProgress(100);
+      scrollProgressRef.current = 100;
+
+      setTimeout(() => {
+        window.scrollBy({ top: 160, behavior: "smooth" });
+        toast.success("Documentation unlocked", {
+          description: "You can now scroll down to read the guide.",
+        });
+      }, 100);
+    };
+
+    const resetDrainTimer = () => {
+      if (drainTimerRef.current) clearInterval(drainTimerRef.current);
+      drainTimerRef.current = setInterval(() => {
+        const nextProgress = Math.max(0, scrollProgressRef.current - 8);
+        scrollProgressRef.current = nextProgress;
+        setScrollProgress(nextProgress);
+        if (nextProgress === 0 && drainTimerRef.current) {
+          clearInterval(drainTimerRef.current);
+          drainTimerRef.current = null;
+        }
+      }, 40);
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    window.addEventListener("keydown", handleKeyDown, { passive: false });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("keydown", handleKeyDown);
+      if (drainTimerRef.current) clearInterval(drainTimerRef.current);
+    };
+  }, [isSeoUnlocked]);
+
+
   /** Apply a preset theme: sets bgColor, textColor, lightSurface in one shot. */
   const applyTheme = (bg: string, text: string) => {
     setSettings((prev) => {
@@ -1343,198 +1553,333 @@ export default function Notepad() {
         This ensures the right-side buttons are NEVER hidden by overflow,
         regardless of viewport width or fullscreen mode.
       */}
-      <div style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--bg0)", borderBottom: "1px solid var(--b0)", height: 48, display: "flex", alignItems: "center" }}>
+      {/*
+        DOUBLE-ROW TOOLBAR:
+        • ROW 1 (Window & File Tabs) — height 40px, displays open note tabs and file action controls
+        • ROW 2 (Formatting Tools)   — height 38px, displays rich-text formatting buttons and view controls
+      */}
+      <div style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--bg0)", borderBottom: "1px solid var(--b0)", display: "flex", flexDirection: "column" }}>
+        
+        {/* ── ROW 1: Window header, file tabs, and file action buttons ── */}
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: "1px solid var(--b0)", padding: "0 10px", width: "100%", boxSizing: "border-box" }}>
+          
+          {/* Left Zone: Back and Tabs */}
+          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
+            {/* Back Button */}
+            <Link href="/tools" className="notepad-back-link" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, color: "rgba(255,255,255,0.48)", textDecoration: "none", alignSelf: "center", flexShrink: 0 }} title="Back to Tools">
+              <ArrowLeft size={15} />
+            </Link>
+            <span className="notepad-back-link" style={{ alignSelf: "center" }}>{sep}</span>
 
-        {/* ── LEFT ZONE: scrollable formatting tools ── */}
-        <div className="notepad-toolbar" style={{ display: "flex", alignItems: "center", height: "100%", padding: "0 6px 0 10px", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
+            {/* Browser Tabs Scrollable Container */}
+            <div
+              className="notepad-tabs-container"
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: 2,
+                overflowX: "auto",
+                height: "100%",
+                flex: 1,
+              }}
+            >
+              {docs.map((doc) => {
+                const isActive = doc.id === activeId;
+                const isArmed = confirmDeleteId === doc.id;
+                
+                return (
+                  <div
+                    key={doc.id}
+                    className={`notepad-tab-item ${isActive ? "active" : ""}`}
+                    onClick={() => {
+                      if (!isActive) {
+                        setActiveId(doc.id);
+                        cancelConfirm();
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      height: 32,
+                      padding: "0 12px",
+                      borderRadius: "6px 6px 0 0",
+                      border: "1px solid",
+                      borderColor: isActive ? "var(--b0)" : "transparent",
+                      borderBottom: isActive ? `1px solid ${surfBg}` : "none",
+                      background: isActive ? surfBg : "transparent",
+                      color: isActive ? surfTxt : "rgba(255, 255, 255, 0.45)",
+                      cursor: "pointer",
+                      position: "relative",
+                      minWidth: 80,
+                      maxWidth: 150,
+                      marginBottom: isActive ? -1 : 0,
+                      zIndex: isActive ? 2 : 1,
+                    }}
+                  >
+                    {isActive ? (
+                      <input
+                        ref={titleInputRef}
+                        value={doc.title}
+                        onChange={(e) => updateTitle(e.target.value)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          outline: "none",
+                          color: surfTxt,
+                          fontFamily: "'Sora', sans-serif",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          width: "100%",
+                          padding: 0,
+                          margin: 0,
+                          letterSpacing: "-0.01em",
+                        }}
+                        spellCheck={false}
+                        title="Rename note"
+                      />
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 500,
+                          fontFamily: "Inter, sans-serif",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          width: "100%",
+                        }}
+                      >
+                        {doc.title || "Untitled"}
+                      </span>
+                    )}
 
-          {/* Back */}
-          <Link href="/tools" className="notepad-back-link" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 6, color: "rgba(255,255,255,0.48)", textDecoration: "none", flexShrink: 0 }} title="Back to Tools">
-            <ArrowLeft size={15} />
-          </Link>
-          <span className="notepad-back-link">{sep}</span>
+                    {docs.length > 1 && (
+                      isArmed ? (
+                        <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                          <button
+                            onClick={() => deleteDoc(doc.id)}
+                            style={{ border: "none", background: "var(--err)", color: "#fff", fontSize: 9, padding: "2px 4px", borderRadius: 4, cursor: "pointer", fontWeight: 600 }}
+                            title="Confirm delete"
+                          >
+                            Del
+                          </button>
+                          <button
+                            onClick={cancelConfirm}
+                            style={{ border: "none", background: "transparent", color: "var(--t2)", fontSize: 9, padding: "2px 2px", cursor: "pointer" }}
+                            title="Cancel"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            armConfirm(doc.id, false);
+                          }}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            color: isActive ? "var(--t3)" : "rgba(255,255,255,0.25)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: 2,
+                            borderRadius: 4,
+                            cursor: "pointer",
+                            transition: "all 0.12s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = "var(--err)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = isActive ? "var(--t3)" : "rgba(255,255,255,0.25)";
+                          }}
+                          title="Delete note"
+                        >
+                          <X size={10} />
+                        </button>
+                      )
+                    )}
+                  </div>
+                );
+              })}
+              
+              {/* Plus Button inside tab bar row */}
+              <button
+                onClick={createDoc}
+                style={{
+                  ...tb(),
+                  width: 24,
+                  height: 24,
+                  borderRadius: 6,
+                  alignSelf: "center",
+                  marginLeft: 4,
+                  flexShrink: 0,
+                }}
+                title="New note"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+          </div>
 
-          {/* Doc title — hidden on mobile (rename via documents menu instead) */}
-          <input
-            ref={titleInputRef}
-            className="notepad-doc-title"
-            value={activeDoc.title}
-            onChange={(e) => updateTitle(e.target.value)}
-            style={{ background: "transparent", border: "none", outline: "none", color: "rgba(255,255,255,0.90)", fontFamily: "'Sora',sans-serif", fontSize: 14, fontWeight: 600, width: 130, flexShrink: 0, letterSpacing: "-0.01em" }}
-            spellCheck={false}
-            title="Document title"
-          />
-
-          {/* Docs menu trigger */}
-          <button
-            ref={docMenuBtnRef}
-            style={{ ...tb(), width: "auto", padding: "0 7px", gap: 4, flexShrink: 0 }}
-            onClick={() => {
-              const r = docMenuBtnRef.current?.getBoundingClientRect();
-              if (r) setDocMenuLeft(r.left);
-              setShowDocMenu(!showDocMenu);
-              setShowMoreMenu(false);
-              cancelConfirm();
-            }}
-            title="All documents"
-          >
-            <FileText size={13} />
-            <ChevronDown size={11} />
-          </button>
-
-          {/* Instant One-Click "+" Page Creator */}
-          <button
-            style={{ ...tb(), flexShrink: 0 }}
-            onClick={createDoc}
-            title="New note (one-click)"
-            aria-label="Create new note"
-          >
-            <Plus size={14} />
-          </button>
-          {sep}
-
-          {/* FORMAT — always visible core */}
-          <button style={tb(editor?.isActive("bold"))} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)"><BoldIcon size={14} /></button>
-          <button style={tb(editor?.isActive("italic"))} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic (Ctrl+I)"><ItalicIcon size={14} /></button>
-          <button style={tb(editor?.isActive("underline"))} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="Underline (Ctrl+U)"><UnderlineIcon size={14} /></button>
-          <button style={tb(editor?.isActive("strike"))} onClick={() => editor?.chain().focus().toggleStrike().run()} title="Strikethrough"><Strikethrough size={14} /></button>
-          <button style={tb(editor?.isActive("highlight"))} onClick={() => editor?.chain().focus().toggleHighlight().run()} title="Highlight"><Highlighter size={13} /></button>
-          {sep}
-
-          {/* HEADINGS */}
-          <button style={tb(editor?.isActive("paragraph") && !editor?.isActive("heading"))} onClick={() => editor?.chain().focus().setParagraph().run()} title="Paragraph"><AlignLeft size={14} /></button>
-          <button style={tb(editor?.isActive("heading", { level: 1 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} title="Heading 1"><Heading1 size={14} /></button>
-          <button style={tb(editor?.isActive("heading", { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2"><Heading2 size={14} /></button>
-          <button style={tb(editor?.isActive("heading", { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} title="Heading 3"><Heading3 size={14} /></button>
-          {sep}
-
-          {/* TABLE DYNAMIC CREATOR */}
-          <button
-            ref={tableBtnRef}
-            style={tb(showTableGrid || editor?.isActive("table"))}
-            onClick={() => {
-              const r = tableBtnRef.current?.getBoundingClientRect();
-              if (r) setTableMenuLeft(r.left);
-              setShowTableGrid(!showTableGrid);
-              setShowDocMenu(false);
-              setShowMoreMenu(false);
-              setShowSettings(false);
-              cancelConfirm();
-            }}
-            title="Insert table (dynamic grid)"
-            aria-label="Insert table"
-          >
-            <Table2 size={14} />
-          </button>
-          {sep}
-
-          {/* HISTORY */}
-          <button style={{ ...tb(), opacity: editor?.can().undo() ? 1 : 0.3 }} onClick={() => editor?.chain().focus().undo().run()} title="Undo (Ctrl+Z)"><Undo2 size={13} /></button>
-          <button style={{ ...tb(), opacity: editor?.can().redo() ? 1 : 0.3 }} onClick={() => editor?.chain().focus().redo().run()} title="Redo (Ctrl+Y)"><Redo2 size={13} /></button>
-        </div>
-
-        {/* ── RIGHT ZONE: fixed actions — always visible, never scrolls off ── */}
-        <div style={{ display: "flex", alignItems: "center", height: "100%", padding: "0 10px 0 6px", gap: 2, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-          {/* MORE — Lists / Insert (image, link, divider) / Colors. Lives in the
-              fixed right zone so mobile users can always reach Insert Image. */}
-          <button
-            ref={moreMenuBtnRef}
-            style={{ ...tb(showMoreMenu), width: "auto", padding: "0 8px", gap: 3, flexShrink: 0 }}
-            onClick={() => { setShowMoreMenu(!showMoreMenu); setShowDocMenu(false); setShowSettings(false); setShowExportMenu(false); }}
-            title="More — lists, insert image/link, colors"
-          >
-            <MoreHorizontal size={15} />
-          </button>
-          {sep}
-
-          {/* FIND */}
-          <button
-            style={tb(showFind)}
-            onClick={() => { if (showFind) { setShowFind(false); setShowReplace(false); } else { setShowFind(true); setTimeout(() => findInputRef.current?.focus(), 50); } }}
-            title="Find (Ctrl+F) · Find & Replace (Ctrl+H)"
-          >
-            <Search size={14} />
-          </button>
-
-          {/* FOCUS / FULLSCREEN */}
-          <button style={tb(focusMode)} onClick={toggleFocus} title="Focus / fullscreen (Ctrl+\\)">{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
-
-          {/* DRIVE */}
-          {GCID && (
-            <button style={tb(driveConnected)} onClick={driveConnected ? () => syncToDrive() : connectDrive} title={driveConnected ? "Sync to Drive now" : "Connect Google Drive"}>
-              {driveSaving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : driveConnected ? <Cloud size={14} /> : <CloudOff size={14} />}
-            </button>
-          )}
-
-          {sep}
-
-          {/* SETTINGS */}
-          <button style={tb(showSettings)} onClick={() => { setShowSettings(!showSettings); setShowExportMenu(false); setShowMoreMenu(false); }} title="Settings" aria-label="Editor settings">
-            <Settings size={14} />
-          </button>
-
-          {/* FEEDBACK — calm, always-present button so users can flag bugs or
-              request features without ever leaving the editor. Replaced the
-              old global floating widget which felt SaaS-y and intrusive. */}
-          <button
-            style={tb()}
-            onClick={openFeedback}
-            title="Send feedback or report a bug"
-            aria-label="Send feedback"
-          >
-            <MessageSquarePlus size={14} />
-          </button>
-
-          {/* COPY — copies the active note (HTML + plain text + images) to clipboard.
-              Same responsive collapse pattern as Export: label hides on narrow widths. */}
-          <button
-            className="notepad-export-btn notepad-copy-btn"
-            style={{
-              ...tb(),
-              width: "auto",
-              padding: "0 12px",
-              gap: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              color: copyState === "copied"
-                ? "rgba(140, 230, 170, 0.95)"
-                : copyState === "error"
-                ? "rgba(255, 150, 150, 0.95)"
-                : "rgba(255,255,255,0.75)",
-              background: "rgba(255,255,255,0.04)",
-              borderRadius: 7,
-              marginLeft: 4,
-              flexShrink: 0,
-            }}
-            onClick={handleCopy}
-            title="Copy note to clipboard (with formatting & images)"
-            aria-label={
-              copyState === "copied" ? "Note copied to clipboard"
-              : copyState === "error" ? "Copy failed"
-              : "Copy note to clipboard"
-            }
-            aria-live="polite"
-          >
-            {copyState === "copied"
-              ? <Check size={13} />
-              : <CopyIcon size={13} />}
-            <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>
-              {copyState === "copied" ? "Copied" : copyState === "error" ? "Failed" : "Copy"}
+          {/* Right Zone: Status, Cloud, Settings, Feedback */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>
+            <span style={{ fontSize: 11, color: "var(--t3)", fontFamily: "Inter, sans-serif" }} className="notepad-shortcuts-btn">
+              {savedAgo}
             </span>
-          </button>
 
-          {/* EXPORT — collapses to icon-only on mobile */}
-          <button
-            className="notepad-export-btn"
-            style={{ ...tb(), width: "auto", padding: "0 12px", gap: 6, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.07)", borderRadius: 7, marginLeft: 4, flexShrink: 0 }}
-            onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); setShowMoreMenu(false); }}
-            title="Export (Ctrl+D for smart export)"
-          >
-            {exportingPdf ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={13} />}
-            <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Export</span>
-            <ChevronDown size={11} />
-          </button>
+            {GCID && (
+              <button style={tb(driveConnected)} onClick={driveConnected ? () => syncToDrive() : connectDrive} title={driveConnected ? "Sync to Drive now" : "Connect Google Drive"}>
+                {driveSaving ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : driveConnected ? <Cloud size={13} /> : <CloudOff size={13} />}
+              </button>
+            )}
+
+            {sep}
+
+            {/* Shortcuts */}
+            <button style={tb(showShortcuts)} onClick={() => setShowShortcuts(!showShortcuts)} title="Keyboard Shortcuts" className="notepad-shortcuts-btn">
+              <Clock size={13} />
+            </button>
+
+            {/* Feedback */}
+            <button style={tb()} onClick={openFeedback} title="Send feedback" className="notepad-shortcuts-btn">
+              <MessageSquarePlus size={13} />
+            </button>
+          </div>
+
         </div>
+
+        {/* ── ROW 2: Rich-text formatting tools and view/export options ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 38, padding: "0 10px", boxSizing: "border-box", width: "100%" }}>
+          
+          {/* Row 2 Left Zone: Formatting buttons (scrollable) */}
+          <div className="notepad-toolbar" style={{ display: "flex", alignItems: "center", height: "100%", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
+            {/* FORMAT */}
+            <button style={tb(editor?.isActive("bold"))} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)"><BoldIcon size={14} /></button>
+            <button style={tb(editor?.isActive("italic"))} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic (Ctrl+I)"><ItalicIcon size={14} /></button>
+            <button style={tb(editor?.isActive("underline"))} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="Underline (Ctrl+U)"><UnderlineIcon size={14} /></button>
+            <button style={tb(editor?.isActive("strike"))} onClick={() => editor?.chain().focus().toggleStrike().run()} title="Strikethrough"><Strikethrough size={14} /></button>
+            <button style={tb(editor?.isActive("highlight"))} onClick={() => editor?.chain().focus().toggleHighlight().run()} title="Highlight"><Highlighter size={13} /></button>
+            {sep}
+
+            {/* HEADINGS */}
+            <button style={tb(editor?.isActive("paragraph") && !editor?.isActive("heading"))} onClick={() => editor?.chain().focus().setParagraph().run()} title="Paragraph"><AlignLeft size={14} /></button>
+            <button style={tb(editor?.isActive("heading", { level: 1 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} title="Heading 1"><Heading1 size={14} /></button>
+            <button style={tb(editor?.isActive("heading", { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2"><Heading2 size={14} /></button>
+            <button style={tb(editor?.isActive("heading", { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} title="Heading 3"><Heading3 size={14} /></button>
+            {sep}
+
+            {/* TABLE DYNAMIC CREATOR */}
+            <button
+              ref={tableBtnRef}
+              style={tb(showTableGrid || editor?.isActive("table"))}
+              onClick={() => {
+                const r = tableBtnRef.current?.getBoundingClientRect();
+                if (r) setTableMenuLeft(r.left);
+                setShowTableGrid(!showTableGrid);
+                setShowDocMenu(false);
+                setShowMoreMenu(false);
+                setShowSettings(false);
+                cancelConfirm();
+              }}
+              title="Insert table (dynamic grid)"
+              aria-label="Insert table"
+            >
+              <Table2 size={14} />
+            </button>
+            {sep}
+
+            {/* HISTORY */}
+            <button style={{ ...tb(), opacity: editor?.can().undo() ? 1 : 0.3 }} onClick={() => editor?.chain().focus().undo().run()} title="Undo (Ctrl+Z)"><Undo2 size={13} /></button>
+            <button style={{ ...tb(), opacity: editor?.can().redo() ? 1 : 0.3 }} onClick={() => editor?.chain().focus().redo().run()} title="Redo (Ctrl+Y)"><Redo2 size={13} /></button>
+          </div>
+
+          {/* Row 2 Right Zone: Fixed layout and export options */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, paddingLeft: 6 }}>
+            {/* MORE Menu */}
+            <button
+              ref={moreMenuBtnRef}
+              style={{ ...tb(showMoreMenu), width: "auto", padding: "0 8px", gap: 3, flexShrink: 0 }}
+              onClick={() => { setShowMoreMenu(!showMoreMenu); setShowDocMenu(false); setShowSettings(false); setShowExportMenu(false); }}
+              title="More — lists, insert image/link, colors"
+            >
+              <MoreHorizontal size={15} />
+            </button>
+            {sep}
+
+            {/* FIND */}
+            <button
+              style={tb(showFind)}
+              onClick={() => { if (showFind) { setShowFind(false); setShowReplace(false); } else { setShowFind(true); setTimeout(() => findInputRef.current?.focus(), 50); } }}
+              title="Find (Ctrl+F) · Find & Replace (Ctrl+H)"
+            >
+              <Search size={14} />
+            </button>
+
+            {/* FOCUS / FULLSCREEN */}
+            <button style={tb(focusMode)} onClick={toggleFocus} title="Focus / fullscreen (Ctrl+\\)">{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
+
+            {sep}
+
+            {/* SETTINGS */}
+            <button style={tb(showSettings)} onClick={() => { setShowSettings(!showSettings); setShowExportMenu(false); setShowMoreMenu(false); }} title="Settings" aria-label="Editor settings">
+              <Settings size={14} />
+            </button>
+
+            {/* COPY */}
+            <button
+              className="notepad-export-btn notepad-copy-btn"
+              style={{
+                ...tb(),
+                width: "auto",
+                padding: "0 10px",
+                gap: 5,
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: copyState === "copied"
+                  ? "rgba(140, 230, 170, 0.95)"
+                  : copyState === "error"
+                  ? "rgba(255, 150, 150, 0.95)"
+                  : "rgba(255,255,255,0.75)",
+                background: "rgba(255,255,255,0.04)",
+                borderRadius: 6,
+                flexShrink: 0,
+              }}
+              onClick={handleCopy}
+              title="Copy note to clipboard (with formatting & images)"
+              aria-label={
+                copyState === "copied" ? "Note copied to clipboard"
+                : copyState === "error" ? "Copy failed"
+                : "Copy note to clipboard"
+              }
+              aria-live="polite"
+            >
+              {copyState === "copied"
+                ? <Check size={12} />
+                : <CopyIcon size={12} />}
+              <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>
+                {copyState === "copied" ? "Copied" : copyState === "error" ? "Failed" : "Copy"}
+              </span>
+            </button>
+
+            {/* EXPORT */}
+            <button
+              className="notepad-export-btn"
+              style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5, fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.07)", borderRadius: 6, flexShrink: 0 }}
+              onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); setShowMoreMenu(false); }}
+              title="Export (Ctrl+D for smart export)"
+            >
+              {exportingPdf ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={12} />}
+              <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Export</span>
+              <ChevronDown size={10} />
+            </button>
+          </div>
+
+        </div>
+
       </div>
 
       {/* ── MORE MENU PANEL — position: fixed, escapes all overflow contexts ── */}
@@ -1542,7 +1887,7 @@ export default function Notepad() {
         <div
           style={{
             position: "fixed",
-            top: 52,
+            top: 82,
             left: (() => { const r = moreMenuBtnRef.current?.getBoundingClientRect(); return r ? Math.min(r.left, window.innerWidth - 280) : 120; })(),
             background: "var(--bg1)",
             border: "1px solid var(--b0)",
@@ -1695,7 +2040,7 @@ export default function Notepad() {
 
         {/* ── DOC MENU PANEL — position: fixed so it escapes the overflow context ── */}
         {showDocMenu && (
-          <div style={{ position: "fixed", top: 50, left: docMenuLeft, background: "var(--bg1)", border: "1px solid var(--b0)", borderRadius: "var(--r)", minWidth: 240, padding: "6px 0", zIndex: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.65)" }}>
+          <div style={{ position: "fixed", top: 80, left: docMenuLeft, background: "var(--bg1)", border: "1px solid var(--b0)", borderRadius: "var(--r)", minWidth: 240, padding: "6px 0", zIndex: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.65)" }}>
             {docs.map((d) => {
               const armed = confirmDeleteId === d.id;
               return (
@@ -1817,7 +2162,7 @@ export default function Notepad() {
           <div
             style={{
               position: "fixed",
-              top: 50,
+              top: 80,
               left: tableMenuLeft,
               background: "var(--bg1)",
               border: "1px solid var(--b0)",
@@ -1892,12 +2237,12 @@ export default function Notepad() {
             // alone, so its own overflow:auto can scroll natively.
             data-lenis-prevent
             style={{
-              position: "fixed", top: 52, right: 10,
+              position: "fixed", top: 82, right: 10,
               background: "var(--bg1)", border: "1px solid var(--b0)",
               borderRadius: "var(--r)", width: 316, padding: "14px",
               zIndex: 200,
               boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)",
-              maxHeight: "calc(100vh - 58px)",
+              maxHeight: "calc(100vh - 88px)",
               overflowY: "auto",
               overflowX: "hidden",
               scrollbarWidth: "thin" as React.CSSProperties["scrollbarWidth"],
@@ -2043,7 +2388,7 @@ export default function Notepad() {
 
         {/* ── EXPORT PANEL — position: fixed anchored top-right ── */}
         {showExportMenu && (
-          <div style={{ position: "fixed", top: 52, right: 10, background: "var(--bg1)", border: "1px solid var(--b0)", borderRadius: "var(--r)", minWidth: 216, padding: "6px 0", zIndex: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+          <div style={{ position: "fixed", top: 82, right: 10, background: "var(--bg1)", border: "1px solid var(--b0)", borderRadius: "var(--r)", minWidth: 216, padding: "6px 0", zIndex: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)" }}>
             {[
               { label: "Smart Export", sub: "Ctrl+D · auto-detect format", fn: handleSmartExport, accent: true },
               null,
@@ -2141,7 +2486,7 @@ export default function Notepad() {
         style={{
           backgroundColor: surfBg,
           color: surfTxt,
-          minHeight: "calc(100vh - 48px - 38px)",
+          minHeight: "calc(100vh - 78px - 38px)",
           transition: "background 0.3s, color 0.3s",
           cursor: "text",
           // Clip overflow-x so the full-width ::after rule lines (width: 100vw) on
@@ -2297,7 +2642,122 @@ export default function Notepad() {
             • Related-tools internal links + footer band
           Pure CSS/HTML. No extra JS. Zero impact on editor performance.
          ────────────────────────────────────────────────────────────────────── */}
-      <NotepadSeoContent seo={seo} onScrolledPastEditor={setScrolledPastEditor} />
+      <motion.div
+        animate={{
+          height: isSeoUnlocked ? "auto" : 0,
+          opacity: isSeoUnlocked ? 1 : 0,
+        }}
+        initial={{ height: 0, opacity: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        style={{ overflow: "hidden" }}
+      >
+        <NotepadSeoContent seo={seo} onScrolledPastEditor={setScrolledPastEditor} />
+      </motion.div>
+
+      {/* Floating Scroll Gate Indicator */}
+      <AnimatePresence>
+        {isNearBottom && !isSeoUnlocked && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              position: "fixed",
+              bottom: 24,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: effectiveDark ? "rgba(15, 17, 22, 0.82)" : "rgba(255, 255, 255, 0.82)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              border: `1px solid ${effectiveDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}`,
+              borderRadius: 14,
+              padding: "10px 16px 10px 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              zIndex: 100,
+              boxShadow: `0 12px 40px ${effectiveDark ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.12)"}`,
+              width: "max-content",
+              maxWidth: "90vw",
+            }}
+          >
+            <div style={{ position: "relative", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="36" height="36" viewBox="0 0 36 36">
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="transparent"
+                  stroke={effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}
+                  strokeWidth="3"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="transparent"
+                  stroke={surfAccent}
+                  strokeWidth="3"
+                  strokeDasharray={2 * Math.PI * 14}
+                  strokeDashoffset={(2 * Math.PI * 14) - (scrollProgress / 100) * (2 * Math.PI * 14)}
+                  strokeLinecap="round"
+                  style={{
+                    transform: "rotate(-90deg)",
+                    transformOrigin: "18px 18px",
+                    transition: "stroke-dashoffset 80ms linear",
+                  }}
+                />
+              </svg>
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {scrollProgress >= 100 ? (
+                  <Check size={14} style={{ color: surfAccent }} />
+                ) : (
+                  <ChevronDown size={14} style={{ color: surfAccent }} />
+                )}
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: effectiveDark ? "#FFFFFF" : "#1A1A1A", fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em" }}>
+                Scroll down to unlock guide
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: effectiveDark ? "rgba(255, 255, 255, 0.45)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif" }}>
+                  Accidental scroll protection
+                </span>
+                <span style={{ color: effectiveDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.15)", fontSize: 10 }}>•</span>
+                <button
+                  onClick={() => {
+                    setIsSeoUnlocked(true);
+                    setIsNearBottom(false);
+                    setScrollProgress(100);
+                    scrollProgressRef.current = 100;
+                    setTimeout(() => {
+                      window.scrollBy({ top: 180, behavior: "smooth" });
+                      toast.success("Documentation unlocked", {
+                        description: "You can now scroll down to read the guide.",
+                      });
+                    }, 100);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: surfAccent,
+                    fontSize: 11,
+                    fontWeight: 500,
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    padding: 0,
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  Show guide
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
