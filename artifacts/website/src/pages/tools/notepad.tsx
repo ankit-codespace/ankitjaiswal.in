@@ -1354,7 +1354,7 @@ export default function Notepad() {
         }
 
         // Standardize step sizes across different scroll gears
-        const step = Math.min(20, Math.max(4, Math.abs(e.deltaY) * 0.08));
+        const step = Math.min(6, Math.max(1, Math.abs(e.deltaY) * 0.015));
         const nextProgress = Math.min(100, scrollProgressRef.current + step);
         scrollProgressRef.current = nextProgress;
         setScrollProgress(nextProgress);
@@ -1395,7 +1395,7 @@ export default function Notepad() {
           drainTimerRef.current = null;
         }
 
-        const step = Math.min(12, deltaY * 0.2);
+        const step = Math.min(4, deltaY * 0.05);
         const nextProgress = Math.min(100, scrollProgressRef.current + step);
         scrollProgressRef.current = nextProgress;
         setScrollProgress(nextProgress);
@@ -1432,7 +1432,7 @@ export default function Notepad() {
           drainTimerRef.current = null;
         }
 
-        const step = e.key === "ArrowDown" ? 15 : 35;
+        const step = e.key === "ArrowDown" ? 5 : 12;
         const nextProgress = Math.min(100, scrollProgressRef.current + step);
         scrollProgressRef.current = nextProgress;
         setScrollProgress(nextProgress);
@@ -2710,15 +2710,14 @@ export default function Notepad() {
       <AnimatePresence>
         {isNearBottom && !isSeoUnlocked && (
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, x: "-50%", y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: "-50%", y: 20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: "fixed",
               bottom: 24,
               left: "50%",
-              transform: "translateX(-50%)",
               background: effectiveDark ? "rgba(15, 17, 22, 0.82)" : "rgba(255, 255, 255, 0.82)",
               backdropFilter: "blur(16px)",
               WebkitBackdropFilter: "blur(16px)",
@@ -2794,6 +2793,7 @@ export default function Notepad() {
                   style={{
                     background: "none",
                     border: "none",
+                    outline: "none",
                     color: surfAccent,
                     fontSize: 11,
                     fontWeight: 500,
