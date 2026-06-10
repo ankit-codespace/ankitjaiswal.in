@@ -1558,10 +1558,10 @@ export default function Notepad() {
         • ROW 1 (Window & File Tabs) — height 40px, displays open note tabs and file action controls
         • ROW 2 (Formatting Tools)   — height 38px, displays rich-text formatting buttons and view controls
       */}
-      <div style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--bg0)", borderBottom: "1px solid var(--b0)", display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 40, display: "flex", flexDirection: "column" }}>
         
         {/* ── ROW 1: Window header, file tabs, and file action buttons ── */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: "1px solid var(--b0)", padding: "0 10px", width: "100%", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: "1px solid var(--b0)", padding: "0 10px", width: "100%", boxSizing: "border-box", background: "var(--bg0)" }}>
           
           {/* Left Zone: Back and Tabs */}
           <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
@@ -1577,15 +1577,19 @@ export default function Notepad() {
               style={{
                 display: "flex",
                 alignItems: "flex-end",
-                gap: 2,
+                gap: 0,
                 overflowX: "auto",
                 height: "100%",
                 flex: 1,
+                paddingLeft: 8,
+                paddingRight: 8,
               }}
             >
-              {docs.map((doc) => {
+              {docs.map((doc, idx) => {
                 const isActive = doc.id === activeId;
                 const isArmed = confirmDeleteId === doc.id;
+                const isNextActive = idx + 1 < docs.length && docs[idx + 1].id === activeId;
+                const showDivider = !isActive && !isNextActive && idx < docs.length - 1;
                 
                 return (
                   <div
@@ -1603,18 +1607,17 @@ export default function Notepad() {
                       gap: 8,
                       height: 32,
                       padding: "0 12px",
-                      borderRadius: "6px 6px 0 0",
-                      border: "1px solid",
-                      borderColor: isActive ? "var(--b0)" : "transparent",
-                      borderBottom: isActive ? `1px solid ${surfBg}` : "none",
+                      borderRadius: "8px 8px 0 0",
+                      border: "none",
                       background: isActive ? surfBg : "transparent",
-                      color: isActive ? surfTxt : "rgba(255, 255, 255, 0.45)",
+                      color: isActive ? surfTxt : "var(--t3)",
                       cursor: "pointer",
                       position: "relative",
                       minWidth: 80,
                       maxWidth: 150,
                       marginBottom: isActive ? -1 : 0,
                       zIndex: isActive ? 2 : 1,
+                      ["--active-tab-bg" as any]: surfBg,
                     }}
                   >
                     {isActive ? (
@@ -1702,6 +1705,21 @@ export default function Notepad() {
                         </button>
                       )
                     )}
+
+                    {/* Vertical tab divider lines (Chrome aesthetic) */}
+                    {showDivider && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          right: 0,
+                          top: 9,
+                          width: 1,
+                          height: 14,
+                          background: effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -1715,8 +1733,9 @@ export default function Notepad() {
                   height: 24,
                   borderRadius: 6,
                   alignSelf: "center",
-                  marginLeft: 4,
+                  marginLeft: 8,
                   flexShrink: 0,
+                  zIndex: 1,
                 }}
                 title="New note"
               >
@@ -1753,7 +1772,7 @@ export default function Notepad() {
         </div>
 
         {/* ── ROW 2: Rich-text formatting tools and view/export options ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 38, padding: "0 10px", boxSizing: "border-box", width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 38, padding: "0 10px", boxSizing: "border-box", width: "100%", background: surfBg, borderBottom: "1px solid var(--b0)", transition: "background 0.3s" }}>
           
           {/* Row 2 Left Zone: Formatting buttons (scrollable) */}
           <div className="notepad-toolbar" style={{ display: "flex", alignItems: "center", height: "100%", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
