@@ -1644,7 +1644,7 @@ export default function Notepad() {
                           top: 0,
                           left: 0,
                           right: 0,
-                          bottom: 8,
+                          height: "calc(100% - 8px)",
                           borderTop: `1px solid ${surfAccent}`,
                           borderLeft: `1px solid ${surfAccent}`,
                           borderRight: `1px solid ${surfAccent}`,
