@@ -114,11 +114,11 @@ const DEFAULT_SETTINGS: NotepadSettings = {
  */
 const THEMES = [
   // Default for OS dark mode — warm-tinted near-black, emerald accent
-  { label: "Slate",    bg: "#0F0F0E", text: "#F0EDE8", accent: "#52C47A", dark: true },
+  { label: "Slate",    bg: "#161615", text: "#F0EDE8", accent: "#52C47A", dark: true },
   // Default for OS light mode — warm cream, amber gold accent
   { label: "Paper",    bg: "#FAF8F2", text: "#1F1B16", accent: "#C8863A", dark: false },
   // True warm near-black for night-mode purists
-  { label: "Midnight", bg: "#0B0B0A", text: "#D4D0C8", accent: "#EDE8DF", dark: true },
+  { label: "Midnight", bg: "#0F0F0E", text: "#D4D0C8", accent: "#EDE8DF", dark: true },
   // Warm sepia for long reading sessions
   { label: "Sepia",    bg: "#F4ECD8", text: "#3D2B1F", accent: "#C8863A", dark: false },
   // Warm-neutral light grey
@@ -1266,7 +1266,7 @@ export default function Notepad() {
 
   const sep = <div style={{ width: 1, height: 20, background: "var(--b0)", margin: "0 8px", flexShrink: 0 }} />;
 
-  const surfBg  = settings.bgColor   || (settings.lightSurface ? "#FAF8F2" : "#0F0F0E");
+  const surfBg  = settings.bgColor   || (settings.lightSurface ? "#FAF8F2" : "#161615");
   const surfTxt = settings.textColor || (settings.lightSurface ? "#1F1B16" : "#F0EDE8");
   // Derive light/dark for marker colors etc. based on effective bg
   const effectiveDark = settings.bgColor ? !isLightHex(settings.bgColor) : !settings.lightSurface;
@@ -1276,6 +1276,7 @@ export default function Notepad() {
     if (match) return match.accent;
     return effectiveDark ? "#10B981" : "#5D4FB8";
   })();
+  const tabStripBg = effectiveDark ? "#000000" : "rgba(0, 0, 0, 0.05)";
 
 
   // --- Scroll Gate & Lock Effects ---
@@ -1561,7 +1562,7 @@ export default function Notepad() {
       <div style={{ position: "sticky", top: 0, zIndex: 40, display: "flex", flexDirection: "column" }}>
         
         {/* ── ROW 1: Window header, file tabs, and file action buttons ── */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: "1px solid var(--b0)", padding: "0 10px", width: "100%", boxSizing: "border-box", background: "var(--bg0)" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: "1px solid var(--b0)", padding: "0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg }}>
           
           {/* Left Zone: Back and Tabs */}
           <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
@@ -1620,6 +1621,19 @@ export default function Notepad() {
                       ["--active-tab-bg" as any]: surfBg,
                     }}
                   >
+                    {isActive && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 2,
+                          background: surfAccent,
+                          borderRadius: "8px 8px 0 0",
+                        }}
+                      />
+                    )}
                     {isActive ? (
                       <input
                         ref={titleInputRef}
