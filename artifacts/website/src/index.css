@@ -1045,9 +1045,13 @@ html, body { overflow-x: clip; max-width: 100%; }
   left: -8px;
   width: 8px;
   height: 8px;
-  background: transparent;
-  border-bottom-right-radius: 8px;
-  box-shadow: 4px 4px 0 0 var(--active-tab-bg), 4px 4px 0 1px var(--active-border-color);
+  background: radial-gradient(
+    circle at 100% 100%,
+    transparent 6.8px,
+    var(--active-border-color) 7px,
+    var(--active-border-color) 8px,
+    var(--active-tab-bg) 8.2px
+  );
   pointer-events: none;
   z-index: 3;
 }
@@ -1059,9 +1063,13 @@ html, body { overflow-x: clip; max-width: 100%; }
   right: -8px;
   width: 8px;
   height: 8px;
-  background: transparent;
-  border-bottom-left-radius: 8px;
-  box-shadow: -4px 4px 0 0 var(--active-tab-bg), -4px 4px 0 1px var(--active-border-color);
+  background: radial-gradient(
+    circle at 0 100%,
+    transparent 6.8px,
+    var(--active-border-color) 7px,
+    var(--active-border-color) 8px,
+    var(--active-tab-bg) 8.2px
+  );
   pointer-events: none;
   z-index: 3;
 }
