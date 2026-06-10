@@ -114,15 +114,15 @@ const DEFAULT_SETTINGS: NotepadSettings = {
  */
 const THEMES = [
   // Default for OS dark mode — warm-tinted near-black, emerald accent
-  { label: "Slate",    bg: "#161615", text: "#F0EDE8", accent: "#52C47A", dark: true },
+  { label: "Slate",    bg: "#161615", tabStripBg: "#0C0C0C", text: "#F0EDE8", accent: "#52C47A", dark: true },
   // Default for OS light mode — warm cream, amber gold accent
-  { label: "Paper",    bg: "#FAF8F2", text: "#1F1B16", accent: "#C8863A", dark: false },
+  { label: "Paper",    bg: "#FAF8F2", tabStripBg: "#EAE6DF", text: "#1F1B16", accent: "#C8863A", dark: false },
   // True warm near-black for night-mode purists
-  { label: "Midnight", bg: "#0F0F0E", text: "#D4D0C8", accent: "#EDE8DF", dark: true },
+  { label: "Midnight", bg: "#0F0F0E", tabStripBg: "#000000", text: "#D4D0C8", accent: "#EDE8DF", dark: true },
   // Warm sepia for long reading sessions
-  { label: "Sepia",    bg: "#F4ECD8", text: "#3D2B1F", accent: "#C8863A", dark: false },
+  { label: "Sepia",    bg: "#F4ECD8", tabStripBg: "#E3DAC2", text: "#3D2B1F", accent: "#C8863A", dark: false },
   // Warm-neutral light grey
-  { label: "Mist",     bg: "#EAE6DF", text: "#1F1B16", accent: "#7A7874", dark: false },
+  { label: "Mist",     bg: "#EAE6DF", tabStripBg: "#DAD6CE", text: "#1F1B16", accent: "#7A7874", dark: false },
 ] as const;
 
 /** Returns true if the hex colour is perceptually light (>128 brightness). */
@@ -1255,28 +1255,43 @@ export default function Notepad() {
     finally { setDriveSaving(false); }
   };
 
-  // ── Toolbar helpers ────────────────────────────────────────────────────────
-  const tb = (active?: boolean): React.CSSProperties => ({
-    display: "flex", alignItems: "center", justifyContent: "center",
-    width: 30, height: 30, borderRadius: 6, border: "none", cursor: "pointer",
-    background: active ? "var(--bg2)" : "transparent",
-    color: active ? "var(--t1)" : "var(--t2)",
-    transition: "background 0.14s, color 0.14s", flexShrink: 0,
-  });
-
-  const sep = <div style={{ width: 1, height: 20, background: "var(--b0)", margin: "0 8px", flexShrink: 0 }} />;
-
   const surfBg  = settings.bgColor   || (settings.lightSurface ? "#FAF8F2" : "#161615");
   const surfTxt = settings.textColor || (settings.lightSurface ? "#1F1B16" : "#F0EDE8");
   // Derive light/dark for marker colors etc. based on effective bg
   const effectiveDark = settings.bgColor ? !isLightHex(settings.bgColor) : !settings.lightSurface;
+
+  // ── Toolbar helpers ────────────────────────────────────────────────────────
+  const tb = (active?: boolean): React.CSSProperties => {
+    const fg = effectiveDark 
+      ? (active ? "var(--t1)" : "var(--t2)") 
+      : (active ? "#111111" : "rgba(0, 0, 0, 0.54)");
+    const bg = active 
+      ? (effectiveDark ? "var(--bg2)" : "rgba(0, 0, 0, 0.08)") 
+      : "transparent";
+    return {
+      display: "flex", alignItems: "center", justifyContent: "center",
+      width: 30, height: 30, borderRadius: 6, border: "none", cursor: "pointer",
+      background: bg,
+      color: fg,
+      transition: "background 0.14s, color 0.14s", flexShrink: 0,
+    };
+  };
+
+  const sepColor = effectiveDark ? "var(--b0)" : "rgba(0, 0, 0, 0.08)";
+  const sep = <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px", flexShrink: 0 }} />;
   // Look up the accent for the current theme; fall back per light/dark.
   const surfAccent = (() => {
     const match = THEMES.find((t) => t.bg === settings.bgColor && t.text === settings.textColor);
     if (match) return match.accent;
     return effectiveDark ? "#10B981" : "#5D4FB8";
   })();
-  const tabStripBg = effectiveDark ? "#000000" : "rgba(0, 0, 0, 0.05)";
+  
+  // Look up the tabStripBg for the current theme; fall back per light/dark.
+  const tabStripBg = (() => {
+    const match = THEMES.find((t) => t.bg === settings.bgColor && t.text === settings.textColor);
+    if (match) return match.tabStripBg;
+    return effectiveDark ? "#0C0C0C" : "#EAE6DF";
+  })();
 
 
   // --- Scroll Gate & Lock Effects ---
@@ -1562,12 +1577,12 @@ export default function Notepad() {
       <div style={{ position: "sticky", top: 0, zIndex: 40, display: "flex", flexDirection: "column" }}>
         
         {/* ── ROW 1: Window header, file tabs, and file action buttons ── */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: "1px solid var(--b0)", padding: "0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: `1px solid ${sepColor}`, padding: "0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg }}>
           
           {/* Left Zone: Back and Tabs */}
           <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
             {/* Back Button */}
-            <Link href="/tools" className="notepad-back-link" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, color: "rgba(255,255,255,0.48)", textDecoration: "none", alignSelf: "center", flexShrink: 0 }} title="Back to Tools">
+            <Link href="/tools" className="notepad-back-link" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, color: effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)", textDecoration: "none", alignSelf: "center", flexShrink: 0 }} title="Back to Tools">
               <ArrowLeft size={15} />
             </Link>
             <span className="notepad-back-link" style={{ alignSelf: "center" }}>{sep}</span>
@@ -1611,7 +1626,7 @@ export default function Notepad() {
                       borderRadius: "8px 8px 0 0",
                       border: "none",
                       background: isActive ? surfBg : "transparent",
-                      color: isActive ? surfTxt : "var(--t3)",
+                      color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
                       cursor: "pointer",
                       position: "relative",
                       minWidth: 80,
@@ -1698,7 +1713,7 @@ export default function Notepad() {
                           style={{
                             border: "none",
                             background: "transparent",
-                            color: isActive ? "var(--t3)" : "rgba(255,255,255,0.25)",
+                            color: isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)"),
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1711,7 +1726,7 @@ export default function Notepad() {
                             e.currentTarget.style.color = "var(--err)";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.color = isActive ? "var(--t3)" : "rgba(255,255,255,0.25)";
+                            e.currentTarget.style.color = isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)");
                           }}
                           title="Delete note"
                         >
@@ -1729,7 +1744,7 @@ export default function Notepad() {
                           top: 9,
                           width: 1,
                           height: 14,
-                          background: effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)",
+                          background: effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)",
                           pointerEvents: "none",
                         }}
                       />
@@ -1760,7 +1775,7 @@ export default function Notepad() {
 
           {/* Right Zone: Status, Cloud, Settings, Feedback */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>
-            <span style={{ fontSize: 11, color: "var(--t3)", fontFamily: "Inter, sans-serif" }} className="notepad-shortcuts-btn">
+            <span style={{ fontSize: 11, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif" }} className="notepad-shortcuts-btn">
               {savedAgo}
             </span>
 
@@ -1786,7 +1801,7 @@ export default function Notepad() {
         </div>
 
         {/* ── ROW 2: Rich-text formatting tools and view/export options ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 38, padding: "0 10px", boxSizing: "border-box", width: "100%", background: surfBg, borderBottom: "1px solid var(--b0)", transition: "background 0.3s" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 38, padding: "0 10px", boxSizing: "border-box", width: "100%", background: surfBg, borderBottom: `1px solid ${sepColor}`, transition: "background 0.3s" }}>
           
           {/* Row 2 Left Zone: Formatting buttons (scrollable) */}
           <div className="notepad-toolbar" style={{ display: "flex", alignItems: "center", height: "100%", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
