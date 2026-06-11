@@ -1218,13 +1218,24 @@ html, body { overflow-x: clip; max-width: 100%; }
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 div:hover > .notepad-guide-trigger-text {
-  color: var(--np-accent, #5D4FB8) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 div:hover > .notepad-guide-trigger-icon {
-  border-color: var(--np-accent, #5D4FB8) !important;
-  color: var(--np-accent, #5D4FB8) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
   transform: translateY(2px);
-  background: color-mix(in srgb, var(--np-accent, #5D4FB8) 8%, transparent) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Light Mode Overrides */
+.surface-light div:hover > .notepad-guide-trigger-text {
+  color: rgba(0, 0, 0, 0.7) !important;
+}
+.surface-light div:hover > .notepad-guide-trigger-icon {
+  border-color: rgba(0, 0, 0, 0.22) !important;
+  color: rgba(0, 0, 0, 0.8) !important;
+  transform: translateY(2px);
+  background: rgba(0, 0, 0, 0.05) !important;
 }
 
 

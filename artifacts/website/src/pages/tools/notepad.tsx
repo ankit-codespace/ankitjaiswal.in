@@ -2018,7 +2018,19 @@ export default function Notepad() {
 
 
   // --- Scroll Gate & Lock Effects ---
-  // Overhauled: Click-to-expand down arrow replaces active/passive scroll calculations.
+  const justUnlockedRef = useRef(false);
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY === 0) {
+        setIsSeoUnlocked(false);
+        justUnlockedRef.current = false;
+      } else if (window.scrollY > 15) {
+        justUnlockedRef.current = false;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
 
   /** Apply a preset theme: sets bgColor, textColor, lightSurface in one shot. */
@@ -3769,6 +3781,7 @@ export default function Notepad() {
             userSelect: "none"
           }}
           onClick={() => {
+            justUnlockedRef.current = true;
             setIsSeoUnlocked(true);
             setTimeout(() => {
               window.scrollBy({ top: 120, behavior: "smooth" });
@@ -3777,7 +3790,7 @@ export default function Notepad() {
         >
           <span
             style={{
-              fontSize: 10,
+              fontSize: 8.5,
               fontWeight: 600,
               fontFamily: "'Sora', sans-serif",
               color: effectiveDark ? "rgba(255, 255, 255, 0.28)" : "rgba(0, 0, 0, 0.3)",
