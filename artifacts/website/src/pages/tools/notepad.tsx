@@ -1871,54 +1871,35 @@ export default function Notepad() {
                         )}
 
                         {docs.length > 1 && (
-                          isArmed ? (
-                            <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                              <button
-                                onClick={() => deleteDoc(doc.id)}
-                                style={{ border: "none", background: "var(--err)", color: "#fff", fontSize: 9, padding: "2px 4px", borderRadius: 4, cursor: "pointer", fontWeight: 600 }}
-                                title="Confirm delete"
-                              >
-                                Del
-                              </button>
-                              <button
-                                onClick={cancelConfirm}
-                                style={{ border: "none", background: "transparent", color: "var(--t2)", fontSize: 9, padding: "2px 2px", cursor: "pointer" }}
-                                title="Cancel"
-                              >
-                                No
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                armConfirm(doc.id, false);
-                              }}
-                              style={{
-                                border: "none",
-                                background: "transparent",
-                                color: isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)"),
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                padding: 2,
-                                borderRadius: 4,
-                                cursor: "pointer",
-                                transition: "all 0.12s",
-                                position: "relative",
-                                zIndex: 1,
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = "var(--err)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)");
-                              }}
-                              title="Delete note"
-                            >
-                              <X size={10} />
-                            </button>
-                          )
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteDoc(doc.id);
+                            }}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              color: isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)"),
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: 2,
+                              borderRadius: 4,
+                              cursor: "pointer",
+                              transition: "all 0.12s",
+                              position: "relative",
+                              zIndex: 1,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "var(--err)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)");
+                            }}
+                            title="Delete note"
+                          >
+                            <X size={10} />
+                          </button>
                         )}
                       </>
                     )}
@@ -2346,69 +2327,38 @@ export default function Notepad() {
         {showDocMenu && (
           <div style={{ position: "fixed", top: 80, left: docMenuLeft, background: "var(--bg1)", border: "1px solid var(--b0)", borderRadius: "var(--r)", minWidth: 240, padding: "6px 0", zIndex: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.65)" }}>
             {sortedDocs.map((d) => {
-              const armed = confirmDeleteId === d.id;
               return (
                 <div
                   key={d.id}
                   style={{
                     display: "flex", alignItems: "center", padding: "7px 12px",
                     cursor: "pointer",
-                    background: armed
-                      ? "color-mix(in srgb, var(--err) 8%, transparent)"
-                      : d.id === activeId ? "var(--bg2)" : "transparent",
+                    background: d.id === activeId ? "var(--bg2)" : "transparent",
                     transition: "background 140ms ease",
                   }}
                 >
                   <span
                     style={{ flex: 1, color: "var(--t1)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center" }}
-                    onClick={() => { if (!armed) { setActiveId(d.id); setShowDocMenu(false); } }}
+                    onClick={() => { setActiveId(d.id); setShowDocMenu(false); }}
                   >
                     {d.title || "Untitled"}
                     {d.isPinned && (
                       <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, color: "var(--t3)" }} />
                     )}
                   </span>
-                  {!armed && d.id === activeId && (
+                  {d.id === activeId && (
                     <Check size={12} style={{ color: "var(--t2)", flexShrink: 0 }} />
                   )}
                   {docs.length > 1 && (
-                    armed ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: 6 }}>
-                        <button
-                          autoFocus
-                          onClick={(e) => { e.stopPropagation(); deleteDoc(d.id); }}
-                          style={{
-                            fontSize: 11, fontFamily: "Inter,sans-serif", fontWeight: 600,
-                            padding: "3px 11px", borderRadius: 999,
-                            background: "var(--err)", color: "#fff",
-                            border: "1px solid var(--err)", cursor: "pointer",
-                            letterSpacing: "0.01em",
-                            boxShadow: "0 1px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-                          }}
-                          title="Confirm delete"
-                        >Delete</button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); cancelConfirm(); }}
-                          style={{
-                            fontSize: 11, fontFamily: "Inter,sans-serif", fontWeight: 500,
-                            padding: "3px 9px", borderRadius: 999,
-                            background: "transparent", color: "var(--t2)",
-                            border: "1px solid var(--b0)", cursor: "pointer",
-                          }}
-                          title="Cancel"
-                        >No</button>
-                      </div>
-                    ) : (
-                      <button
-                        style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55, color: "var(--t2)" }}
-                        onClick={(e) => { e.stopPropagation(); armConfirm(d.id, false); }}
-                        onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "1"; el.style.color = "var(--err)"; el.style.background = "color-mix(in srgb, var(--err) 12%, transparent)"; }}
-                        onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.55"; el.style.color = "var(--t2)"; el.style.background = "transparent"; }}
-                        title="Delete note"
-                      >
-                        <X size={10} />
-                      </button>
-                    )
+                    <button
+                      style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55, color: "var(--t2)" }}
+                      onClick={(e) => { e.stopPropagation(); deleteDoc(d.id); }}
+                      onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "1"; el.style.color = "var(--err)"; el.style.background = "color-mix(in srgb, var(--err) 12%, transparent)"; }}
+                      onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.55"; el.style.color = "var(--t2)"; el.style.background = "transparent"; }}
+                      title="Delete note"
+                    >
+                      <X size={10} />
+                    </button>
                   )}
                 </div>
               );
@@ -3175,7 +3125,7 @@ export default function Notepad() {
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
               onClick={() => {
                 setContextMenu(null);
-                armConfirm(targetDoc.id, false);
+                deleteDoc(targetDoc.id);
               }}
             >
               <Trash2 size={11} style={{ opacity: 0.8 }} />
