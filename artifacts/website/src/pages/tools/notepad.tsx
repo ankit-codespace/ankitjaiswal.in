@@ -1473,12 +1473,51 @@ export default function Notepad() {
     const html = editor?.getHTML() ?? "";
     const TDS = (await import("turndown")) as any;
     const TurndownService = TDS.default ?? TDS;
-    const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" });
+    const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-", codeBlockStyle: "fenced" });
+
+    // Task list items
     td.addRule("task", {
       filter: (n: Element) => n.nodeName === "LI" && n.getAttribute("data-type") === "taskItem",
       replacement: (content: string, node: Element) =>
         `- [${node.getAttribute("data-checked") === "true" ? "x" : " "}] ${content.replace(/^\n+/, "").trimEnd()}\n`,
     });
+
+    // Code blocks — TipTap wraps in NodeViewWrapper div > pre > code
+    // We target the <pre> element and wrap the inner text in fenced code blocks
+    td.addRule("codeBlock", {
+      filter: (n: Element) => n.nodeName === "PRE",
+      replacement: (_content: string, node: Element) => {
+        const code = node.querySelector("code");
+        const text = code ? code.textContent || "" : node.textContent || "";
+        return `\n\n\`\`\`\n${text.trimEnd()}\n\`\`\`\n\n`;
+      },
+    });
+
+    // Inline highlight → backtick code if inside regular text
+    td.addRule("highlight", {
+      filter: ["mark"],
+      replacement: (content: string) => `==${content}==`,
+    });
+
+    // Tables — Turndown doesn't handle tables by default;
+    // fall back to preserving the raw HTML table for readability
+    td.addRule("table", {
+      filter: ["table"],
+      replacement: (_content: string, node: Element) => `\n\n${node.outerHTML}\n\n`,
+    });
+
+    // Images — strip base64 srcs to keep file size manageable, write as [alt](image)
+    td.addRule("image", {
+      filter: ["img"],
+      replacement: (_content: string, node: Element) => {
+        const src = node.getAttribute("src") || "";
+        const alt = node.getAttribute("alt") || "image";
+        // Skip embedding 100KB+ base64 blobs — write a placeholder instead
+        if (src.startsWith("data:")) return `\n\n![${alt}](embedded-image)\n\n`;
+        return `\n\n![${alt}](${src})\n\n`;
+      },
+    });
+
     dl(td.turndown(html), `${activeDoc.title}.md`, "text/markdown");
   };
 
@@ -1713,8 +1752,51 @@ export default function Notepad() {
   };
 
   const exportHtml = () => {
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${activeDoc.title}</title><style>body{font-family:Inter,sans-serif;max-width:760px;margin:48px auto;line-height:1.75;font-size:18px;color:#1a1a1a;padding:0 24px}h1,h2,h3{font-family:Sora,sans-serif}</style></head><body>${editor?.getHTML() ?? ""}</body></html>`;
-    dl(html, `${activeDoc.title}.html`, "text/html");
+    const title = activeDoc?.title || "Note";
+    const content = editor?.getHTML() ?? "";
+    // Full-featured standalone HTML — same quality stylesheet as the PDF print export
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 17px; line-height: 1.75; color: #1a1a1a; background: #fff; max-width: 760px; margin: 48px auto; padding: 0 28px; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Sora', 'Inter', sans-serif; font-weight: 700; color: #0d1117; margin-top: 1.6em; margin-bottom: 0.45em; line-height: 1.3; }
+    h1 { font-size: 2em; } h2 { font-size: 1.5em; } h3 { font-size: 1.2em; }
+    p { margin-bottom: 0.75em; }
+    strong, b { font-weight: 600; color: #0d1117; }
+    em, i { font-style: italic; }
+    u { text-decoration: underline; text-underline-offset: 2px; }
+    s, del { text-decoration: line-through; color: #6b7280; }
+    code { font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace; font-size: 0.87em; background: #f0f0f0; border: 1px solid #e0e0e0; border-radius: 3px; padding: 0.1em 0.35em; color: #c7254e; }
+    pre { font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace; font-size: 0.87em; line-height: 1.65; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 14px 18px; overflow-x: auto; margin: 1.2em 0; white-space: pre-wrap; word-break: break-word; }
+    pre code { background: none; border: none; padding: 0; color: #24292f; font-size: inherit; }
+    blockquote { border-left: 4px solid #6366f1; margin: 1.2em 0; padding: 10px 16px; background: #f8f7ff; border-radius: 0 6px 6px 0; color: #374151; font-style: italic; }
+    blockquote p { margin: 0; }
+    ul, ol { margin: 0.5em 0 0.75em 1.6em; padding: 0; }
+    li { margin-bottom: 0.3em; line-height: 1.7; }
+    ul { list-style-type: disc; } ol { list-style-type: decimal; }
+    ul[data-type="taskList"] { list-style: none; margin-left: 0.5em; }
+    li[data-type="taskItem"] { display: flex; align-items: flex-start; gap: 8px; }
+    li[data-type="taskItem"][data-checked="true"] > div { text-decoration: line-through; color: #9ca3af; }
+    mark { background: #fef08a; color: #713f12; border-radius: 2px; padding: 0 2px; }
+    a { color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; }
+    hr { border: none; border-top: 2px solid #e5e7eb; margin: 1.5em 0; }
+    img { max-width: 100%; height: auto; border-radius: 6px; display: block; margin: 1.2em auto; }
+    table { width: 100%; border-collapse: collapse; margin: 1.2em 0; font-size: 0.95em; }
+    th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; vertical-align: top; }
+    th { background: #f3f4f6; font-weight: 600; color: #111827; }
+    tr:nth-child(even) td { background: #f9fafb; }
+  </style>
+</head>
+<body>${content}</body>
+</html>`;
+    dl(html, `${title}.html`, "text/html");
     setShowExportMenu(false);
   };
 
