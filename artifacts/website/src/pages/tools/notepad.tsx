@@ -1908,7 +1908,7 @@ export default function Notepad() {
                             style={{
                               border: "none",
                               background: "transparent",
-                              color: isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)"),
+                              color: isActive ? (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)") : (effectiveDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)"),
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -1923,7 +1923,7 @@ export default function Notepad() {
                               e.currentTarget.style.color = "var(--err)";
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.color = isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)");
+                              e.currentTarget.style.color = isActive ? (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)") : (effectiveDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)");
                             }}
                             title="Delete note"
                           >
@@ -1959,7 +1959,8 @@ export default function Notepad() {
                   width: 24,
                   height: 24,
                   borderRadius: 6,
-                  alignSelf: "center",
+                  alignSelf: "flex-end",
+                  marginBottom: 7,
                   marginLeft: 8,
                   flexShrink: 0,
                   zIndex: 1,
