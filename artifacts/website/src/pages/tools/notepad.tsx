@@ -1643,7 +1643,7 @@ export default function Notepad() {
                       ["--active-border-color" as any]: activeTabStroke,
                     }}
                   >
-                    {/* Chrome-like active tab frame: quiet outline, lifted shoulders, attached bottom edge. */}
+                    {/* SVG Vector Background & Outline with Chrome-like flaring tails */}
                     {isActive && (
                       <div
                         style={{
@@ -1653,32 +1653,57 @@ export default function Notepad() {
                           zIndex: 0,
                         }}
                       >
+                        {/* Left Curve SVG */}
+                        <svg
+                          width="24"
+                          height="34"
+                          viewBox="0 0 24 34"
+                          fill="none"
+                          style={{ position: "absolute", left: -12, top: 0, overflow: "visible" }}
+                        >
+                          <path
+                            d="M 24 34 L 0 34 L 4 34 A 8 8 0 0 0 12 26 L 12 12 A 12 12 0 0 1 24 0 Z"
+                            fill={activeTabSurface}
+                          />
+                          <path
+                            d="M 0 34 L 4 34 A 8 8 0 0 0 12 26 L 12 12 A 12 12 0 0 1 24 0"
+                            stroke={activeTabStroke}
+                            strokeWidth="2"
+                            fill="none"
+                          />
+                        </svg>
+
+                        {/* Middle Top Border */}
                         <div
                           style={{
                             position: "absolute",
-                            left: 0,
-                            right: 0,
+                            left: 12,
+                            right: 12,
                             top: 0,
-                            bottom: 0,
-                            borderRadius: "12px 12px 0 0",
-                            borderTop: `2px solid ${activeTabStroke}`,
-                            borderLeft: `2px solid ${activeTabStroke}`,
-                            borderRight: `2px solid ${activeTabStroke}`,
-                            boxSizing: "border-box",
-                          }}
-                        />
-                        <div
-                          style={{
-                            position: "absolute",
-                            left: 10,
-                            right: 10,
-                            bottom: -1,
                             height: 2,
-                            borderRadius: 999,
                             background: activeTabStroke,
-                            opacity: effectiveDark ? 0.85 : 0.55,
                           }}
                         />
+
+                        {/* Right Curve SVG */}
+                        <svg
+                          width="24"
+                          height="34"
+                          viewBox="0 0 24 34"
+                          fill="none"
+                          style={{ position: "absolute", right: -12, top: 0, overflow: "visible" }}
+                        >
+                          <path
+                            d="M 0 0 A 12 12 0 0 1 12 12 L 12 26 A 8 8 0 0 0 20 34 L 24 34 L 0 34 Z"
+                            fill={activeTabSurface}
+                          />
+                          <path
+                            d="M 0 0 A 12 12 0 0 1 12 12 L 12 26 A 8 8 0 0 0 20 34 L 24 34"
+                            stroke={activeTabStroke}
+                            strokeWidth="2"
+                            fill="none"
+                          />
+                        </svg>
                       </div>
                     )}
                     {isActive ? (
