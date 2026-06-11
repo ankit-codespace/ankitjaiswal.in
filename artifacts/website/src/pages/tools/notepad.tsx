@@ -20,6 +20,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import { motion, AnimatePresence } from "framer-motion";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
 import TipTapImage from "@tiptap/extension-image";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
@@ -53,7 +54,7 @@ import {
   Strikethrough, Heading1, Heading2, Heading3, List, ListOrdered, CheckSquare,
   ImageIcon, Link as LinkIcon, Minus, Undo2, Redo2, Search, X, Maximize2,
   Minimize2, Cloud, CloudOff, Download, ChevronDown, ChevronRight, Plus, FileText,
-  Check, Highlighter, AlignLeft, Clock, Loader2, Quote, Settings, Pencil, MoreHorizontal,
+  Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Pilcrow, Clock, Loader2, Quote, Settings, Pencil, MoreHorizontal,
   Trash2,
   Lock, Zap, Layers, Sparkles, GraduationCap, PenLine, Code2, Briefcase,
   ArrowUpRight, FileDown, Eye, Save,
@@ -528,6 +529,13 @@ const NOTEPAD_USE_CASES: { icon: typeof GraduationCap; title: string; desc: stri
   { icon: Briefcase,     title: "For professionals", desc: "Capture meeting notes during a call without your client wondering what app you're using. Paste screenshots from a deck, a Figma board, or a spreadsheet. Build a quick brief, an internal memo, or a proposal with proper formatting and export to PDF or DOCX in one click. Everything stays on your laptop — useful when you're working with confidential or pre-release information." },
 ];
 
+const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
+function getTooltip(name: string, shortcut?: string) {
+  if (!shortcut) return name;
+  const key = isMac ? shortcut.replace(/Ctrl\+/g, "⌘").replace(/Alt\+/g, "⌥").replace(/Shift\+/g, "⇧") : shortcut;
+  return `${name} (${key})`;
+}
+
 export default function Notepad() {
   const [location] = useLocation();
   const seo = useMemo<NotepadSeo>(() => NOTEPAD_SEO[location] ?? DEFAULT_NOTEPAD_SEO, [location]);
@@ -668,6 +676,7 @@ export default function Notepad() {
       TextStyle,
       Color,
       Underline,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
       ResizableImage.configure({ inline: false, allowBase64: true }),
       TipTapLink.configure({ openOnClick: false, HTMLAttributes: { rel: "noopener noreferrer" } }),
       TaskList,
@@ -1959,15 +1968,17 @@ export default function Notepad() {
           {/* Row 2 Left Zone: Formatting buttons (scrollable) */}
           <div className="notepad-toolbar" style={{ display: "flex", alignItems: "center", height: "100%", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
             {/* FORMAT */}
-            <button style={tb(editor?.isActive("bold"))} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)"><BoldIcon size={14} /></button>
-            <button style={tb(editor?.isActive("italic"))} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic (Ctrl+I)"><ItalicIcon size={14} /></button>
-            <button style={tb(editor?.isActive("underline"))} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="Underline (Ctrl+U)"><UnderlineIcon size={14} /></button>
-            <button style={tb(editor?.isActive("strike"))} onClick={() => editor?.chain().focus().toggleStrike().run()} title="Strikethrough"><Strikethrough size={14} /></button>
-            <button style={tb(editor?.isActive("highlight"))} onClick={() => editor?.chain().focus().toggleHighlight().run()} title="Highlight"><Highlighter size={13} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Bold", "Ctrl+B")} style={tb(editor?.isActive("bold"))} onClick={() => editor?.chain().focus().toggleBold().run()}><BoldIcon size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Italic", "Ctrl+I")} style={tb(editor?.isActive("italic"))} onClick={() => editor?.chain().focus().toggleItalic().run()}><ItalicIcon size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Underline", "Ctrl+U")} style={tb(editor?.isActive("underline"))} onClick={() => editor?.chain().focus().toggleUnderline().run()}><UnderlineIcon size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Strikethrough", "Ctrl+Shift+X")} style={tb(editor?.isActive("strike"))} onClick={() => editor?.chain().focus().toggleStrike().run()}><Strikethrough size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Highlight")} style={tb(editor?.isActive("highlight"))} onClick={() => editor?.chain().focus().toggleHighlight().run()}><Highlighter size={13} /></button>
             
             {/* Text Color Dropdown */}
             <div className="notepad-color-picker-trigger" style={{ position: "relative", display: "inline-block" }}>
               <button
+                className="notepad-tooltip"
+                data-tooltip={getTooltip("Text Color")}
                 style={{
                   ...tb(showColorPicker),
                   display: "flex",
@@ -1984,7 +1995,6 @@ export default function Notepad() {
                   setShowTableMenu(false);
                   setShowTableGrid(false);
                 }}
-                title="Text Color"
               >
                 <span style={{ fontSize: 13, fontWeight: 700, lineHeight: "12px", fontFamily: "serif" }}>A</span>
                 <div style={{ width: 14, height: 3, background: editor?.getAttributes("textStyle").color || (effectiveDark ? "#FFFFFF" : "#0D1117"), borderRadius: 1, marginTop: 1 }} />
@@ -2054,25 +2064,62 @@ export default function Notepad() {
             </div>
             {sep}
 
+            {/* ALIGNMENT */}
+            <button
+              className="notepad-tooltip"
+              data-tooltip={getTooltip("Align Left", "Ctrl+Shift+L")}
+              style={tb(editor?.isActive({ textAlign: "left" }) || (!editor?.isActive({ textAlign: "center" }) && !editor?.isActive({ textAlign: "right" }) && !editor?.isActive({ textAlign: "justify" })))}
+              onClick={() => editor?.chain().focus().setTextAlign("left").run()}
+            >
+              <AlignLeft size={14} />
+            </button>
+            <button
+              className="notepad-tooltip"
+              data-tooltip={getTooltip("Align Center", "Ctrl+Shift+E")}
+              style={tb(editor?.isActive({ textAlign: "center" }))}
+              onClick={() => editor?.chain().focus().setTextAlign("center").run()}
+            >
+              <AlignCenter size={14} />
+            </button>
+            <button
+              className="notepad-tooltip"
+              data-tooltip={getTooltip("Align Right", "Ctrl+Shift+R")}
+              style={tb(editor?.isActive({ textAlign: "right" }))}
+              onClick={() => editor?.chain().focus().setTextAlign("right").run()}
+            >
+              <AlignRight size={14} />
+            </button>
+            <button
+              className="notepad-tooltip"
+              data-tooltip={getTooltip("Justify", "Ctrl+Shift+J")}
+              style={tb(editor?.isActive({ textAlign: "justify" }))}
+              onClick={() => editor?.chain().focus().setTextAlign("justify").run()}
+            >
+              <AlignJustify size={14} />
+            </button>
+            {sep}
+
             {/* HEADINGS */}
-            <button style={tb(editor?.isActive("paragraph") && !editor?.isActive("heading"))} onClick={() => editor?.chain().focus().setParagraph().run()} title="Paragraph"><AlignLeft size={14} /></button>
-            <button style={tb(editor?.isActive("heading", { level: 1 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} title="Heading 1"><Heading1 size={14} /></button>
-            <button style={tb(editor?.isActive("heading", { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2"><Heading2 size={14} /></button>
-            <button style={tb(editor?.isActive("heading", { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} title="Heading 3"><Heading3 size={14} /></button>
-            <button style={tb(editor?.isActive("blockquote"))} onClick={() => editor?.chain().focus().toggleBlockquote().run()} title="Blockquote"><Quote size={13} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Paragraph")} style={tb(editor?.isActive("paragraph") && !editor?.isActive("heading"))} onClick={() => editor?.chain().focus().setParagraph().run()}><Pilcrow size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Heading 1", "Ctrl+Alt+1")} style={tb(editor?.isActive("heading", { level: 1 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}><Heading1 size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Heading 2", "Ctrl+Alt+2")} style={tb(editor?.isActive("heading", { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Heading 3", "Ctrl+Alt+3")} style={tb(editor?.isActive("heading", { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Blockquote", "Ctrl+Shift+B")} style={tb(editor?.isActive("blockquote"))} onClick={() => editor?.chain().focus().toggleBlockquote().run()}><Quote size={13} /></button>
             {sep}
 
             {/* LISTS */}
-            <button style={tb(editor?.isActive("bulletList"))} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="Bullet List"><List size={14} /></button>
-            <button style={tb(editor?.isActive("orderedList"))} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="Numbered List"><ListOrdered size={14} /></button>
-            <button style={tb(editor?.isActive("taskList"))} onClick={() => editor?.chain().focus().toggleTaskList().run()} title="Checklist"><CheckSquare size={13} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Bullet List", "Ctrl+Shift+8")} style={tb(editor?.isActive("bulletList"))} onClick={() => editor?.chain().focus().toggleBulletList().run()}><List size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Numbered List", "Ctrl+Shift+7")} style={tb(editor?.isActive("orderedList"))} onClick={() => editor?.chain().focus().toggleOrderedList().run()}><ListOrdered size={14} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Checklist", "Ctrl+Shift+9")} style={tb(editor?.isActive("taskList"))} onClick={() => editor?.chain().focus().toggleTaskList().run()}><CheckSquare size={13} /></button>
             {sep}
 
             {/* INSERT SHORTCUTS */}
-            <button style={tb(editor?.isActive("link"))} onClick={insertLink} title="Insert Link"><LinkIcon size={13} /></button>
-            <button style={tb()} onClick={insertImage} title="Insert Image"><ImageIcon size={13} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Insert Link", "Ctrl+K")} style={tb(editor?.isActive("link"))} onClick={insertLink}><LinkIcon size={13} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Insert Image")} style={tb()} onClick={insertImage}><ImageIcon size={13} /></button>
             <button
               ref={tableBtnRef}
+              className="notepad-tooltip"
+              data-tooltip={getTooltip("Insert Table")}
               style={tb(showTableGrid || editor?.isActive("table"))}
               onClick={() => {
                 const r = tableBtnRef.current?.getBoundingClientRect();
@@ -2082,12 +2129,11 @@ export default function Notepad() {
                 setShowSettings(false);
                 cancelConfirm();
               }}
-              title="Insert Table"
               aria-label="Insert table"
             >
               <Table2 size={14} />
             </button>
-            <button style={tb()} onClick={() => editor?.chain().focus().setHorizontalRule().run()} title="Insert Divider"><Minus size={13} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Insert Divider")} style={tb()} onClick={() => editor?.chain().focus().setHorizontalRule().run()}><Minus size={13} /></button>
             
             {/* CONTEXTUAL TABLE ACTIONS */}
             {editor?.isActive("table") && (
@@ -2182,34 +2228,36 @@ export default function Notepad() {
             {sep}
 
             {/* HISTORY */}
-            <button style={{ ...tb(), opacity: editor?.can().undo() ? 1 : 0.3 }} onClick={() => editor?.chain().focus().undo().run()} title="Undo (Ctrl+Z)"><Undo2 size={13} /></button>
-            <button style={{ ...tb(), opacity: editor?.can().redo() ? 1 : 0.3 }} onClick={() => editor?.chain().focus().redo().run()} title="Redo (Ctrl+Y)"><Redo2 size={13} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Undo", "Ctrl+Z")} style={{ ...tb(), opacity: editor?.can().undo() ? 1 : 0.3 }} onClick={() => editor?.chain().focus().undo().run()}><Undo2 size={13} /></button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Redo", "Ctrl+Y")} style={{ ...tb(), opacity: editor?.can().redo() ? 1 : 0.3 }} onClick={() => editor?.chain().focus().redo().run()}><Redo2 size={13} /></button>
           </div>
 
           {/* Row 2 Right Zone: Fixed layout and export options */}
           <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, paddingLeft: 6 }}>
             {/* FIND */}
             <button
+              className="notepad-tooltip"
+              data-tooltip={getTooltip("Find / Replace", "Ctrl+F")}
               style={tb(showFind)}
               onClick={() => { if (showFind) { setShowFind(false); setShowReplace(false); } else { setShowFind(true); setTimeout(() => findInputRef.current?.focus(), 50); } }}
-              title="Find (Ctrl+F) · Find & Replace (Ctrl+H)"
             >
               <Search size={14} />
             </button>
 
             {/* FOCUS / FULLSCREEN */}
-            <button style={tb(focusMode)} onClick={toggleFocus} title="Focus / fullscreen (Ctrl+\\)">{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Focus Mode", "Ctrl+\\") } style={tb(focusMode)} onClick={toggleFocus}>{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
 
             {sep}
 
             {/* SETTINGS */}
-            <button style={tb(showSettings)} onClick={() => { setShowSettings(!showSettings); setShowExportMenu(false); }} title="Settings" aria-label="Editor settings">
+            <button className="notepad-tooltip" data-tooltip={getTooltip("Settings")} style={tb(showSettings)} onClick={() => { setShowSettings(!showSettings); setShowExportMenu(false); }} aria-label="Editor settings">
               <Settings size={14} />
             </button>
 
             {/* COPY */}
             <button
-              className="notepad-export-btn notepad-copy-btn"
+              className="notepad-export-btn notepad-copy-btn notepad-tooltip"
+              data-tooltip={getTooltip("Copy All", "Ctrl+Shift+C")}
               style={{
                 ...tb(),
                 width: "auto",
@@ -2227,7 +2275,6 @@ export default function Notepad() {
                 flexShrink: 0,
               }}
               onClick={handleCopy}
-              title="Copy note to clipboard (with formatting & images)"
               aria-label={
                 copyState === "copied" ? "Note copied to clipboard"
                 : copyState === "error" ? "Copy failed"
@@ -2245,10 +2292,10 @@ export default function Notepad() {
 
             {/* EXPORT */}
             <button
-              className="notepad-export-btn"
+              className="notepad-export-btn notepad-tooltip"
+              data-tooltip={getTooltip("Export", "Ctrl+D")}
               style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5, fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.07)", borderRadius: 6, flexShrink: 0 }}
               onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); }}
-              title="Export (Ctrl+D for smart export)"
             >
               {exportingPdf ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={12} />}
               <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Export</span>
