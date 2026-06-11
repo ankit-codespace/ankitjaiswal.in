@@ -1373,7 +1373,7 @@ export default function Notepad() {
     };
   };
 
-  const sepColor = effectiveDark ? "var(--b0)" : "rgba(0, 0, 0, 0.08)";
+  const sepColor = effectiveDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.08)";
   const sep = <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px", flexShrink: 0 }} />;
   // Look up the accent for the current theme; fall back per light/dark.
   const surfAccent = (() => {
