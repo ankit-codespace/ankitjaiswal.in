@@ -94,6 +94,35 @@ const CustomCodeBlock = CodeBlock.extend({
   addNodeView() {
     return ReactNodeViewRenderer(CodeBlockNodeView);
   },
+
+  addCommands() {
+    return {
+      toggleCodeBlock: () => ({ state, chain, commands }: any) => {
+        const { selection } = state;
+        const { from, to, empty } = selection;
+
+        // If inside code block, toggle it off
+        const isActive = this.editor.isActive("codeBlock");
+        if (isActive) {
+          return commands.toggleNode("codeBlock", "paragraph");
+        }
+
+        // If selection is empty, default toggle
+        if (empty) {
+          return commands.toggleNode("codeBlock", "paragraph");
+        }
+
+        // If selection is not empty, merge selected blocks into a single code block
+        const selectedText = state.doc.textBetween(from, to, "\n");
+        return chain()
+          .insertContentAt({ from, to }, {
+            type: "codeBlock",
+            content: selectedText ? [{ type: "text", text: selectedText }] : []
+          })
+          .run();
+      }
+    } as any;
+  }
 });
 
 interface SearchAndReplaceStorage {
