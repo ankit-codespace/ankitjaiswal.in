@@ -3074,12 +3074,13 @@ export default function Notepad() {
               background: "var(--bg1)",
               border: "1px solid var(--b0)",
               borderRadius: "var(--r)",
-              padding: "4px 0",
+              padding: "4px",
               minWidth: 160,
               zIndex: 300,
               boxShadow: "0 10px 30px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.2)",
               display: "flex",
               flexDirection: "column",
+              gap: "2px",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -3088,7 +3089,8 @@ export default function Notepad() {
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "8px 12px",
+                padding: "6px 8px",
+                borderRadius: "4px",
                 width: "100%",
                 background: "none",
                 border: "none",
@@ -3116,7 +3118,8 @@ export default function Notepad() {
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
-                  padding: "8px 12px",
+                  padding: "6px 8px",
+                  borderRadius: "4px",
                   width: "100%",
                   background: "none",
                   border: "none",
@@ -3141,14 +3144,15 @@ export default function Notepad() {
               </button>
             )}
 
-            <div style={{ borderTop: "1px solid var(--b0)", margin: "4px 0" }} />
+            <div style={{ borderTop: "1px solid var(--b0)", margin: "2px 0" }} />
 
             <button
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "8px 12px",
+                padding: "6px 8px",
+                borderRadius: "4px",
                 width: "100%",
                 background: "none",
                 border: "none",
