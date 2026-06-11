@@ -536,6 +536,30 @@ function getTooltip(name: string, shortcut?: string) {
   return `${name} (${key})`;
 }
 
+function blendColors(fgType: "dark" | "light", bgHex: string, alpha: number): string {
+  try {
+    let hex = bgHex.replace("#", "");
+    if (hex.length === 3) {
+      hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    const bgR = parseInt(hex.slice(0, 2), 16) || 0;
+    const bgG = parseInt(hex.slice(2, 4), 16) || 0;
+    const bgB = parseInt(hex.slice(4, 6), 16) || 0;
+    
+    const fgR = fgType === "dark" ? 255 : 13;
+    const fgG = fgType === "dark" ? 255 : 17;
+    const fgB = fgType === "dark" ? 255 : 23;
+    
+    const r = Math.round(fgR * alpha + bgR * (1 - alpha));
+    const g = Math.round(fgG * alpha + bgG * (1 - alpha));
+    const b = Math.round(fgB * alpha + bgB * (1 - alpha));
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  } catch {
+    return fgType === "dark" ? "rgb(203, 204, 204)" : "rgb(153, 155, 157)";
+  }
+}
+
 export default function Notepad() {
   const [location] = useLocation();
   const seo = useMemo<NotepadSeo>(() => NOTEPAD_SEO[location] ?? DEFAULT_NOTEPAD_SEO, [location]);
@@ -1656,11 +1680,13 @@ export default function Notepad() {
                 const isArmed = confirmDeleteId === doc.id;
                 const isNextActive = idx + 1 < sortedDocs.length && sortedDocs[idx + 1].id === activeId;
                 const showDivider = !isActive && !isNextActive && idx < sortedDocs.length - 1;
-                const activeTabStroke = effectiveDark ? "rgba(255,255,255,0.78)" : "rgba(13,17,23,0.42)";
+                const activeTabSurface = effectiveDark ? "#202124" : surfBg;
+                const activeTabStroke = effectiveDark
+                  ? blendColors("dark", "#202124", 0.78)
+                  : blendColors("light", activeTabSurface, 0.42);
                 const activeTabShadow = effectiveDark
                   ? "0 -1px 0 rgba(255,255,255,0.20) inset, 0 8px 18px rgba(0,0,0,0.34)"
                   : "0 -1px 0 rgba(255,255,255,0.72) inset, 0 8px 18px rgba(13,17,23,0.12)";
-                const activeTabSurface = effectiveDark ? "#202124" : surfBg;
 
                 return (
                   <div
@@ -1730,7 +1756,7 @@ export default function Notepad() {
                             fill={activeTabSurface}
                           />
                           <path
-                            d="M 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0"
+                            d="M 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 L 30 0"
                             stroke={activeTabStroke}
                             strokeWidth="2"
                             fill="none"
@@ -1762,7 +1788,7 @@ export default function Notepad() {
                             fill={activeTabSurface}
                           />
                           <path
-                            d="M 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34"
+                            d="M 0 0 L 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34"
                             stroke={activeTabStroke}
                             strokeWidth="2"
                             fill="none"
