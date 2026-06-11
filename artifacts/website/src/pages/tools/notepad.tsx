@@ -1655,18 +1655,18 @@ export default function Notepad() {
                       >
                         {/* Left Curve SVG */}
                         <svg
-                          width="24"
-                          height="34"
-                          viewBox="0 0 24 34"
+                          width="30"
+                          height="36"
+                          viewBox="-1 -1 30 36"
                           fill="none"
-                          style={{ position: "absolute", left: -12, top: 0, overflow: "visible" }}
+                          style={{ position: "absolute", left: -17, top: -1, overflow: "visible" }}
                         >
                           <path
-                            d="M 24 34 L 0 34 L 4 34 A 8 8 0 0 0 12 26 L 12 12 A 12 12 0 0 1 24 0 Z"
+                            d="M 28 34 L 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 Z"
                             fill={activeTabSurface}
                           />
                           <path
-                            d="M 0 34 L 4 34 A 8 8 0 0 0 12 26 L 12 12 A 12 12 0 0 1 24 0"
+                            d="M 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0"
                             stroke={activeTabStroke}
                             strokeWidth="2"
                             fill="none"
@@ -1687,18 +1687,18 @@ export default function Notepad() {
 
                         {/* Right Curve SVG */}
                         <svg
-                          width="24"
-                          height="34"
-                          viewBox="0 0 24 34"
+                          width="30"
+                          height="36"
+                          viewBox="-1 -1 30 36"
                           fill="none"
-                          style={{ position: "absolute", right: -12, top: 0, overflow: "visible" }}
+                          style={{ position: "absolute", right: -17, top: -1, overflow: "visible" }}
                         >
                           <path
-                            d="M 0 0 A 12 12 0 0 1 12 12 L 12 26 A 8 8 0 0 0 20 34 L 24 34 L 0 34 Z"
+                            d="M 0 0 A 12 12 0 0 1 12 12 L 12 26 A 8 8 0 0 0 20 34 L 28 34 L 0 34 Z"
                             fill={activeTabSurface}
                           />
                           <path
-                            d="M 0 0 A 12 12 0 0 1 12 12 L 12 26 A 8 8 0 0 0 20 34 L 24 34"
+                            d="M 0 0 A 12 12 0 0 1 12 12 L 12 26 A 8 8 0 0 0 20 34 L 28 34"
                             stroke={activeTabStroke}
                             strokeWidth="2"
                             fill="none"
