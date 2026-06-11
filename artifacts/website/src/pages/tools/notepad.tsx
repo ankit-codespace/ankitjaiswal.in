@@ -1482,52 +1482,234 @@ export default function Notepad() {
     dl(td.turndown(html), `${activeDoc.title}.md`, "text/markdown");
   };
 
-  const exportPdf = async () => {
+  const exportPdf = () => {
     setShowExportMenu(false);
-    setExportingPdf(true);
-    try {
-      const el = document.querySelector(".notepad-editor") as HTMLElement;
-      if (!el) return;
-      const { default: html2canvas } = await import("html2canvas");
-      const jsPDFMod = await import("jspdf");
-      const jsPDF = (jsPDFMod as any).default ?? jsPDFMod.jsPDF;
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: surfBg });
+    const html = editor?.getHTML() ?? "";
+    const title = activeDoc?.title || "Note";
 
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
-      const pw = pdf.internal.pageSize.getWidth();   // 595.28 pt
-      const ph = pdf.internal.pageSize.getHeight();  // 841.89 pt
-      const margin = 72;                             // 1 inch all sides — matches word processors
+    // Build a clean standalone print document.
+    // This approach (used by Notion, Google Docs, Confluence) produces:
+    //   • Real selectable/searchable text PDF (not a screenshot)
+    //   • White background — no theme colours bleed through
+    //   • Proper font rendering and page breaks
+    //   • Tiny file size (typically 50-300KB vs 28MB for html2canvas bitmap)
+    const printDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      const contentW = pw - margin * 2;  // printable width
-      const contentH = ph - margin * 2;  // printable height per page
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11pt;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #ffffff;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px 24px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
 
-      // Total rendered height in pt at the scaled content width
-      const totalRenderH = (canvas.height * contentW) / canvas.width;
+    /* ── Headings ── */
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Sora', 'Inter', sans-serif;
+      font-weight: 700;
+      color: #0d1117;
+      margin-top: 1.6em;
+      margin-bottom: 0.5em;
+      line-height: 1.3;
+      page-break-after: avoid;
+    }
+    h1 { font-size: 22pt; }
+    h2 { font-size: 17pt; }
+    h3 { font-size: 13pt; }
 
-      let rendered = 0;
-      let firstPage = true;
-      while (rendered < totalRenderH) {
-        const sliceH = Math.min(contentH, totalRenderH - rendered);
-        const srcY = (rendered / totalRenderH) * canvas.height;
-        const srcH = (sliceH / totalRenderH) * canvas.height;
+    /* ── Paragraphs & spacing ── */
+    p { margin-bottom: 0.75em; }
+    p:last-child { margin-bottom: 0; }
 
-        const sc = document.createElement("canvas");
-        sc.width = canvas.width;
-        sc.height = Math.ceil(srcH);
-        sc.getContext("2d")?.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+    /* ── Bold / Italic / Underline / Strike ── */
+    strong, b { font-weight: 600; color: #0d1117; }
+    em, i { font-style: italic; }
+    u { text-decoration: underline; text-underline-offset: 2px; }
+    s, del { text-decoration: line-through; color: #6b7280; }
 
-        if (!firstPage) pdf.addPage();
-        firstPage = false;
+    /* ── Inline code ── */
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.88em;
+      background: #f0f0f0;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      padding: 0.1em 0.35em;
+      color: #c7254e;
+    }
 
-        // Place image inside the margin box on every page
-        pdf.addImage(sc.toDataURL("image/png"), "PNG", margin, margin, contentW, sliceH);
-        rendered += contentH;
+    /* ── Code blocks ── */
+    pre {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 9pt;
+      line-height: 1.6;
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 14px 18px;
+      overflow-x: auto;
+      margin: 1em 0;
+      page-break-inside: avoid;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #24292f;
+      font-size: inherit;
+    }
+
+    /* ── Blockquote ── */
+    blockquote {
+      border-left: 4px solid #6366f1;
+      margin: 1.2em 0;
+      padding: 10px 16px;
+      background: #f8f7ff;
+      border-radius: 0 6px 6px 0;
+      color: #374151;
+      font-style: italic;
+      page-break-inside: avoid;
+    }
+    blockquote p { margin-bottom: 0; }
+
+    /* ── Lists ── */
+    ul, ol {
+      margin: 0.5em 0 0.75em 1.5em;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 0.3em;
+      line-height: 1.7;
+    }
+    ul { list-style-type: disc; }
+    ol { list-style-type: decimal; }
+    ul ul { list-style-type: circle; }
+    ul ul ul { list-style-type: square; }
+
+    /* ── Task list ── */
+    ul[data-type="taskList"] {
+      list-style: none;
+      margin-left: 0.5em;
+    }
+    li[data-type="taskItem"] {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    li[data-type="taskItem"] > label { flex-shrink: 0; margin-top: 2px; }
+    li[data-type="taskItem"][data-checked="true"] > div { 
+      text-decoration: line-through; 
+      color: #9ca3af; 
+    }
+
+    /* ── Highlight ── */
+    mark {
+      background: #fef08a;
+      color: #713f12;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+
+    /* ── Links ── */
+    a {
+      color: #1d4ed8;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    /* Print full URLs after links */
+    @media print {
+      a[href^="http"]::after {
+        content: " (" attr(href) ")";
+        font-size: 8pt;
+        color: #6b7280;
+        word-break: break-all;
       }
+    }
 
-      pdf.save(`${activeDoc.title}.pdf`);
-      toast.success("PDF downloaded.");
-    } catch { toast.error("PDF export failed."); }
-    finally { setExportingPdf(false); }
+    /* ── Horizontal rule ── */
+    hr {
+      border: none;
+      border-top: 2px solid #e5e7eb;
+      margin: 1.5em 0;
+    }
+
+    /* ── Images ── */
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 6px;
+      display: block;
+      margin: 1em auto;
+      page-break-inside: avoid;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.2em 0;
+      font-size: 10pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 8px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f3f4f6;
+      font-weight: 600;
+      color: #111827;
+    }
+    tr:nth-child(even) td { background: #f9fafb; }
+
+    /* ── Print page setup ── */
+    @page {
+      size: A4 portrait;
+      margin: 20mm 18mm;
+    }
+    @media print {
+      body { padding: 0; max-width: 100%; }
+      h1, h2, h3 { page-break-after: avoid; }
+      pre, blockquote, table, img { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  ${html}
+  <script>
+    // Auto-trigger print dialog after fonts load
+    window.addEventListener('load', () => {
+      setTimeout(() => { window.print(); }, 400);
+    });
+  <\/script>
+</body>
+</html>`;
+
+    const printWin = window.open("", "_blank", "width=900,height=700");
+    if (!printWin) {
+      toast.error("Print blocked", { description: "Please allow pop-ups for this site, then try again." });
+      return;
+    }
+    printWin.document.write(printDoc);
+    printWin.document.close();
+    toast.success("Print dialog opening…", { description: "Choose 'Save as PDF' to download." });
   };
 
   const exportHtml = () => {
@@ -2818,7 +3000,7 @@ export default function Notepad() {
               }}
               onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); }}
             >
-              {exportingPdf ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={12} />}
+              <Download size={12} />
               <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Export</span>
               <ChevronDown size={10} />
             </button>
