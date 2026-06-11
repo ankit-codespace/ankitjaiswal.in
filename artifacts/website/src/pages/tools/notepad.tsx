@@ -1679,7 +1679,7 @@ export default function Notepad() {
                             position: "absolute",
                             left: 12,
                             right: 12,
-                            top: 0,
+                            top: -1,
                             height: 2,
                             background: activeTabStroke,
                           }}
