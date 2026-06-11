@@ -1606,7 +1606,12 @@ export default function Notepad() {
                 const isArmed = confirmDeleteId === doc.id;
                 const isNextActive = idx + 1 < docs.length && docs[idx + 1].id === activeId;
                 const showDivider = !isActive && !isNextActive && idx < docs.length - 1;
-                
+                const activeTabStroke = effectiveDark ? "rgba(255,255,255,0.78)" : "rgba(13,17,23,0.42)";
+                const activeTabShadow = effectiveDark
+                  ? "0 -1px 0 rgba(255,255,255,0.20) inset, 0 0 0 1px rgba(255,255,255,0.05), 0 8px 18px rgba(0,0,0,0.34)"
+                  : "0 -1px 0 rgba(255,255,255,0.72) inset, 0 0 0 1px rgba(255,255,255,0.55), 0 8px 18px rgba(13,17,23,0.12)";
+                const activeTabSurface = effectiveDark ? "#202124" : surfBg;
+
                 return (
                   <div
                     key={doc.id}
@@ -1621,84 +1626,59 @@ export default function Notepad() {
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
-                      height: 32,
-                      padding: "0 12px",
-                      borderRadius: "8px 8px 0 0",
+                      height: isActive ? 34 : 32,
+                      padding: isActive ? "0 14px" : "0 12px",
+                      borderRadius: isActive ? "12px 12px 0 0" : "8px 8px 0 0",
                       border: "none",
-                      background: isActive ? surfBg : "transparent",
+                      background: isActive ? activeTabSurface : "transparent",
                       color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
                       cursor: "pointer",
                       position: "relative",
                       minWidth: 80,
                       maxWidth: 150,
-                      marginBottom: isActive ? -1 : 0,
-                      zIndex: isActive ? 2 : 1,
-                      ["--active-tab-bg" as any]: surfBg,
-                      ["--active-border-color" as any]: surfAccent,
+                      marginBottom: isActive ? -2 : 0,
+                      zIndex: isActive ? 3 : 1,
+                      boxShadow: isActive ? activeTabShadow : "none",
+                      ["--active-tab-bg" as any]: activeTabSurface,
+                      ["--active-border-color" as any]: activeTabStroke,
                     }}
                   >
-                    {/* SVG Vector Background & Outline */}
+                    {/* Chrome-like active tab frame: quiet outline, lifted shoulders, attached bottom edge. */}
                     {isActive && (
                       <div
                         style={{
                           position: "absolute",
                           inset: 0,
                           pointerEvents: "none",
-                          zIndex: -1,
+                          zIndex: 0,
                         }}
                       >
-                        {/* Left Curve SVG */}
-                        <svg
-                          width="16"
-                          height="32"
-                          viewBox="0 0 16 32"
-                          fill="none"
-                          style={{ position: "absolute", left: -8, top: 0 }}
-                        >
-                          <path
-                            d="M 16 32 L 8 32 A 8 8 0 0 1 0 24 L 0 8 A 8 8 0 0 1 8 0 L 16 0 Z"
-                            fill={surfBg}
-                          />
-                          <path
-                            d="M 8 32 A 8 8 0 0 1 0 24 L 0 8 A 8 8 0 0 1 8 0 L 16 0"
-                            stroke={surfAccent}
-                            strokeWidth="1"
-                            fill="none"
-                          />
-                        </svg>
-
-                        {/* Middle Fill */}
                         <div
                           style={{
                             position: "absolute",
-                            left: 8,
-                            right: 8,
+                            left: 0,
+                            right: 0,
                             top: 0,
                             bottom: 0,
-                            background: surfBg,
-                            borderTop: `1px solid ${surfAccent}`,
+                            borderRadius: "12px 12px 0 0",
+                            borderTop: `2px solid ${activeTabStroke}`,
+                            borderLeft: `2px solid ${activeTabStroke}`,
+                            borderRight: `2px solid ${activeTabStroke}`,
+                            boxSizing: "border-box",
                           }}
                         />
-
-                        {/* Right Curve SVG */}
-                        <svg
-                          width="16"
-                          height="32"
-                          viewBox="0 0 16 32"
-                          fill="none"
-                          style={{ position: "absolute", right: -8, top: 0 }}
-                        >
-                          <path
-                            d="M 0 32 L 0 0 L 8 0 A 8 8 0 0 1 16 8 L 16 24 A 8 8 0 0 1 8 32 Z"
-                            fill={surfBg}
-                          />
-                          <path
-                            d="M 0 0 L 8 0 A 8 8 0 0 1 16 8 L 16 24 A 8 8 0 0 1 8 32"
-                            stroke={surfAccent}
-                            strokeWidth="1"
-                            fill="none"
-                          />
-                        </svg>
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: 10,
+                            right: 10,
+                            bottom: -1,
+                            height: 2,
+                            borderRadius: 999,
+                            background: activeTabStroke,
+                            opacity: effectiveDark ? 0.85 : 0.55,
+                          }}
+                        />
                       </div>
                     )}
                     {isActive ? (
@@ -1718,6 +1698,8 @@ export default function Notepad() {
                           padding: 0,
                           margin: 0,
                           letterSpacing: "-0.01em",
+                          position: "relative",
+                          zIndex: 1,
                         }}
                         spellCheck={false}
                         title="Rename note"
@@ -1773,6 +1755,8 @@ export default function Notepad() {
                             borderRadius: 4,
                             cursor: "pointer",
                             transition: "all 0.12s",
+                            position: "relative",
+                            zIndex: 1,
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.color = "var(--err)";
@@ -3098,4 +3082,3 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
     </>
   );
 });
-
