@@ -1649,8 +1649,8 @@ export default function Notepad() {
                 const showDivider = !isActive && !isNextActive && idx < sortedDocs.length - 1;
                 const activeTabStroke = effectiveDark ? "rgba(255,255,255,0.78)" : "rgba(13,17,23,0.42)";
                 const activeTabShadow = effectiveDark
-                  ? "0 -1px 0 rgba(255,255,255,0.20) inset, 0 0 0 1px rgba(255,255,255,0.05), 0 8px 18px rgba(0,0,0,0.34)"
-                  : "0 -1px 0 rgba(255,255,255,0.72) inset, 0 0 0 1px rgba(255,255,255,0.55), 0 8px 18px rgba(13,17,23,0.12)";
+                  ? "0 -1px 0 rgba(255,255,255,0.20) inset, 0 8px 18px rgba(0,0,0,0.34)"
+                  : "0 -1px 0 rgba(255,255,255,0.72) inset, 0 8px 18px rgba(13,17,23,0.12)";
                 const activeTabSurface = effectiveDark ? "#202124" : surfBg;
 
                 return (
@@ -1749,11 +1749,11 @@ export default function Notepad() {
                           style={{ position: "absolute", right: -17, top: -1, overflow: "visible" }}
                         >
                           <path
-                            d="M 0 0 A 12 12 0 0 1 12 12 L 12 26 A 8 8 0 0 0 20 34 L 28 34 L 0 34 Z"
+                            d="M 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34 L 2 34 Z"
                             fill={activeTabSurface}
                           />
                           <path
-                            d="M 0 0 A 12 12 0 0 1 12 12 L 12 26 A 8 8 0 0 0 20 34 L 28 34"
+                            d="M 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34"
                             stroke={activeTabStroke}
                             strokeWidth="2"
                             fill="none"
