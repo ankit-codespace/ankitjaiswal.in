@@ -584,8 +584,8 @@ export default function Notepad() {
   const docMenuBtnRef = useRef<HTMLButtonElement>(null);
   const [docMenuLeft, setDocMenuLeft] = useState(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const moreMenuBtnRef = useRef<HTMLButtonElement>(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showTableMenu, setShowTableMenu] = useState(false);
   const [showTableGrid, setShowTableGrid] = useState(false);
   const [hoveredRows, setHoveredRows] = useState(0);
   const [hoveredCols, setHoveredCols] = useState(0);
@@ -624,9 +624,17 @@ export default function Notepad() {
   }, [docs]);
 
   useEffect(() => {
-    const handleClose = () => {
-      if (Date.now() - contextMenuOpenTimeRef.current < 100) return;
-      setContextMenu(null);
+    const handleClose = (e: MouseEvent) => {
+      if (Date.now() - contextMenuOpenTimeRef.current >= 100) {
+        setContextMenu(null);
+      }
+      const target = e.target as HTMLElement;
+      if (target && !target.closest(".notepad-color-picker-trigger")) {
+        setShowColorPicker(false);
+      }
+      if (target && !target.closest(".notepad-table-menu-trigger")) {
+        setShowTableMenu(false);
+      }
     };
     window.addEventListener("click", handleClose);
     window.addEventListener("contextmenu", handleClose);
@@ -848,7 +856,7 @@ export default function Notepad() {
         else { setShowReplace(false); }
       }
       if (ctrl && e.key === "\\") { e.preventDefault(); toggleFocus(); }
-      if (e.key === "Escape") { setShowFind(false); setShowReplace(false); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowMoreMenu(false); setContextMenu(null); setEditingTabId(null); cancelConfirm(); }
+      if (e.key === "Escape") { setShowFind(false); setShowReplace(false); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowColorPicker(false); setShowTableMenu(false); setContextMenu(null); setEditingTabId(null); cancelConfirm(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -1956,6 +1964,94 @@ export default function Notepad() {
             <button style={tb(editor?.isActive("underline"))} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="Underline (Ctrl+U)"><UnderlineIcon size={14} /></button>
             <button style={tb(editor?.isActive("strike"))} onClick={() => editor?.chain().focus().toggleStrike().run()} title="Strikethrough"><Strikethrough size={14} /></button>
             <button style={tb(editor?.isActive("highlight"))} onClick={() => editor?.chain().focus().toggleHighlight().run()} title="Highlight"><Highlighter size={13} /></button>
+            
+            {/* Text Color Dropdown */}
+            <div className="notepad-color-picker-trigger" style={{ position: "relative", display: "inline-block" }}>
+              <button
+                style={{
+                  ...tb(showColorPicker),
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                  width: 26,
+                  height: 26,
+                  position: "relative"
+                }}
+                onClick={() => {
+                  setShowColorPicker(!showColorPicker);
+                  setShowTableMenu(false);
+                  setShowTableGrid(false);
+                }}
+                title="Text Color"
+              >
+                <span style={{ fontSize: 13, fontWeight: 700, lineHeight: "12px", fontFamily: "serif" }}>A</span>
+                <div style={{ width: 14, height: 3, background: editor?.getAttributes("textStyle").color || (effectiveDark ? "#FFFFFF" : "#0D1117"), borderRadius: 1, marginTop: 1 }} />
+              </button>
+              {showColorPicker && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    marginTop: 4,
+                    background: "var(--bg1)",
+                    border: "1px solid var(--b0)",
+                    borderRadius: "var(--r)",
+                    padding: "8px",
+                    zIndex: 100,
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                    display: "flex",
+                    gap: 6,
+                    alignItems: "center",
+                  }}
+                >
+                  {(["#EF4444", "#F97316", "#EAB308", "#22C55E", "#3B82F6", "#A855F7"] as const).map((color) => {
+                    const isActive = editor?.isActive("textStyle", { color });
+                    return (
+                      <button
+                        key={color}
+                        title={color}
+                        onClick={() => {
+                          if (isActive) {
+                            editor?.chain().focus().unsetColor().run();
+                          } else {
+                            editor?.chain().focus().setColor(color).run();
+                          }
+                          setShowColorPicker(false);
+                        }}
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: "50%",
+                          border: "none",
+                          cursor: "pointer",
+                          background: color,
+                          flexShrink: 0,
+                          outline: isActive ? "2px solid white" : "2px solid transparent",
+                          outlineOffset: 2,
+                          transition: "outline 0.1s",
+                        }}
+                      />
+                    );
+                  })}
+                  <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)", margin: "0 2px" }} />
+                  <label title="Custom color" style={{ ...tb(), cursor: "pointer", position: "relative", width: 20, height: 20, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Pencil size={11} />
+                    <input
+                      ref={colorInputRef}
+                      type="color"
+                      style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", top: 0, left: 0, cursor: "pointer" }}
+                      onChange={(e) => {
+                        editor?.chain().focus().setColor(e.target.value).run();
+                        setShowColorPicker(false);
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
             {sep}
 
             {/* HEADINGS */}
@@ -1963,9 +2059,18 @@ export default function Notepad() {
             <button style={tb(editor?.isActive("heading", { level: 1 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} title="Heading 1"><Heading1 size={14} /></button>
             <button style={tb(editor?.isActive("heading", { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2"><Heading2 size={14} /></button>
             <button style={tb(editor?.isActive("heading", { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} title="Heading 3"><Heading3 size={14} /></button>
+            <button style={tb(editor?.isActive("blockquote"))} onClick={() => editor?.chain().focus().toggleBlockquote().run()} title="Blockquote"><Quote size={13} /></button>
             {sep}
 
-            {/* TABLE DYNAMIC CREATOR */}
+            {/* LISTS */}
+            <button style={tb(editor?.isActive("bulletList"))} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="Bullet List"><List size={14} /></button>
+            <button style={tb(editor?.isActive("orderedList"))} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="Numbered List"><ListOrdered size={14} /></button>
+            <button style={tb(editor?.isActive("taskList"))} onClick={() => editor?.chain().focus().toggleTaskList().run()} title="Checklist"><CheckSquare size={13} /></button>
+            {sep}
+
+            {/* INSERT SHORTCUTS */}
+            <button style={tb(editor?.isActive("link"))} onClick={insertLink} title="Insert Link"><LinkIcon size={13} /></button>
+            <button style={tb()} onClick={insertImage} title="Insert Image"><ImageIcon size={13} /></button>
             <button
               ref={tableBtnRef}
               style={tb(showTableGrid || editor?.isActive("table"))}
@@ -1974,15 +2079,106 @@ export default function Notepad() {
                 if (r) setTableMenuLeft(r.left);
                 setShowTableGrid(!showTableGrid);
                 setShowDocMenu(false);
-                setShowMoreMenu(false);
                 setShowSettings(false);
                 cancelConfirm();
               }}
-              title="Insert table (dynamic grid)"
+              title="Insert Table"
               aria-label="Insert table"
             >
               <Table2 size={14} />
             </button>
+            <button style={tb()} onClick={() => editor?.chain().focus().setHorizontalRule().run()} title="Insert Divider"><Minus size={13} /></button>
+            
+            {/* CONTEXTUAL TABLE ACTIONS */}
+            {editor?.isActive("table") && (
+              <>
+                {sep}
+                <div className="notepad-table-menu-trigger" style={{ position: "relative", display: "inline-block" }}>
+                  <button
+                    style={{ ...tb(showTableMenu), width: "auto", padding: "0 8px", gap: 4, height: 26, fontSize: 11.5 }}
+                    onClick={() => {
+                      setShowTableMenu(!showTableMenu);
+                      setShowColorPicker(false);
+                      setShowTableGrid(false);
+                    }}
+                    title="Table Actions"
+                  >
+                    <Table2 size={13} />
+                    <span>Table Actions</span>
+                    <ChevronDown size={10} />
+                  </button>
+                  {showTableMenu && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        marginTop: 4,
+                        background: "var(--bg1)",
+                        border: "1px solid var(--b0)",
+                        borderRadius: "var(--r)",
+                        padding: "6px",
+                        zIndex: 100,
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                        display: "flex",
+                        flexDirection: "column",
+                        minWidth: 140,
+                        gap: 2,
+                      }}
+                    >
+                      <button
+                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif" }}
+                        onClick={() => { editor.chain().focus().addRowBefore().run(); setShowTableMenu(false); }}
+                      >
+                        Row Above
+                      </button>
+                      <button
+                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif" }}
+                        onClick={() => { editor.chain().focus().addRowAfter().run(); setShowTableMenu(false); }}
+                      >
+                        Row Below
+                      </button>
+                      <button
+                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif", color: "var(--err)" }}
+                        onClick={() => { editor.chain().focus().deleteRow().run(); setShowTableMenu(false); }}
+                      >
+                        Delete Row
+                      </button>
+                      
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", margin: "4px 0" }} />
+                      
+                      <button
+                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif" }}
+                        onClick={() => { editor.chain().focus().addColumnBefore().run(); setShowTableMenu(false); }}
+                      >
+                        Column Left
+                      </button>
+                      <button
+                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif" }}
+                        onClick={() => { editor.chain().focus().addColumnAfter().run(); setShowTableMenu(false); }}
+                      >
+                        Column Right
+                      </button>
+                      <button
+                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif", color: "var(--err)" }}
+                        onClick={() => { editor.chain().focus().deleteColumn().run(); setShowTableMenu(false); }}
+                      >
+                        Delete Column
+                      </button>
+                      
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", margin: "4px 0" }} />
+                      
+                      <button
+                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif", color: "var(--err)", fontWeight: 600 }}
+                        onClick={() => { editor.chain().focus().deleteTable().run(); setShowTableMenu(false); }}
+                      >
+                        Delete Table
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             {sep}
 
             {/* HISTORY */}
@@ -1992,17 +2188,6 @@ export default function Notepad() {
 
           {/* Row 2 Right Zone: Fixed layout and export options */}
           <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, paddingLeft: 6 }}>
-            {/* MORE Menu */}
-            <button
-              ref={moreMenuBtnRef}
-              style={{ ...tb(showMoreMenu), width: "auto", padding: "0 8px", gap: 3, flexShrink: 0 }}
-              onClick={() => { setShowMoreMenu(!showMoreMenu); setShowDocMenu(false); setShowSettings(false); setShowExportMenu(false); }}
-              title="More — lists, insert image/link, colors"
-            >
-              <MoreHorizontal size={15} />
-            </button>
-            {sep}
-
             {/* FIND */}
             <button
               style={tb(showFind)}
@@ -2018,7 +2203,7 @@ export default function Notepad() {
             {sep}
 
             {/* SETTINGS */}
-            <button style={tb(showSettings)} onClick={() => { setShowSettings(!showSettings); setShowExportMenu(false); setShowMoreMenu(false); }} title="Settings" aria-label="Editor settings">
+            <button style={tb(showSettings)} onClick={() => { setShowSettings(!showSettings); setShowExportMenu(false); }} title="Settings" aria-label="Editor settings">
               <Settings size={14} />
             </button>
 
@@ -2062,7 +2247,7 @@ export default function Notepad() {
             <button
               className="notepad-export-btn"
               style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5, fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.07)", borderRadius: 6, flexShrink: 0 }}
-              onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); setShowMoreMenu(false); }}
+              onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); }}
               title="Export (Ctrl+D for smart export)"
             >
               {exportingPdf ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={12} />}
@@ -2076,160 +2261,7 @@ export default function Notepad() {
       </div>
 
       {/* ── MORE MENU PANEL — position: fixed, escapes all overflow contexts ── */}
-      {showMoreMenu && (
-        <div
-          style={{
-            position: "fixed",
-            top: 82,
-            left: (() => { const r = moreMenuBtnRef.current?.getBoundingClientRect(); return r ? Math.min(r.left, window.innerWidth - 280) : 120; })(),
-            background: "var(--bg1)",
-            border: "1px solid var(--b0)",
-            borderRadius: "var(--r)",
-            width: 260,
-            padding: "10px",
-            zIndex: 200,
-            boxShadow: "0 16px 48px rgba(0,0,0,0.65)",
-          }}
-        >
-          {/* Section: Lists */}
-          <div style={{ color: "var(--t3)", fontSize: 10, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>Lists</div>
-          <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
-            <button style={{ ...tb(editor?.isActive("bulletList")), flex: 1, width: "auto", padding: "0 8px", gap: 5 }} onClick={() => { editor?.chain().focus().toggleBulletList().run(); setShowMoreMenu(false); }} title="Bullet list">
-              <List size={13} /><span style={{ fontSize: 12, fontFamily: "Inter,sans-serif" }}>Bullet</span>
-            </button>
-            <button style={{ ...tb(editor?.isActive("orderedList")), flex: 1, width: "auto", padding: "0 8px", gap: 5 }} onClick={() => { editor?.chain().focus().toggleOrderedList().run(); setShowMoreMenu(false); }} title="Numbered list">
-              <ListOrdered size={13} /><span style={{ fontSize: 12, fontFamily: "Inter,sans-serif" }}>Numbered</span>
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
-            <button style={{ ...tb(editor?.isActive("taskList")), flex: 1, width: "auto", padding: "0 8px", gap: 5 }} onClick={() => { editor?.chain().focus().toggleTaskList().run(); setShowMoreMenu(false); }} title="Checklist">
-              <CheckSquare size={13} /><span style={{ fontSize: 12, fontFamily: "Inter,sans-serif" }}>Checklist</span>
-            </button>
-            <button style={{ ...tb(editor?.isActive("blockquote")), flex: 1, width: "auto", padding: "0 8px", gap: 5 }} onClick={() => { editor?.chain().focus().toggleBlockquote().run(); setShowMoreMenu(false); }} title="Blockquote">
-              <Quote size={13} /><span style={{ fontSize: 12, fontFamily: "Inter,sans-serif" }}>Quote</span>
-            </button>
-          </div>
 
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", margin: "6px 0 10px" }} />
-
-          {/* Section: Insert */}
-          <div style={{ color: "rgba(255,255,255,0.28)", fontSize: 10, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>Insert</div>
-          <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
-            <button style={{ ...tb(), flex: 1, width: "auto", padding: "0 8px", gap: 5 }} onClick={() => { insertImage(); setShowMoreMenu(false); }} title="Insert image">
-              <ImageIcon size={13} /><span style={{ fontSize: 12, fontFamily: "Inter,sans-serif" }}>Image</span>
-            </button>
-            <button style={{ ...tb(editor?.isActive("link")), flex: 1, width: "auto", padding: "0 8px", gap: 5 }} onClick={() => { insertLink(); setShowMoreMenu(false); }} title="Insert link">
-              <LinkIcon size={13} /><span style={{ fontSize: 12, fontFamily: "Inter,sans-serif" }}>Link</span>
-            </button>
-            <button style={{ ...tb(), flex: 1, width: "auto", padding: "0 8px", gap: 5 }} onClick={() => { editor?.chain().focus().setHorizontalRule().run(); setShowMoreMenu(false); }} title="Divider">
-              <Minus size={13} /><span style={{ fontSize: 12, fontFamily: "Inter,sans-serif" }}>Divider</span>
-            </button>
-          </div>
-
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", margin: "6px 0 10px" }} />
-
-          {/* Section: Text Color */}
-          <div style={{ color: "rgba(255,255,255,0.28)", fontSize: 10, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Text Color</div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            {(["#EF4444", "#F97316", "#EAB308", "#22C55E", "#3B82F6", "#A855F7"] as const).map((color) => {
-              const isActive = editor?.isActive("textStyle", { color });
-              return (
-                <button
-                  key={color}
-                  title={color}
-                  onClick={() => { isActive ? editor?.chain().focus().unsetColor().run() : editor?.chain().focus().setColor(color).run(); }}
-                  style={{ width: 20, height: 20, borderRadius: "50%", border: "none", cursor: "pointer", background: color, flexShrink: 0, outline: isActive ? "2px solid white" : "2px solid transparent", outlineOffset: 2, transition: "outline 0.1s" }}
-                />
-              );
-            })}
-            <label title="Custom color" style={{ ...tb(), cursor: "pointer", position: "relative", marginLeft: 2 }}>
-              <Pencil size={13} />
-              <input
-                ref={colorInputRef}
-                type="color"
-                style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", top: 0, left: 0, cursor: "pointer" }}
-                onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()}
-              />
-            </label>
-          </div>
-
-          {/* Section: Table Actions (Only visible inside table) */}
-          {editor?.isActive("table") && (
-            <>
-              <div style={{ borderTop: "1px solid var(--b0)", margin: "8px 0 10px" }} />
-              <div style={{ color: "var(--t3)", fontSize: 10, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>Table Actions</div>
-              
-              <div style={{ display: "flex", gap: 4, marginBottom: 5 }}>
-                <button
-                  style={{ ...tb(), flex: 1, width: "auto", padding: "4px 8px", fontSize: 11, fontFamily: "Inter,sans-serif" }}
-                  onClick={() => { editor.chain().focus().addRowBefore().run(); }}
-                  title="Insert row above"
-                >
-                  Row Above
-                </button>
-                <button
-                  style={{ ...tb(), flex: 1, width: "auto", padding: "4px 8px", fontSize: 11, fontFamily: "Inter,sans-serif" }}
-                  onClick={() => { editor.chain().focus().addRowAfter().run(); }}
-                  title="Insert row below"
-                >
-                  Row Below
-                </button>
-              </div>
-
-              <div style={{ display: "flex", gap: 4, marginBottom: 5 }}>
-                <button
-                  style={{ ...tb(), flex: 1, width: "auto", padding: "4px 8px", fontSize: 11, fontFamily: "Inter,sans-serif" }}
-                  onClick={() => { editor.chain().focus().addColumnBefore().run(); }}
-                  title="Insert column left"
-                >
-                  Col Left
-                </button>
-                <button
-                  style={{ ...tb(), flex: 1, width: "auto", padding: "4px 8px", fontSize: 11, fontFamily: "Inter,sans-serif" }}
-                  onClick={() => { editor.chain().focus().addColumnAfter().run(); }}
-                  title="Insert column right"
-                >
-                  Col Right
-                </button>
-              </div>
-
-              <div style={{ display: "flex", gap: 4, marginBottom: 5 }}>
-                <button
-                  style={{ ...tb(), flex: 1, width: "auto", padding: "4px 8px", fontSize: 11, fontFamily: "Inter,sans-serif", color: "var(--err)" }}
-                  onClick={() => { editor.chain().focus().deleteRow().run(); }}
-                  title="Delete row"
-                >
-                  Delete Row
-                </button>
-                <button
-                  style={{ ...tb(), flex: 1, width: "auto", padding: "4px 8px", fontSize: 11, fontFamily: "Inter,sans-serif", color: "var(--err)" }}
-                  onClick={() => { editor.chain().focus().deleteColumn().run(); }}
-                  title="Delete column"
-                >
-                  Delete Col
-                </button>
-              </div>
-
-              <div style={{ display: "flex", gap: 4 }}>
-                <button
-                  style={{ ...tb(), flex: 1, width: "auto", padding: "4px 8px", fontSize: 11, fontFamily: "Inter,sans-serif" }}
-                  onClick={() => { editor.chain().focus().toggleHeaderRow().run(); }}
-                  title="Toggle header row style"
-                >
-                  Toggle Header
-                </button>
-                <button
-                  style={{ ...tb(), flex: 1, width: "auto", padding: "4px 8px", fontSize: 11, fontFamily: "Inter,sans-serif", color: "var(--err)", fontWeight: 600 }}
-                  onClick={() => { editor.chain().focus().deleteTable().run(); setShowMoreMenu(false); }}
-                  title="Delete entire table"
-                >
-                  Delete Table
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
 
         {/* ── DOC MENU PANEL — position: fixed so it escapes the overflow context ── */}
         {showDocMenu && (
