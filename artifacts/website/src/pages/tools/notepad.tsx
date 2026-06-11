@@ -2043,7 +2043,10 @@ export default function Notepad() {
                     alignItems: "center",
                   }}
                 >
-                  {(["#EF4444", "#F97316", "#EAB308", "#22C55E", "#3B82F6", "#A855F7"] as const).map((color) => {
+                  {(effectiveDark
+                    ? ["#FF6B6B", "#FF9F43", "#FEE08B", "#52C47A", "#54A0FF", "#D6A2E8"]
+                    : ["#D93838", "#D97706", "#B45309", "#047857", "#1D4ED8", "#7C3AED"]
+                  ).map((color) => {
                     const isActive = editor?.isActive("textStyle", { color });
                     return (
                       <button
@@ -2065,7 +2068,7 @@ export default function Notepad() {
                           cursor: "pointer",
                           background: color,
                           flexShrink: 0,
-                          outline: isActive ? "2px solid white" : "2px solid transparent",
+                          outline: isActive ? (effectiveDark ? "2px solid white" : "2px solid black") : "2px solid transparent",
                           outlineOffset: 2,
                           transition: "outline 0.1s",
                         }}
@@ -2073,60 +2076,63 @@ export default function Notepad() {
                     );
                   })}
                   <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)", margin: "0 2px" }} />
-                  <label title="Custom color" style={{ ...tb(), cursor: "pointer", position: "relative", width: 20, height: 20, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Pencil size={11} />
+                  <button
+                    title="Custom color"
+                    onClick={() => colorInputRef.current?.click()}
+                    style={{
+                      ...tb(),
+                      cursor: "pointer",
+                      position: "relative",
+                      width: 20,
+                      height: 20,
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "none",
+                      background: "none"
+                    }}
+                  >
+                    <Pencil size={11} style={{ color: editor?.getAttributes("textStyle").color || "inherit" }} />
                     <input
                       ref={colorInputRef}
                       type="color"
-                      style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", top: 0, left: 0, cursor: "pointer" }}
+                      style={{ position: "absolute", opacity: 0, width: 0, height: 0, pointerEvents: "none" }}
                       onChange={(e) => {
                         editor?.chain().focus().setColor(e.target.value).run();
                         setShowColorPicker(false);
                       }}
                     />
-                  </label>
+                  </button>
                 </div>
               )}
             </div>
             {sep}
 
             {/* ALIGNMENT */}
-            <button
-              className="notepad-tooltip"
-              data-tooltip={getTooltip("Align Left", "Ctrl+Shift+L")}
-              style={tb(editor?.isActive({ textAlign: "left" }) || (!editor?.isActive({ textAlign: "center" }) && !editor?.isActive({ textAlign: "right" }) && !editor?.isActive({ textAlign: "justify" })))}
-              onClick={() => editor?.chain().focus().setTextAlign("left").run()}
-            >
-              <AlignLeft size={14} />
-            </button>
-            <button
-              className="notepad-tooltip"
-              data-tooltip={getTooltip("Align Center", "Ctrl+Shift+E")}
-              style={tb(editor?.isActive({ textAlign: "center" }))}
-              onClick={() => editor?.chain().focus().setTextAlign("center").run()}
-            >
-              <AlignCenter size={14} />
-            </button>
-            <button
-              className="notepad-tooltip"
-              data-tooltip={getTooltip("Align Right", "Ctrl+Shift+R")}
-              style={tb(editor?.isActive({ textAlign: "right" }))}
-              onClick={() => editor?.chain().focus().setTextAlign("right").run()}
-            >
-              <AlignRight size={14} />
-            </button>
-            <button
-              className="notepad-tooltip"
-              data-tooltip={getTooltip("Justify", "Ctrl+Shift+J")}
-              style={tb(editor?.isActive({ textAlign: "justify" }))}
-              onClick={() => editor?.chain().focus().setTextAlign("justify").run()}
-            >
-              <AlignJustify size={14} />
-            </button>
+            {(() => {
+              const alignVal = editor?.isActive({ textAlign: "center" }) ? "center" : editor?.isActive({ textAlign: "right" }) ? "right" : editor?.isActive({ textAlign: "justify" }) ? "justify" : "left";
+              const AlignIconComponent = alignVal === "center" ? AlignCenter : alignVal === "right" ? AlignRight : alignVal === "justify" ? AlignJustify : AlignLeft;
+              return (
+                <button
+                  className="notepad-tooltip"
+                  data-tooltip={getTooltip("Align text (Click to cycle)", "Ctrl+Shift+L/E/R/J")}
+                  style={tb(alignVal !== "left")}
+                  onClick={() => {
+                    if (!editor) return;
+                    if (alignVal === "left") editor.chain().focus().setTextAlign("center").run();
+                    else if (alignVal === "center") editor.chain().focus().setTextAlign("right").run();
+                    else if (alignVal === "right") editor.chain().focus().setTextAlign("justify").run();
+                    else editor.chain().focus().unsetTextAlign().run();
+                  }}
+                >
+                  <AlignIconComponent size={14} />
+                </button>
+              );
+            })()}
             {sep}
 
             {/* HEADINGS */}
-            <button className="notepad-tooltip" data-tooltip={getTooltip("Paragraph")} style={tb(editor?.isActive("paragraph") && !editor?.isActive("heading"))} onClick={() => editor?.chain().focus().setParagraph().run()}><Pilcrow size={14} /></button>
             <button className="notepad-tooltip" data-tooltip={getTooltip("Heading 1", "Ctrl+Alt+1")} style={tb(editor?.isActive("heading", { level: 1 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}><Heading1 size={14} /></button>
             <button className="notepad-tooltip" data-tooltip={getTooltip("Heading 2", "Ctrl+Alt+2")} style={tb(editor?.isActive("heading", { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={14} /></button>
             <button className="notepad-tooltip" data-tooltip={getTooltip("Heading 3", "Ctrl+Alt+3")} style={tb(editor?.isActive("heading", { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={14} /></button>
