@@ -875,7 +875,6 @@ export default function Notepad() {
     }
     return false;
   });
-  const [scrollProgress, setScrollProgress] = useState(0);
 
   const contextMenuOpenTimeRef = useRef<number>(0);
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
@@ -2019,37 +2018,7 @@ export default function Notepad() {
 
 
   // --- Scroll Gate & Lock Effects ---
-
-  // Detect and track natural scroll progress past the editor bottom
-  useEffect(() => {
-    if (isSeoUnlocked) return;
-
-    const handleScroll = () => {
-      const editorEl = editorWrapRef.current;
-      if (!editorEl) return;
-
-      // Calculate where the editor ends vertically on the page
-      const editorBottom = editorEl.offsetTop + editorEl.offsetHeight;
-      const scrollBottom = window.scrollY + window.innerHeight;
-
-      if (scrollBottom > editorBottom) {
-        const scrolledPast = scrollBottom - editorBottom;
-        // Map 0px to 300px scroll into 0% to 100% progress
-        const progress = Math.min(100, (scrolledPast / 300) * 100);
-        setScrollProgress(progress);
-        if (progress >= 100) {
-          setIsSeoUnlocked(true);
-        }
-      } else {
-        setScrollProgress(0);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Run initial check on load or state updates
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [isSeoUnlocked]);
+  // Overhauled: Click-to-expand down arrow replaces active/passive scroll calculations.
 
 
   /** Apply a preset theme: sets bgColor, textColor, lightSurface in one shot. */
@@ -3785,57 +3754,61 @@ export default function Notepad() {
         <NotepadSeoContent seo={seo} onScrolledPastEditor={setScrolledPastEditor} />
       </motion.div>
 
-      {/* ── Scroll Wall Spacer Zone ── */}
-      <div
-        style={{
-          height: isSeoUnlocked ? 0 : 300,
-          transition: "height 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: surfBg,
-          overflow: "hidden",
-          gap: 12,
-        }}
-      >
-        {/* Faded instruction label */}
-        <span
+      {/* ── Click-to-Expand Guide Trigger Zone ── */}
+      {!isSeoUnlocked && (
+        <div
           style={{
-            fontSize: 10.5,
-            fontWeight: 600,
-            fontFamily: "'Sora', sans-serif",
-            color: effectiveDark ? "rgba(255, 255, 255, 0.22)" : "rgba(0, 0, 0, 0.24)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            userSelect: "none",
+            height: 120,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: surfBg,
+            gap: 8,
+            cursor: "pointer",
+            userSelect: "none"
+          }}
+          onClick={() => {
+            setIsSeoUnlocked(true);
+            setTimeout(() => {
+              window.scrollBy({ top: 120, behavior: "smooth" });
+            }, 80);
           }}
         >
-          Scroll to explore guide
-        </span>
-
-        {/* Subtle 20px progress line centered */}
-        <div 
-          style={{ 
-            width: 20, 
-            height: 2, 
-            background: effectiveDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.15)", 
-            borderRadius: 1,
-            position: "relative"
-          }}
-        >
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              fontFamily: "'Sora', sans-serif",
+              color: effectiveDark ? "rgba(255, 255, 255, 0.28)" : "rgba(0, 0, 0, 0.3)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              transition: "color 0.2s"
+            }}
+            className="notepad-guide-trigger-text"
+          >
+            Explore Notepad Guide
+          </span>
+          
           <div
             style={{
-              width: `${scrollProgress}%`,
-              height: "100%",
-              background: surfAccent,
-              borderRadius: 1,
-              transition: "width 0.1s ease-out"
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: `1px solid ${effectiveDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}`,
+              background: effectiveDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.02)",
+              color: effectiveDark ? "rgba(255, 255, 255, 0.38)" : "rgba(0, 0, 0, 0.4)",
+              transition: "all 0.2s ease",
             }}
-          />
+            className="notepad-guide-trigger-icon"
+          >
+            <ChevronDown size={14} />
+          </div>
         </div>
-      </div>
+      )}
 
       {contextMenu && (() => {
         const targetDoc = docs.find((d) => d.id === contextMenu.tabId);

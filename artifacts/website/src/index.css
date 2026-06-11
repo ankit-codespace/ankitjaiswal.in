@@ -1210,5 +1210,22 @@ html, body { overflow-x: clip; max-width: 100%; }
   transform: translateX(-50%) translateY(-2px);
 }
 
+/* Click-to-expand Guide Trigger Animations */
+.notepad-guide-trigger-text {
+  transition: color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.notepad-guide-trigger-icon {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+div:hover > .notepad-guide-trigger-text {
+  color: var(--np-accent, #5D4FB8) !important;
+}
+div:hover > .notepad-guide-trigger-icon {
+  border-color: var(--np-accent, #5D4FB8) !important;
+  color: var(--np-accent, #5D4FB8) !important;
+  transform: translateY(2px);
+  background: color-mix(in srgb, var(--np-accent, #5D4FB8) 8%, transparent) !important;
+}
+
 
 
