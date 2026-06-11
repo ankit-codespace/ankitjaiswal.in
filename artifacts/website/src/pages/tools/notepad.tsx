@@ -1527,6 +1527,16 @@ export default function Notepad() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
       const docHeight = document.documentElement.scrollHeight;
       const winHeight = window.innerHeight;
       const scrollY = window.scrollY;
