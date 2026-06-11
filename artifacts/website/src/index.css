@@ -626,10 +626,12 @@ html.lenis, html.lenis body {
 /* Horizontal rule */
 .notepad-editor hr {
   border: none;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 2px dashed #ffffff94;
   margin: 1.5em 0;
 }
-.surface-light .notepad-editor hr { border-top-color: rgba(0,0,0,0.1); }
+.surface-light .notepad-editor hr {
+  border-top: 2px dashed rgba(0, 0, 0, 0.58);
+}
 
 /* Images — sized via data-size attribute set by ResizableImage extension.
    Defaults to medium (~45% of editor width). Click an image to reveal the
