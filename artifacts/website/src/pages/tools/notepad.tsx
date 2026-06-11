@@ -238,7 +238,7 @@ import {
   Strikethrough, Heading1, Heading2, Heading3, List, ListOrdered, CheckSquare,
   ImageIcon, Link as LinkIcon, Minus, Undo2, Redo2, Search, X, Maximize2,
   Minimize2, Cloud, CloudOff, Download, ChevronDown, ChevronRight, Plus, FileText,
-  Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Pilcrow, Clock, Loader2, Quote, Settings, Pencil, MoreHorizontal,
+  Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Pilcrow, Clock, Loader2, Quote, Settings, Pencil, MoreHorizontal, Eraser,
   Trash2,
   Lock, Zap, Layers, Sparkles, GraduationCap, PenLine, Code2, Briefcase,
   ArrowUpRight, FileDown, Eye, Save,
@@ -2358,6 +2358,18 @@ export default function Notepad() {
             <button title={getTooltip("Underline", "Ctrl+U")} style={tb(editor?.isActive("underline"))} onClick={() => editor?.chain().focus().toggleUnderline().run()}><UnderlineIcon size={14} /></button>
             <button title={getTooltip("Strikethrough", "Ctrl+Shift+X")} style={tb(editor?.isActive("strike"))} onClick={() => editor?.chain().focus().toggleStrike().run()}><Strikethrough size={14} /></button>
             <button title={getTooltip("Highlight")} style={tb(editor?.isActive("highlight"))} onClick={() => editor?.chain().focus().toggleHighlight().run()}><Highlighter size={13} /></button>
+            <button
+              title={getTooltip("Clear Formatting")}
+              style={tb()}
+              onClick={() => {
+                if (editor) {
+                  editor.chain().focus().unsetAllMarks().clearNodes().run();
+                  toast.success("Formatting cleared");
+                }
+              }}
+            >
+              <Eraser size={14} />
+            </button>
             
             {/* Text Color Dropdown */}
             <div className="notepad-color-picker-trigger" style={{ position: "relative", display: "inline-block" }}>
@@ -2384,7 +2396,7 @@ export default function Notepad() {
                 }}
               >
                 <span style={{ fontSize: 13, fontWeight: 700, lineHeight: "12px", fontFamily: "serif" }}>A</span>
-                <div style={{ width: 14, height: 3, background: editor?.getAttributes("textStyle").color || (effectiveDark ? "#FFFFFF" : "#0D1117"), borderRadius: 1, marginTop: 1 }} />
+                <div style={{ width: 14, height: 3, background: editor?.getAttributes("textStyle").color || (effectiveDark ? "#FFFFFF" : "#111318"), borderRadius: 1, marginTop: 1 }} />
               </button>
               {showColorPicker && (
                 <div
@@ -2404,15 +2416,48 @@ export default function Notepad() {
                     alignItems: "center",
                   }}
                 >
+                  {/* Clear Color / Reset */}
+                  <button
+                    title="Clear text color"
+                    onClick={() => {
+                      editor?.chain().focus().unsetColor().run();
+                      setShowColorPicker(false);
+                    }}
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      border: effectiveDark ? "1px solid rgba(255,255,255,0.3)" : "1px solid rgba(0,0,0,0.25)",
+                      background: "transparent",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                      padding: 0,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <div style={{
+                      width: "100%",
+                      height: 1.5,
+                      background: "#D93838",
+                      transform: "rotate(-45deg)",
+                    }} />
+                  </button>
+
+                  <div style={{ width: 1, height: 16, background: effectiveDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)", margin: "0 1px" }} />
+
+                  {/* Swatches */}
                   {(effectiveDark
-                    ? ["#FF6B6B", "#FF9F43", "#FEE08B", "#52C47A", "#54A0FF", "#D6A2E8"]
-                    : ["#D93838", "#D97706", "#B45309", "#047857", "#1D4ED8", "#7C3AED"]
+                    ? ["#FFFFFF", "#FF6B6B", "#FF9F43", "#FEE08B", "#52C47A", "#54A0FF", "#D6A2E8"]
+                    : ["#111318", "#D93838", "#D97706", "#B45309", "#047857", "#1D4ED8", "#7C3AED"]
                   ).map((color) => {
                     const isActive = editor?.isActive("textStyle", { color });
                     return (
                       <button
                         key={color}
-                        title={color}
+                        title={color === "#FFFFFF" || color === "#111318" ? "Default text color" : color}
                         onClick={() => {
                           if (isActive) {
                             editor?.chain().focus().unsetColor().run();
@@ -2425,7 +2470,7 @@ export default function Notepad() {
                           width: 18,
                           height: 18,
                           borderRadius: "50%",
-                          border: "none",
+                          border: effectiveDark ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(0,0,0,0.12)",
                           cursor: "pointer",
                           background: color,
                           flexShrink: 0,
@@ -2436,12 +2481,14 @@ export default function Notepad() {
                       />
                     );
                   })}
-                  <div style={{ width: 1, height: 16, background: effectiveDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)", margin: "0 2px" }} />
+
+                  <div style={{ width: 1, height: 16, background: effectiveDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)", margin: "0 1px" }} />
+
+                  {/* Custom color picker */}
                   <button
                     title="Custom color"
                     onClick={() => colorInputRef.current?.click()}
                     style={{
-                      ...tb(),
                       cursor: "pointer",
                       position: "relative",
                       width: 20,
@@ -2451,10 +2498,23 @@ export default function Notepad() {
                       alignItems: "center",
                       justifyContent: "center",
                       border: "none",
-                      background: "none"
+                      background: "none",
+                      flexShrink: 0,
                     }}
                   >
-                    <Pencil size={11} style={{ color: editor?.getAttributes("textStyle").color || "inherit" }} />
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      background: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                      border: effectiveDark ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(0,0,0,0.15)",
+                    }}>
+                      <Pencil size={8} style={{ color: "#FFFFFF", filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.5))" }} />
+                    </div>
                     <input
                       ref={colorInputRef}
                       type="color"
