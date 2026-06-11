@@ -78,6 +78,13 @@ interface NotepadDoc {
   isPinned?: boolean;
 }
 
+interface DeleteConfirmState {
+  docId: string;
+  source: "tab" | "menu" | "switcher";
+  x: number;
+  y: number;
+}
+
 interface NotepadSettings {
   fontSize: number;
   lineHeight: number;
@@ -577,6 +584,7 @@ export default function Notepad() {
   // Inline-confirm state for delete actions in the doc switcher
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "unsaved">("saved");
@@ -614,6 +622,19 @@ export default function Notepad() {
   const editorWrapRef = useRef<HTMLDivElement>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
   const docMenuBtnRef = useRef<HTMLButtonElement>(null);
+  const deleteConfirmCancelBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (deleteConfirm) {
+      timer = setTimeout(() => {
+        deleteConfirmCancelBtnRef.current?.focus();
+      }, 50);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [deleteConfirm]);
   const [docMenuLeft, setDocMenuLeft] = useState(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -1060,6 +1081,7 @@ export default function Notepad() {
     if (confirmTimerRef.current) { clearTimeout(confirmTimerRef.current); confirmTimerRef.current = null; }
     setConfirmDeleteId(null);
     setConfirmClearAll(false);
+    setDeleteConfirm(null);
   }, []);
 
   const armConfirm = useCallback((id: string | null, all: boolean) => {
@@ -1875,7 +1897,13 @@ export default function Notepad() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteDoc(doc.id);
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDeleteConfirm({
+                                docId: doc.id,
+                                source: "tab",
+                                x: rect.left + rect.width / 2,
+                                y: rect.bottom,
+                              });
                             }}
                             style={{
                               border: "none",
@@ -2353,7 +2381,16 @@ export default function Notepad() {
                   {docs.length > 1 && (
                     <button
                       style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55, color: "var(--t2)" }}
-                      onClick={(e) => { e.stopPropagation(); deleteDoc(d.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setDeleteConfirm({
+                          docId: d.id,
+                          source: "switcher",
+                          x: rect.left,
+                          y: rect.top + rect.height / 2,
+                        });
+                      }}
                       onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "1"; el.style.color = "var(--err)"; el.style.background = "color-mix(in srgb, var(--err) 12%, transparent)"; }}
                       onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.55"; el.style.color = "var(--t2)"; el.style.background = "transparent"; }}
                       title="Delete note"
@@ -3091,8 +3128,13 @@ export default function Notepad() {
               onMouseEnter={(e) => { if (docs.length > 1) { (e.currentTarget as HTMLElement).style.background = "color-mix(in srgb, var(--err) 8%, transparent)"; } }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
               onClick={() => {
+                setDeleteConfirm({
+                  docId: targetDoc.id,
+                  source: "menu",
+                  x: contextMenu.x,
+                  y: contextMenu.y,
+                });
                 setContextMenu(null);
-                deleteDoc(targetDoc.id);
               }}
             >
               <Trash2 size={11} style={{ opacity: 0.8 }} />
@@ -3101,6 +3143,128 @@ export default function Notepad() {
           </div>
         );
       })()}
+
+      <AnimatePresence>
+        {deleteConfirm && (
+          <>
+            {/* Overlay to catch clicks outside the popover */}
+            <div
+              onClick={cancelConfirm}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 290,
+                background: "transparent",
+                cursor: "default",
+              }}
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: deleteConfirm.source === "tab" ? -8 : 0 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              style={{
+                position: "fixed",
+                zIndex: 300,
+                width: 220,
+                background: effectiveDark ? "rgba(26, 29, 36, 0.96)" : "rgba(255, 255, 255, 0.96)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+                borderRadius: 12,
+                padding: "12px 14px",
+                boxShadow: effectiveDark ? "0 10px 40px rgba(0, 0, 0, 0.5)" : "0 10px 40px rgba(0, 0, 0, 0.12)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                fontFamily: "Inter, sans-serif",
+                // Positioning logic based on trigger source
+                ...(() => {
+                  if (deleteConfirm.source === "tab") {
+                    return {
+                      left: deleteConfirm.x,
+                      top: deleteConfirm.y + 6,
+                      transform: "translateX(-50%)",
+                    };
+                  } else if (deleteConfirm.source === "switcher") {
+                    return {
+                      left: deleteConfirm.x - 228,
+                      top: deleteConfirm.y,
+                      transform: "translateY(-50%)",
+                    };
+                  } else {
+                    // context menu source
+                    return {
+                      left: Math.min(deleteConfirm.x, window.innerWidth - 230),
+                      top: Math.min(deleteConfirm.y, window.innerHeight - 130),
+                    };
+                  }
+                })(),
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: effectiveDark ? "#FFFFFF" : "#1A1A1A", fontFamily: "'Sora', sans-serif" }}>
+                  Delete this note?
+                </span>
+                <span style={{ fontSize: 11, color: effectiveDark ? "rgba(255, 255, 255, 0.45)" : "rgba(0, 0, 0, 0.45)", lineHeight: "1.4" }}>
+                  This action cannot be undone.
+                </span>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 2 }}>
+                <button
+                  ref={deleteConfirmCancelBtnRef}
+                  onClick={cancelConfirm}
+                  style={{
+                    background: "transparent",
+                    border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
+                    borderRadius: 6,
+                    padding: "5px 12px",
+                    fontSize: 11.5,
+                    fontWeight: 500,
+                    color: effectiveDark ? "rgba(255, 255, 255, 0.8)" : "rgba(0, 0, 0, 0.8)",
+                    cursor: "pointer",
+                    outline: "none",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = surfAccent; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"; }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    deleteDoc(deleteConfirm.docId);
+                    setDeleteConfirm(null);
+                  }}
+                  style={{
+                    background: "var(--err)",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "5px 12px",
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: "#FFFFFF",
+                    cursor: "pointer",
+                    outline: "none",
+                    transition: "opacity 0.1s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                  onFocus={(e) => { e.currentTarget.style.boxShadow = `0 0 0 2px ${surfAccent}`; }}
+                  onBlur={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
