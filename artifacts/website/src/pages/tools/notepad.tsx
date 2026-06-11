@@ -541,6 +541,7 @@ export default function Notepad() {
   const [showReplace, setShowReplace] = useState(false);
   const [replaceText, setReplaceText] = useState("");
   const [showDocMenu, setShowDocMenu] = useState(false);
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
   // Inline-confirm state for delete actions in the doc switcher
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
@@ -839,7 +840,7 @@ export default function Notepad() {
         else { setShowReplace(false); }
       }
       if (ctrl && e.key === "\\") { e.preventDefault(); toggleFocus(); }
-      if (e.key === "Escape") { setShowFind(false); setShowReplace(false); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowMoreMenu(false); setContextMenu(null); cancelConfirm(); }
+      if (e.key === "Escape") { setShowFind(false); setShowReplace(false); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowMoreMenu(false); setContextMenu(null); setEditingTabId(null); cancelConfirm(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -994,6 +995,7 @@ export default function Notepad() {
     const d = newDoc();
     setDocs((prev) => { const next = [...prev, d]; saveDocs(next); return next; });
     setActiveId(d.id);
+    setEditingTabId(d.id);
     setShowDocMenu(false);
     setTimeout(() => titleInputRef.current?.select(), 80);
   };
@@ -1659,9 +1661,9 @@ export default function Notepad() {
                       alignItems: "center",
                       justifyContent: doc.isPinned ? "center" : "flex-start",
                       gap: doc.isPinned ? 0 : 8,
-                      height: isActive ? 34 : 32,
-                      padding: doc.isPinned ? "0" : (isActive ? "0 14px" : "0 12px"),
-                      borderRadius: isActive ? "12px 12px 0 0" : "8px 8px 0 0",
+                      height: 34,
+                      padding: doc.isPinned ? "0" : "0 14px",
+                      borderRadius: "12px 12px 0 0",
                       border: "none",
                       background: isActive ? activeTabSurface : "transparent",
                       color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
@@ -1670,11 +1672,12 @@ export default function Notepad() {
                       width: doc.isPinned ? 44 : undefined,
                       minWidth: doc.isPinned ? 44 : 80,
                       maxWidth: doc.isPinned ? 44 : 150,
-                      marginBottom: isActive ? -2 : 0,
+                      marginBottom: -2,
                       zIndex: isActive ? 3 : 1,
                       boxShadow: isActive ? activeTabShadow : "none",
                       ["--active-tab-bg" as any]: activeTabSurface,
                       ["--active-border-color" as any]: activeTabStroke,
+                      transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease",
                     }}
                   >
                     {/* SVG Vector Background & Outline with Chrome-like flaring tails */}
@@ -1761,11 +1764,18 @@ export default function Notepad() {
                       </div>
                     ) : (
                       <>
-                        {isActive ? (
+                        {editingTabId === doc.id ? (
                           <input
                             ref={titleInputRef}
                             value={doc.title}
                             onChange={(e) => updateTitle(e.target.value)}
+                            onBlur={() => setEditingTabId(null)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === "Escape") {
+                                setEditingTabId(null);
+                              }
+                            }}
+                            autoFocus
                             style={{
                               background: "transparent",
                               border: "none",
@@ -1786,10 +1796,17 @@ export default function Notepad() {
                           />
                         ) : (
                           <span
+                            onDoubleClick={() => {
+                              if (!doc.isPinned) {
+                                setActiveId(doc.id);
+                                setEditingTabId(doc.id);
+                                setTimeout(() => titleInputRef.current?.select(), 80);
+                              }
+                            }}
                             style={{
                               fontSize: 12,
-                              fontWeight: 500,
-                              fontFamily: "Inter, sans-serif",
+                              fontWeight: isActive ? 600 : 500,
+                              fontFamily: isActive ? "'Sora', sans-serif" : "Inter, sans-serif",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -3000,6 +3017,7 @@ export default function Notepad() {
                 onClick={() => {
                   setContextMenu(null);
                   setActiveId(targetDoc.id);
+                  setEditingTabId(targetDoc.id);
                   setTimeout(() => titleInputRef.current?.select(), 80);
                 }}
               >
