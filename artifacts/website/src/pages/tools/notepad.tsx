@@ -2056,10 +2056,10 @@ export default function Notepad() {
           {/* Left Zone: Back and Tabs */}
           <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
             {/* Back Button */}
-            <Link href="/tools" className="notepad-back-link" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, color: effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)", textDecoration: "none", alignSelf: "center", flexShrink: 0 }} title="Back to Tools">
+            <Link href="/tools" className="notepad-back-link" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, color: effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)", textDecoration: "none", alignSelf: "flex-end", marginBottom: 5, flexShrink: 0 }} title="Back to Tools">
               <ArrowLeft size={15} />
             </Link>
-            <span className="notepad-back-link" style={{ alignSelf: "center" }}>{sep}</span>
+            <span className="notepad-back-link" style={{ alignSelf: "flex-end", marginBottom: 5 }}>{sep}</span>
 
             {/* Browser Tabs Scrollable Container */}
             <div
@@ -2337,7 +2337,7 @@ export default function Notepad() {
                   height: 24,
                   borderRadius: 6,
                   alignSelf: "flex-end",
-                  marginBottom: 7,
+                  marginBottom: 5,
                   marginLeft: 8,
                   flexShrink: 0,
                   zIndex: 1,
