@@ -59,7 +59,7 @@ import {
   ArrowUpRight, FileDown, Eye, Save,
   Keyboard, BookOpen, Shield, ListChecks, Table2, Lightbulb, MousePointer2,
   Wand2, Globe,
-  Copy as CopyIcon, MessageSquarePlus,
+  Copy as CopyIcon, MessageSquarePlus, Pin,
 } from "lucide-react";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -74,6 +74,7 @@ interface NotepadDoc {
   createdAt: number;
   updatedAt: number;
   driveFileId?: string;
+  isPinned?: boolean;
 }
 
 interface NotepadSettings {
@@ -604,6 +605,28 @@ export default function Notepad() {
   const scrollProgressRef = useRef(0);
   const drainTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
+
+  const togglePin = useCallback((id: string) => {
+    setDocs((prev) => {
+      const next = prev.map((d) => d.id === id ? { ...d, isPinned: !d.isPinned } : d);
+      saveDocs(next);
+      return next;
+    });
+  }, []);
+
+  const sortedDocs = useMemo(() => {
+    const pinned = docs.filter((d) => d.isPinned);
+    const unpinned = docs.filter((d) => !d.isPinned);
+    return [...pinned, ...unpinned];
+  }, [docs]);
+
+  useEffect(() => {
+    const handleClose = () => setContextMenu(null);
+    window.addEventListener("click", handleClose);
+    return () => window.removeEventListener("click", handleClose);
+  }, []);
+
   const activeDoc = useMemo(() => docs.find((d) => d.id === activeId) ?? docs[0], [docs, activeId]);
   const GCID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "";
 
@@ -816,7 +839,7 @@ export default function Notepad() {
         else { setShowReplace(false); }
       }
       if (ctrl && e.key === "\\") { e.preventDefault(); toggleFocus(); }
-      if (e.key === "Escape") { setShowFind(false); setShowReplace(false); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowMoreMenu(false); cancelConfirm(); }
+      if (e.key === "Escape") { setShowFind(false); setShowReplace(false); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowMoreMenu(false); setContextMenu(null); cancelConfirm(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -1601,11 +1624,11 @@ export default function Notepad() {
                 paddingRight: 8,
               }}
             >
-              {docs.map((doc, idx) => {
+              {sortedDocs.map((doc, idx) => {
                 const isActive = doc.id === activeId;
                 const isArmed = confirmDeleteId === doc.id;
-                const isNextActive = idx + 1 < docs.length && docs[idx + 1].id === activeId;
-                const showDivider = !isActive && !isNextActive && idx < docs.length - 1;
+                const isNextActive = idx + 1 < sortedDocs.length && sortedDocs[idx + 1].id === activeId;
+                const showDivider = !isActive && !isNextActive && idx < sortedDocs.length - 1;
                 const activeTabStroke = effectiveDark ? "rgba(255,255,255,0.78)" : "rgba(13,17,23,0.42)";
                 const activeTabShadow = effectiveDark
                   ? "0 -1px 0 rgba(255,255,255,0.20) inset, 0 0 0 1px rgba(255,255,255,0.05), 0 8px 18px rgba(0,0,0,0.34)"
@@ -1622,20 +1645,31 @@ export default function Notepad() {
                         cancelConfirm();
                       }
                     }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setContextMenu({
+                        tabId: doc.id,
+                        x: e.clientX,
+                        y: e.clientY,
+                      });
+                    }}
+                    title={doc.isPinned ? (doc.title || "Untitled Note") : undefined}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
+                      justifyContent: doc.isPinned ? "center" : "flex-start",
+                      gap: doc.isPinned ? 0 : 8,
                       height: isActive ? 34 : 32,
-                      padding: isActive ? "0 14px" : "0 12px",
+                      padding: doc.isPinned ? "0" : (isActive ? "0 14px" : "0 12px"),
                       borderRadius: isActive ? "12px 12px 0 0" : "8px 8px 0 0",
                       border: "none",
                       background: isActive ? activeTabSurface : "transparent",
                       color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
                       cursor: "pointer",
                       position: "relative",
-                      minWidth: 80,
-                      maxWidth: 150,
+                      width: doc.isPinned ? 44 : undefined,
+                      minWidth: doc.isPinned ? 44 : 80,
+                      maxWidth: doc.isPinned ? 44 : 150,
                       marginBottom: isActive ? -2 : 0,
                       zIndex: isActive ? 3 : 1,
                       boxShadow: isActive ? activeTabShadow : "none",
@@ -1706,94 +1740,117 @@ export default function Notepad() {
                         </svg>
                       </div>
                     )}
-                    {isActive ? (
-                      <input
-                        ref={titleInputRef}
-                        value={doc.title}
-                        onChange={(e) => updateTitle(e.target.value)}
+                    
+                    {doc.isPinned ? (
+                      <div
                         style={{
-                          background: "transparent",
-                          border: "none",
-                          outline: "none",
-                          color: surfTxt,
-                          fontFamily: "'Sora', sans-serif",
-                          fontSize: 12,
-                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 3,
                           width: "100%",
-                          padding: 0,
-                          margin: 0,
-                          letterSpacing: "-0.01em",
+                          height: "100%",
                           position: "relative",
                           zIndex: 1,
                         }}
-                        spellCheck={false}
-                        title="Rename note"
-                      />
-                    ) : (
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 500,
-                          fontFamily: "Inter, sans-serif",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          width: "100%",
-                        }}
                       >
-                        {doc.title || "Untitled"}
-                      </span>
-                    )}
+                        <Pin size={10} style={{ transform: "rotate(30deg)", opacity: 0.8 }} />
+                        <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
+                          {doc.title ? doc.title.charAt(0).toUpperCase() : "U"}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        {isActive ? (
+                          <input
+                            ref={titleInputRef}
+                            value={doc.title}
+                            onChange={(e) => updateTitle(e.target.value)}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              outline: "none",
+                              color: surfTxt,
+                              fontFamily: "'Sora', sans-serif",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              width: "100%",
+                              padding: 0,
+                              margin: 0,
+                              letterSpacing: "-0.01em",
+                              position: "relative",
+                              zIndex: 1,
+                            }}
+                            spellCheck={false}
+                            title="Rename note"
+                          />
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 500,
+                              fontFamily: "Inter, sans-serif",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              width: "100%",
+                            }}
+                          >
+                            {doc.title || "Untitled"}
+                          </span>
+                        )}
 
-                    {docs.length > 1 && (
-                      isArmed ? (
-                        <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                          <button
-                            onClick={() => deleteDoc(doc.id)}
-                            style={{ border: "none", background: "var(--err)", color: "#fff", fontSize: 9, padding: "2px 4px", borderRadius: 4, cursor: "pointer", fontWeight: 600 }}
-                            title="Confirm delete"
-                          >
-                            Del
-                          </button>
-                          <button
-                            onClick={cancelConfirm}
-                            style={{ border: "none", background: "transparent", color: "var(--t2)", fontSize: 9, padding: "2px 2px", cursor: "pointer" }}
-                            title="Cancel"
-                          >
-                            No
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            armConfirm(doc.id, false);
-                          }}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            color: isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)"),
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: 2,
-                            borderRadius: 4,
-                            cursor: "pointer",
-                            transition: "all 0.12s",
-                            position: "relative",
-                            zIndex: 1,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = "var(--err)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)");
-                          }}
-                          title="Delete note"
-                        >
-                          <X size={10} />
-                        </button>
-                      )
+                        {docs.length > 1 && (
+                          isArmed ? (
+                            <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                              <button
+                                onClick={() => deleteDoc(doc.id)}
+                                style={{ border: "none", background: "var(--err)", color: "#fff", fontSize: 9, padding: "2px 4px", borderRadius: 4, cursor: "pointer", fontWeight: 600 }}
+                                title="Confirm delete"
+                              >
+                                Del
+                              </button>
+                              <button
+                                onClick={cancelConfirm}
+                                style={{ border: "none", background: "transparent", color: "var(--t2)", fontSize: 9, padding: "2px 2px", cursor: "pointer" }}
+                                title="Cancel"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                armConfirm(doc.id, false);
+                              }}
+                              style={{
+                                border: "none",
+                                background: "transparent",
+                                color: isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)"),
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: 2,
+                                borderRadius: 4,
+                                cursor: "pointer",
+                                transition: "all 0.12s",
+                                position: "relative",
+                                zIndex: 1,
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = "var(--err)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = isActive ? (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.4)") : (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)");
+                              }}
+                              title="Delete note"
+                            >
+                              <X size={10} />
+                            </button>
+                          )
+                        )}
+                      </>
                     )}
 
                     {/* Vertical tab divider lines (Chrome aesthetic) */}
@@ -2150,7 +2207,7 @@ export default function Notepad() {
         {/* ── DOC MENU PANEL — position: fixed so it escapes the overflow context ── */}
         {showDocMenu && (
           <div style={{ position: "fixed", top: 80, left: docMenuLeft, background: "var(--bg1)", border: "1px solid var(--b0)", borderRadius: "var(--r)", minWidth: 240, padding: "6px 0", zIndex: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.65)" }}>
-            {docs.map((d) => {
+            {sortedDocs.map((d) => {
               const armed = confirmDeleteId === d.id;
               return (
                 <div
@@ -2165,10 +2222,13 @@ export default function Notepad() {
                   }}
                 >
                   <span
-                    style={{ flex: 1, color: "var(--t1)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    style={{ flex: 1, color: "var(--t1)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center" }}
                     onClick={() => { if (!armed) { setActiveId(d.id); setShowDocMenu(false); } }}
                   >
                     {d.title || "Untitled"}
+                    {d.isPinned && (
+                      <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, color: "var(--t3)" }} />
+                    )}
                   </span>
                   {!armed && d.id === activeId && (
                     <Check size={12} style={{ color: "var(--t2)", flexShrink: 0 }} />
@@ -2867,6 +2927,120 @@ export default function Notepad() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {contextMenu && (() => {
+        const targetDoc = docs.find((d) => d.id === contextMenu.tabId);
+        if (!targetDoc) return null;
+        const isPinned = !!targetDoc.isPinned;
+        
+        return (
+          <div
+            style={{
+              position: "fixed",
+              top: contextMenu.y,
+              left: Math.min(contextMenu.x, window.innerWidth - 180),
+              background: "var(--bg1)",
+              border: "1px solid var(--b0)",
+              borderRadius: "var(--r)",
+              padding: "4px 0",
+              minWidth: 160,
+              zIndex: 300,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.2)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                width: "100%",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--t1)",
+                fontSize: 12.5,
+                fontFamily: "Inter, sans-serif",
+                textAlign: "left",
+                transition: "background 0.12s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg2)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+              onClick={() => {
+                togglePin(targetDoc.id);
+                setContextMenu(null);
+              }}
+            >
+              <Pin size={11} style={{ transform: "rotate(30deg)", opacity: 0.8 }} />
+              {isPinned ? "Unpin note" : "Pin note"}
+            </button>
+
+            {!isPinned && (
+              <button
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 12px",
+                  width: "100%",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--t1)",
+                  fontSize: 12.5,
+                  fontFamily: "Inter, sans-serif",
+                  textAlign: "left",
+                  transition: "background 0.12s",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg2)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+                onClick={() => {
+                  setContextMenu(null);
+                  setActiveId(targetDoc.id);
+                  setTimeout(() => titleInputRef.current?.select(), 80);
+                }}
+              >
+                <Pencil size={11} style={{ opacity: 0.8 }} />
+                Rename note
+              </button>
+            )}
+
+            <div style={{ borderTop: "1px solid var(--b0)", margin: "4px 0" }} />
+
+            <button
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                width: "100%",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: docs.length > 1 ? "var(--err)" : "var(--t4)",
+                fontSize: 12.5,
+                fontFamily: "Inter, sans-serif",
+                textAlign: "left",
+                transition: "background 0.12s",
+                opacity: docs.length > 1 ? 1 : 0.5,
+              }}
+              disabled={docs.length <= 1}
+              onMouseEnter={(e) => { if (docs.length > 1) { (e.currentTarget as HTMLElement).style.background = "color-mix(in srgb, var(--err) 8%, transparent)"; } }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+              onClick={() => {
+                setContextMenu(null);
+                armConfirm(targetDoc.id, false);
+              }}
+            >
+              <Trash2 size={11} style={{ opacity: 0.8 }} />
+              Delete note
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }
