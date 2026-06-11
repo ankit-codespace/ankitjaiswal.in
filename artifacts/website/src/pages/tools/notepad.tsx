@@ -2166,10 +2166,18 @@ export default function Notepad() {
             >
               <ArrowLeft size={15} />
             </Link>
-            <span
-              className="notepad-back-link"
-              style={{ alignSelf: "flex-end", marginBottom: -2, lineHeight: "34px" }}
-            >{sep}</span>
+            {/* Separator — aligned to the optical center of the back button and tabs */}
+            <div
+              style={{
+                width: 1,
+                height: 20,
+                background: sepColor,
+                margin: "0 8px",
+                flexShrink: 0,
+                alignSelf: "flex-end",
+                marginBottom: 5,
+              }}
+            />
 
             {/* Browser Tabs Scrollable Container */}
             <div
