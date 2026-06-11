@@ -16,7 +16,7 @@ import {
 } from "@/components/tool/ToolSEOArticle";
 import { ToolFooter } from "@/components/tool/ToolFooter";
 import { tokens } from "@/components/tool/tokens";
-import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent, Extension } from "@tiptap/react";
 import { motion, AnimatePresence } from "framer-motion";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -96,6 +96,136 @@ const CustomCodeBlock = CodeBlock.extend({
   },
 });
 
+interface SearchAndReplaceStorage {
+  searchTerm: string;
+  caseSensitive: boolean;
+  activeIndex: number;
+  results: { from: number; to: number }[];
+}
+
+const SearchAndReplace = Extension.create({
+  name: "searchAndReplace",
+
+  addStorage(): SearchAndReplaceStorage {
+    return {
+      searchTerm: "",
+      caseSensitive: false,
+      activeIndex: 0,
+      results: [],
+    };
+  },
+
+  addCommands() {
+    return {
+      setSearchTerm: (term: string) => ({ tr, dispatch }: any) => {
+        this.storage.searchTerm = term;
+        this.storage.activeIndex = 0;
+        if (dispatch) {
+          tr.setMeta("searchAndReplaceUpdate", true);
+        }
+        return true;
+      },
+      setSearchActiveIndex: (index: number) => ({ tr, dispatch }: any) => {
+        this.storage.activeIndex = index;
+        if (dispatch) {
+          tr.setMeta("searchAndReplaceUpdate", true);
+        }
+        return true;
+      },
+      replace: (replaceText: string) => ({ state, dispatch }: any) => {
+        const { results, activeIndex } = this.storage;
+        if (!results.length || activeIndex < 0 || activeIndex >= results.length) return false;
+        const match = results[activeIndex];
+        if (dispatch) {
+          const tr = state.tr.replaceWith(match.from, match.to, state.schema.text(replaceText));
+          dispatch(tr);
+        }
+        return true;
+      },
+      replaceAll: (replaceText: string) => ({ state, dispatch }: any) => {
+        const { results } = this.storage;
+        if (!results.length) return false;
+        if (dispatch) {
+          let tr = state.tr;
+          const sorted = [...results].sort((a, b) => b.from - a.from);
+          sorted.forEach((match) => {
+            tr = tr.replaceWith(match.from, match.to, state.schema.text(replaceText));
+          });
+          dispatch(tr);
+        }
+        return true;
+      },
+    } as any;
+  },
+
+  addProseMirrorPlugins() {
+    const extension = this;
+    const searchPluginKey = new PluginKey("searchAndReplace");
+
+    return [
+      new Plugin({
+        key: searchPluginKey,
+        state: {
+          init() {
+            return DecorationSet.empty;
+          },
+          apply(tr, oldState) {
+            const docChanged = tr.docChanged;
+            const forceUpdate = tr.getMeta("searchAndReplaceUpdate");
+            
+            if (!docChanged && !forceUpdate) {
+              return oldState.map(tr.mapping, tr.doc);
+            }
+
+            const { searchTerm, caseSensitive, activeIndex } = extension.storage;
+            const matches: { from: number; to: number }[] = [];
+
+            if (searchTerm) {
+              const escaped = searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+              const flags = caseSensitive ? "g" : "gi";
+              const regex = new RegExp(escaped, flags);
+
+              tr.doc.descendants((node: any, pos: number) => {
+                if (node.isText && node.text) {
+                  const text = node.text;
+                  let match;
+                  while ((match = regex.exec(text)) !== null) {
+                    const from = pos + match.index;
+                    const to = from + match[0].length;
+                    matches.push({ from, to });
+                  }
+                }
+              });
+            }
+
+            extension.storage.results = matches;
+
+            if (!matches.length) {
+              return DecorationSet.empty;
+            }
+
+            const decos = matches.map((match, idx) => {
+              const isActive = idx === activeIndex;
+              return Decoration.inline(match.from, match.to, {
+                class: isActive 
+                  ? "notepad-search-match-active" 
+                  : "notepad-search-match",
+              });
+            });
+
+            return DecorationSet.create(tr.doc, decos);
+          },
+        },
+        props: {
+          decorations(state) {
+            return this.getState(state);
+          },
+        },
+      }),
+    ];
+  },
+});
+
 type ImgSize = "small" | "medium" | "large" | "full";
 import TipTapLink from "@tiptap/extension-link";
 import TaskList from "@tiptap/extension-task-list";
@@ -118,7 +248,8 @@ import {
 } from "lucide-react";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
-import { TextSelection } from "@tiptap/pm/state";
+import { TextSelection, Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { toast } from "sonner";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -634,6 +765,8 @@ export default function Notepad() {
   const [findText, setFindText] = useState("");
   const [showReplace, setShowReplace] = useState(false);
   const [replaceText, setReplaceText] = useState("");
+  const [findResultsCount, setFindResultsCount] = useState(0);
+  const [findActiveIndex, setFindActiveIndex] = useState(0);
   const [showDocMenu, setShowDocMenu] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   // Inline-confirm state for delete actions in the doc switcher
@@ -796,6 +929,7 @@ export default function Notepad() {
       TableRow,
       TableHeader,
       TableCell,
+      SearchAndReplace,
     ],
     content: activeDoc?.content ?? "",
     editorProps: {
@@ -924,6 +1058,13 @@ export default function Notepad() {
         }
       }, 1200);
     },
+    onTransaction({ editor }) {
+      const storage = editor?.storage as any;
+      if (storage?.searchAndReplace) {
+        setFindResultsCount(storage.searchAndReplace.results.length);
+        setFindActiveIndex(storage.searchAndReplace.activeIndex);
+      }
+    },
   });
 
   // ── Switch doc ─────────────────────────────────────────────────────────────
@@ -954,6 +1095,85 @@ export default function Notepad() {
     return () => { try { document.body.removeChild(s); } catch {} };
   }, [GCID]);
 
+  // ── Find & Replace ─────────────────────────────────────────────────────────
+  const scrollToMatch = useCallback((index: number, matches: { from: number; to: number }[]) => {
+    if (!editor || !matches[index]) return;
+    const { from, to } = matches[index];
+    editor.commands.setTextSelection({ from, to });
+    editor.commands.scrollIntoView();
+  }, [editor]);
+
+  const handleSearchChange = useCallback((term: string) => {
+    setFindText(term);
+    if (!editor) return;
+    (editor.commands as any).setSearchTerm(term);
+    const matches = (editor.storage as any).searchAndReplace?.results || [];
+    setFindResultsCount(matches.length);
+    setFindActiveIndex(0);
+    if (matches.length > 0) {
+      scrollToMatch(0, matches);
+    }
+  }, [editor, scrollToMatch]);
+
+  const handleNextMatch = useCallback(() => {
+    if (!editor) return;
+    const matches = (editor.storage as any).searchAndReplace?.results || [];
+    if (!matches.length) return;
+    const nextIndex = (findActiveIndex + 1) % matches.length;
+    setFindActiveIndex(nextIndex);
+    (editor.commands as any).setSearchActiveIndex(nextIndex);
+    scrollToMatch(nextIndex, matches);
+  }, [editor, findActiveIndex, scrollToMatch]);
+
+  const handlePrevMatch = useCallback(() => {
+    if (!editor) return;
+    const matches = (editor.storage as any).searchAndReplace?.results || [];
+    if (!matches.length) return;
+    const prevIndex = (findActiveIndex - 1 + matches.length) % matches.length;
+    setFindActiveIndex(prevIndex);
+    (editor.commands as any).setSearchActiveIndex(prevIndex);
+    scrollToMatch(prevIndex, matches);
+  }, [editor, findActiveIndex, scrollToMatch]);
+
+  const handleReplace = useCallback(() => {
+    if (!editor || !findText.trim()) return;
+    (editor.commands as any).replace(replaceText);
+    setTimeout(() => {
+      const matches = (editor.storage as any).searchAndReplace?.results || [];
+      setFindResultsCount(matches.length);
+      const nextIndex = findActiveIndex >= matches.length ? 0 : findActiveIndex;
+      setFindActiveIndex(nextIndex);
+      (editor.commands as any).setSearchActiveIndex(nextIndex);
+      if (matches.length > 0) {
+        scrollToMatch(nextIndex, matches);
+      }
+    }, 10);
+  }, [editor, findText, replaceText, findActiveIndex, scrollToMatch]);
+
+  const handleReplaceAll = useCallback(() => {
+    if (!editor || !findText.trim()) return;
+    (editor.commands as any).replaceAll(replaceText);
+    setTimeout(() => {
+      setFindText("");
+      (editor.commands as any).setSearchTerm("");
+      setFindResultsCount(0);
+      setFindActiveIndex(0);
+      toast.success("All occurrences replaced");
+    }, 10);
+  }, [editor, findText, replaceText]);
+
+  const closeFind = useCallback(() => {
+    setShowFind(false);
+    setShowReplace(false);
+    setFindText("");
+    setReplaceText("");
+    setFindResultsCount(0);
+    setFindActiveIndex(0);
+    if (editor) {
+      (editor.commands as any).setSearchTerm("");
+    }
+  }, [editor]);
+
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -961,21 +1181,42 @@ export default function Notepad() {
       if (ctrl && e.key === "d") { e.preventDefault(); handleSmartExport(); }
       if (ctrl && e.key === "f") {
         e.preventDefault();
-        if (showFind) { setShowFind(false); setShowReplace(false); }
-        else { setShowFind(true); setShowReplace(false); setTimeout(() => findInputRef.current?.focus(), 50); }
+        if (showFind) {
+          findInputRef.current?.select();
+        } else {
+          setShowFind(true);
+          setShowReplace(false);
+          setTimeout(() => {
+            findInputRef.current?.focus();
+            findInputRef.current?.select();
+          }, 50);
+        }
       }
       if (ctrl && e.key === "h") {
         e.preventDefault();
-        if (!showFind) { setShowFind(true); setShowReplace(true); setTimeout(() => findInputRef.current?.focus(), 50); }
-        else if (!showReplace) { setShowReplace(true); setTimeout(() => replaceInputRef.current?.focus(), 50); }
-        else { setShowReplace(false); }
+        if (!showFind) {
+          setShowFind(true);
+          setShowReplace(true);
+          setTimeout(() => {
+            findInputRef.current?.focus();
+            findInputRef.current?.select();
+          }, 50);
+        } else if (!showReplace) {
+          setShowReplace(true);
+          setTimeout(() => {
+            replaceInputRef.current?.focus();
+            replaceInputRef.current?.select();
+          }, 50);
+        } else {
+          setShowReplace(false);
+        }
       }
       if (ctrl && e.key === "\\") { e.preventDefault(); toggleFocus(); }
-      if (e.key === "Escape") { setShowFind(false); setShowReplace(false); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowColorPicker(false); setShowTableMenu(false); setContextMenu(null); setEditingTabId(null); cancelConfirm(); }
+      if (e.key === "Escape") { closeFind(); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowColorPicker(false); setShowTableMenu(false); setContextMenu(null); setEditingTabId(null); cancelConfirm(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [editor, activeDoc, showFind, showReplace]); // eslint-disable-line
+  }, [editor, activeDoc, showFind, showReplace, closeFind]); // eslint-disable-line
 
   // Cmd/Ctrl+Z restores last deleted note(s) when focus is OUTSIDE the editor
   // (e.g. doc menu open). Inside the editor, ProseMirror handles its own undo.
@@ -1074,52 +1315,6 @@ export default function Notepad() {
     editor.chain().focus().updateAttributes("image", { size }).run();
   }, [editor]);
 
-
-  // ── Find & Replace ─────────────────────────────────────────────────────────
-  const doReplace = useCallback((all: boolean) => {
-    if (!editor || !findText.trim()) return;
-    const escaped = findText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(escaped, "gi");
-    const cursorPos = editor.state.selection.from;
-    const matches: Array<{ from: number; to: number }> = [];
-
-    // Collect matches (single: first occurrence at or after cursor; all: every occurrence)
-    editor.state.doc.descendants((node, pos): boolean | void => {
-      if (matches.length > 0 && !all) return false;
-      if (!node.isText || !node.text) return true;
-      regex.lastIndex = 0;
-      let m: RegExpExecArray | null;
-      while ((m = regex.exec(node.text)) !== null) {
-        const from = pos + m.index;
-        const to = from + m[0].length;
-        if (all || from >= cursorPos) { matches.push({ from, to }); if (!all) return false; }
-      }
-    });
-
-    // Wrap-around for single replace
-    if (!all && matches.length === 0) {
-      editor.state.doc.descendants((node, pos): boolean | void => {
-        if (matches.length > 0) return false;
-        if (!node.isText || !node.text) return true;
-        regex.lastIndex = 0;
-        const m = regex.exec(node.text);
-        if (m) matches.push({ from: pos + m.index, to: pos + m.index + m[0].length });
-      });
-    }
-
-    if (matches.length === 0) { toast.error(`"${findText}" not found`); return; }
-
-    // Apply in reverse order so earlier positions are unaffected by later replacements
-    const { tr } = editor.state;
-    [...matches].reverse().forEach(({ from, to }) => {
-      const marks = editor.state.doc.nodeAt(from)?.marks ?? [];
-      if (replaceText) tr.replaceWith(from, to, editor.state.schema.text(replaceText, marks));
-      else tr.delete(from, to);
-    });
-    editor.view.dispatch(tr);
-
-    if (all) toast.success(`Replaced ${matches.length} occurrence${matches.length > 1 ? "s" : ""}`);
-  }, [editor, findText, replaceText]);
 
   // ── Doc management ─────────────────────────────────────────────────────────
   const createDoc = () => {
@@ -2452,7 +2647,18 @@ export default function Notepad() {
             <button
               title={getTooltip("Find / Replace", "Ctrl+F")}
               style={tb(showFind)}
-              onClick={() => { if (showFind) { setShowFind(false); setShowReplace(false); } else { setShowFind(true); setTimeout(() => findInputRef.current?.focus(), 50); } }}
+              onClick={() => {
+                if (showFind) {
+                  closeFind();
+                } else {
+                  setShowFind(true);
+                  setShowReplace(false);
+                  setTimeout(() => {
+                    findInputRef.current?.focus();
+                    findInputRef.current?.select();
+                  }, 50);
+                }
+              }}
             >
               <Search size={14} />
             </button>
@@ -2930,62 +3136,261 @@ export default function Notepad() {
           </div>
         )}
 
-      {/* ── FIND / REPLACE BAR ─────────────────────────────────────────────── */}
+      {/* ── FLOATING FIND / REPLACE CARD ─────────────────────────────────────── */}
       {showFind && (
-        <div style={{ background: "var(--bg0)", borderBottom: "1px solid var(--b0)", padding: "6px 10px" }}>
-          {/* Find row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: showReplace ? 4 : 0 }}>
+        <div
+          className="notepad-find-panel"
+          style={{
+            position: "fixed",
+            top: 88,
+            right: 20,
+            width: 320,
+            background: effectiveDark ? "rgba(30, 30, 30, 0.88)" : "rgba(255, 255, 255, 0.94)",
+            border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.1)",
+            borderRadius: 12,
+            boxShadow: effectiveDark 
+              ? "0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03)" 
+              : "0 10px 30px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            zIndex: 250,
+            padding: "8px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            transition: "all 0.2s ease-in-out",
+          }}
+        >
+          {/* Find Row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {/* Toggle replace */}
             <button
-              style={{ ...tb(), color: showReplace ? "var(--t2)" : "var(--t4)" }}
-              onClick={() => { setShowReplace(!showReplace); if (!showReplace) setTimeout(() => replaceInputRef.current?.focus(), 50); }}
-              title={showReplace ? "Collapse replace (Ctrl+H)" : "Expand replace (Ctrl+H)"}
-            >
-              <ChevronRight size={12} style={{ transform: showReplace ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
-            </button>
-            <Search size={12} style={{ color: "var(--t3)", flexShrink: 0 }} />
-            <input
-              ref={findInputRef}
-              value={findText}
-              onChange={(e) => setFindText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); (window as any).find(findText, false, e.shiftKey, true); }
-                if (e.key === "Escape") { setShowFind(false); setShowReplace(false); }
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 24,
+                height: 24,
+                borderRadius: 4,
+                border: "none",
+                background: "transparent",
+                color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)",
+                cursor: "pointer",
+                padding: 0,
               }}
-              placeholder="Find… (Enter ↓  Shift+Enter ↑)"
-              style={{ background: "transparent", border: "none", outline: "none", color: "var(--t1)", fontSize: 13, flex: 1, fontFamily: "Inter,sans-serif", minWidth: 0 }}
-            />
-            <button style={{ ...tb() }} onClick={() => { setShowFind(false); setShowReplace(false); }} title="Close (Esc)"><X size={12} /></button>
-          </div>
-          {/* Replace row */}
-          {showReplace && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {/* Spacer matching the chevron toggle width */}
-              <div style={{ width: 28, flexShrink: 0 }} />
-              <ArrowLeft size={12} style={{ color: "var(--t3)", flexShrink: 0, transform: "rotate(180deg)" }} />
+              onClick={() => {
+                setShowReplace(!showReplace);
+                if (!showReplace) setTimeout(() => replaceInputRef.current?.focus(), 50);
+              }}
+              title={showReplace ? "Collapse replace" : "Expand replace"}
+            >
+              <ChevronRight size={14} style={{ transform: showReplace ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
+            </button>
+
+            {/* Input Wrapper */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              flex: 1,
+              minWidth: 0,
+              background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.04)",
+              border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+              borderRadius: 6,
+              padding: "0 6px",
+              height: 26,
+            }}>
+              <Search size={12} style={{ color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.4)", marginRight: 4, flexShrink: 0 }} />
               <input
-                ref={replaceInputRef}
-                value={replaceText}
-                onChange={(e) => setReplaceText(e.target.value)}
+                ref={findInputRef}
+                value={findText}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); doReplace(false); }
-                  if (e.key === "Escape") { setShowFind(false); setShowReplace(false); }
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                      handlePrevMatch();
+                    } else {
+                      handleNextMatch();
+                    }
+                  }
+                  if (e.key === "Escape") {
+                    closeFind();
+                  }
                 }}
-                placeholder="Replace with…"
-                style={{ background: "transparent", border: "none", outline: "none", color: "var(--t1)", fontSize: 13, flex: 1, fontFamily: "Inter,sans-serif", minWidth: 0 }}
+                placeholder="Find..."
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.85)",
+                  fontSize: 12,
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: "Inter,sans-serif",
+                  padding: 0,
+                }}
               />
+              {findText && (
+                <span style={{
+                  fontSize: 10,
+                  color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)",
+                  fontFamily: "Inter,sans-serif",
+                  marginLeft: 4,
+                  whiteSpace: "nowrap",
+                  userSelect: "none"
+                }}>
+                  {findResultsCount > 0 ? `${findActiveIndex + 1}/${findResultsCount}` : "0/0"}
+                </span>
+              )}
+            </div>
+
+            {/* Navigation buttons */}
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               <button
-                style={{ ...tb(), padding: "0 10px", width: "auto", fontSize: 11, fontFamily: "Inter,sans-serif", color: "var(--t2)", letterSpacing: "0.01em" }}
-                onClick={() => doReplace(false)} title="Replace next (Enter)"
+                disabled={findResultsCount === 0}
+                onClick={handlePrevMatch}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 24,
+                  height: 24,
+                  borderRadius: 4,
+                  border: "none",
+                  background: "transparent",
+                  color: findResultsCount === 0 ? "rgba(128,128,128,0.3)" : (effectiveDark ? "var(--t2)" : "rgba(0, 0, 0, 0.6)"),
+                  cursor: findResultsCount === 0 ? "default" : "pointer",
+                  padding: 0,
+                }}
+                title="Previous Match (Shift+Enter)"
               >
-                Replace
+                <ChevronRight size={14} style={{ transform: "rotate(-90deg)" }} />
               </button>
               <button
-                style={{ ...tb(), padding: "0 10px", width: "auto", fontSize: 11, fontFamily: "Inter,sans-serif", color: "var(--t2)", letterSpacing: "0.01em" }}
-                onClick={() => doReplace(true)} title="Replace all occurrences"
+                disabled={findResultsCount === 0}
+                onClick={handleNextMatch}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 24,
+                  height: 24,
+                  borderRadius: 4,
+                  border: "none",
+                  background: "transparent",
+                  color: findResultsCount === 0 ? "rgba(128,128,128,0.3)" : (effectiveDark ? "var(--t2)" : "rgba(0, 0, 0, 0.6)"),
+                  cursor: findResultsCount === 0 ? "default" : "pointer",
+                  padding: 0,
+                }}
+                title="Next Match (Enter)"
               >
-                All
+                <ChevronRight size={14} style={{ transform: "rotate(90deg)" }} />
               </button>
+              <button
+                onClick={closeFind}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 24,
+                  height: 24,
+                  borderRadius: 4,
+                  border: "none",
+                  background: "transparent",
+                  color: effectiveDark ? "var(--t2)" : "rgba(0, 0, 0, 0.6)",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+                title="Close (Esc)"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Replace Row */}
+          {showReplace && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+              <div style={{ width: 24, flexShrink: 0 }} />
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                flex: 1,
+                minWidth: 0,
+                background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.04)",
+                border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+                borderRadius: 6,
+                padding: "0 6px",
+                height: 26,
+              }}>
+                <input
+                  ref={replaceInputRef}
+                  value={replaceText}
+                  onChange={(e) => setReplaceText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleReplace();
+                    }
+                    if (e.key === "Escape") {
+                      closeFind();
+                    }
+                  }}
+                  placeholder="Replace with..."
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    color: effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.85)",
+                    fontSize: 12,
+                    flex: 1,
+                    minWidth: 0,
+                    fontFamily: "Inter,sans-serif",
+                    padding: 0,
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+                <button
+                  onClick={handleReplace}
+                  disabled={findResultsCount === 0}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    fontFamily: "Inter,sans-serif",
+                    color: findResultsCount === 0 ? (effectiveDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)") : (effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.8)"),
+                    background: findResultsCount === 0 ? "transparent" : (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"),
+                    border: "none",
+                    borderRadius: 4,
+                    height: 24,
+                    padding: "0 8px",
+                    cursor: findResultsCount === 0 ? "default" : "pointer",
+                  }}
+                  title="Replace next"
+                >
+                  Replace
+                </button>
+                <button
+                  onClick={handleReplaceAll}
+                  disabled={findResultsCount === 0}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    fontFamily: "Inter,sans-serif",
+                    color: findResultsCount === 0 ? (effectiveDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)") : (effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.8)"),
+                    background: findResultsCount === 0 ? "transparent" : (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"),
+                    border: "none",
+                    borderRadius: 4,
+                    height: 24,
+                    padding: "0 8px",
+                    cursor: findResultsCount === 0 ? "default" : "pointer",
+                  }}
+                  title="Replace all"
+                >
+                  All
+                </button>
+              </div>
             </div>
           )}
         </div>

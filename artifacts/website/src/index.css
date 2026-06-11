@@ -633,6 +633,28 @@ html.lenis, html.lenis body {
   opacity: 0.22;
 }
 
+/* Search matches highlighting */
+.notepad-search-match {
+  background-color: rgba(234, 179, 8, 0.35);
+  border-bottom: 2px solid rgba(234, 179, 8, 0.75);
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+}
+.notepad-search-match-active {
+  background-color: rgba(249, 115, 22, 0.45);
+  border-bottom: 2px solid rgba(249, 115, 22, 0.9);
+  border-radius: 2px;
+  box-shadow: 0 0 4px rgba(249, 115, 22, 0.4);
+}
+.surface-light .notepad-search-match {
+  background-color: rgba(234, 179, 8, 0.25);
+  border-bottom-color: rgba(234, 179, 8, 0.6);
+}
+.surface-light .notepad-search-match-active {
+  background-color: rgba(249, 115, 22, 0.35);
+  border-bottom-color: rgba(249, 115, 22, 0.85);
+}
+
 /* Code */
 .notepad-editor code {
   font-family: 'Inter', sans-serif;
