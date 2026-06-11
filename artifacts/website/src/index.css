@@ -677,6 +677,9 @@ html.lenis, html.lenis body {
   padding: 14px 18px;
   overflow-x: auto;
   margin: 0;
+  /* Sit above any ::after ruled-line overlays from ancestor elements */
+  position: relative;
+  z-index: 1;
 }
 .notepad-code-block-code {
   font-family: 'JetBrains Mono', 'Fira Code', 'Fira Mono', Monaco, Consolas, 'Courier New', monospace !important;
@@ -1065,13 +1068,27 @@ html, body { overflow-x: clip; max-width: 100%; }
   margin: 1.5rem 0 !important;
 }
 
-/* Bypass ruled lines for code blocks and all children within code blocks */
+/* Bypass ruled lines for code blocks.
+   TipTap's ReactNodeViewRenderer wraps the React component in an outer div
+   that becomes the DIRECT child of .notepad-editor — it is that outer div
+   (not .notepad-code-block-wrapper which is one level deeper) that receives
+   the ::after ruled-line gradient. We suppress it via [data-node-view-wrapper]
+   (TipTap always sets this attribute on NodeViewWrapper) as well as both the
+   wrapper class and all descendants. */
+.notepad-ruled .notepad-editor > [data-node-view-wrapper]::after,
 .notepad-ruled .notepad-editor > .notepad-code-block-wrapper::after,
 .notepad-ruled .notepad-editor .notepad-code-block-wrapper::after,
 .notepad-ruled .notepad-editor .notepad-code-block-wrapper *::after {
   display: none !important;
 }
-.notepad-ruled .notepad-editor > .notepad-code-block-wrapper {
+/* Also suppress on any direct-child div that CONTAINS a node-view-wrapper
+   (covers the case where TipTap inserts an extra mount-point div) */
+.notepad-ruled .notepad-editor > div:has(> .notepad-code-block-wrapper)::after,
+.notepad-ruled .notepad-editor > div:has(> .notepad-code-block-wrapper) *::after {
+  display: none !important;
+}
+.notepad-ruled .notepad-editor > .notepad-code-block-wrapper,
+.notepad-ruled .notepad-editor > div:has(> .notepad-code-block-wrapper) {
   margin-top: 1.2em !important;
   margin-bottom: 1.2em !important;
 }
