@@ -606,6 +606,7 @@ export default function Notepad() {
   const scrollProgressRef = useRef(0);
   const drainTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const contextMenuOpenTimeRef = useRef<number>(0);
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
 
   const togglePin = useCallback((id: string) => {
@@ -623,9 +624,16 @@ export default function Notepad() {
   }, [docs]);
 
   useEffect(() => {
-    const handleClose = () => setContextMenu(null);
+    const handleClose = () => {
+      if (Date.now() - contextMenuOpenTimeRef.current < 100) return;
+      setContextMenu(null);
+    };
     window.addEventListener("click", handleClose);
-    return () => window.removeEventListener("click", handleClose);
+    window.addEventListener("contextmenu", handleClose);
+    return () => {
+      window.removeEventListener("click", handleClose);
+      window.removeEventListener("contextmenu", handleClose);
+    };
   }, []);
 
   const activeDoc = useMemo(() => docs.find((d) => d.id === activeId) ?? docs[0], [docs, activeId]);
@@ -1649,6 +1657,8 @@ export default function Notepad() {
                     }}
                     onContextMenu={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
+                      contextMenuOpenTimeRef.current = Date.now();
                       setContextMenu({
                         tabId: doc.id,
                         x: e.clientX,
