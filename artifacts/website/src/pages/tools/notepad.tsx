@@ -876,9 +876,6 @@ export default function Notepad() {
     return false;
   });
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [isNearBottom, setIsNearBottom] = useState(false);
-  const scrollProgressRef = useRef(0);
-  const drainTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const contextMenuOpenTimeRef = useRef<number>(0);
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
@@ -2023,208 +2020,36 @@ export default function Notepad() {
 
   // --- Scroll Gate & Lock Effects ---
 
-  // Detect if the user is near the bottom of the editor
-  useEffect(() => {
-    if (isSeoUnlocked) {
-      setIsNearBottom(false);
-      return;
-    }
-    const handleScroll = () => {
-      const docHeight = document.documentElement.scrollHeight;
-      const winHeight = window.innerHeight;
-      const scrollY = window.scrollY;
-      const maxScroll = docHeight - winHeight;
-      // Trigger indicator within 24px of the bottom scroll limit
-      const near = scrollY >= maxScroll - 24 && maxScroll > 50;
-      setIsNearBottom(near);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [isSeoUnlocked]);
-
-  // Handle relocking scroll gate when user scrolls back to the very top (scrollY === 0)
-  useEffect(() => {
-    if (!isSeoUnlocked) return;
-    const handleScrollRelock = () => {
-      if (window.scrollY === 0) {
-        setIsSeoUnlocked(false);
-        setScrollProgress(0);
-        scrollProgressRef.current = 0;
-        toast.message("Scroll gate locked", {
-          description: "Scroll to the bottom of the editor to unlock the guide again.",
-        });
-      }
-    };
-    window.addEventListener("scroll", handleScrollRelock, { passive: true });
-    return () => window.removeEventListener("scroll", handleScrollRelock);
-  }, [isSeoUnlocked]);
-
-  // Component-level unlock gate callback
-  const unlockGate = useCallback(() => {
-    setIsSeoUnlocked(true);
-    setIsNearBottom(false);
-    setScrollProgress(100);
-    scrollProgressRef.current = 100;
-
-    setTimeout(() => {
-      window.scrollBy({ top: 160, behavior: "smooth" });
-      toast.success("Documentation unlocked", {
-        description: "You can now scroll down to read the guide.",
-      });
-    }, 100);
-  }, []);
-
-  // Intercept scroll wheel, touch swipe, and key downs when locked at bottom of the page
+  // Detect and track natural scroll progress past the editor bottom
   useEffect(() => {
     if (isSeoUnlocked) return;
 
-    const handleWheel = (e: WheelEvent) => {
-      const docHeight = document.documentElement.scrollHeight;
-      const winHeight = window.innerHeight;
-      const scrollY = window.scrollY;
-      const maxScroll = docHeight - winHeight;
-      const atBottom = scrollY >= maxScroll - 5;
-      if (!atBottom) return;
+    const handleScroll = () => {
+      const editorEl = editorWrapRef.current;
+      if (!editorEl) return;
 
-      if (e.deltaY > 0) {
-        e.preventDefault(); // Stop native overscroll / elastic bounce
+      // Calculate where the editor ends vertically on the page
+      const editorBottom = editorEl.offsetTop + editorEl.offsetHeight;
+      const scrollBottom = window.scrollY + window.innerHeight;
 
-        if (drainTimerRef.current) {
-          clearInterval(drainTimerRef.current);
-          drainTimerRef.current = null;
+      if (scrollBottom > editorBottom) {
+        const scrolledPast = scrollBottom - editorBottom;
+        // Map 0px to 1000px scroll into 0% to 100% progress
+        const progress = Math.min(100, (scrolledPast / 1000) * 100);
+        setScrollProgress(progress);
+        if (progress >= 100) {
+          setIsSeoUnlocked(true);
         }
-
-        // Standardize step sizes across different scroll gears
-        const step = Math.min(6, Math.max(1, Math.abs(e.deltaY) * 0.015));
-        const nextProgress = Math.min(100, scrollProgressRef.current + step);
-        scrollProgressRef.current = nextProgress;
-        setScrollProgress(nextProgress);
-
-        if (nextProgress >= 100) {
-          unlockGate();
-        } else {
-          resetDrainTimer();
-        }
+      } else {
+        setScrollProgress(0);
       }
     };
 
-    let touchStartY: number | null = null;
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        touchStartY = e.touches[0].clientY;
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (touchStartY === null) return;
-
-      const docHeight = document.documentElement.scrollHeight;
-      const winHeight = window.innerHeight;
-      const scrollY = window.scrollY;
-      const maxScroll = docHeight - winHeight;
-      const atBottom = scrollY >= maxScroll - 5;
-      if (!atBottom) return;
-
-      const currentY = e.touches[0].clientY;
-      const deltaY = touchStartY - currentY; // Swiping UP scrolls down
-
-      if (deltaY > 0) {
-        e.preventDefault(); // Prevent default pull-up scroll bounce
-
-        if (drainTimerRef.current) {
-          clearInterval(drainTimerRef.current);
-          drainTimerRef.current = null;
-        }
-
-        const step = Math.min(4, deltaY * 0.05);
-        const nextProgress = Math.min(100, scrollProgressRef.current + step);
-        scrollProgressRef.current = nextProgress;
-        setScrollProgress(nextProgress);
-
-        touchStartY = currentY; // Track movement dynamically
-
-        if (nextProgress >= 100) {
-          unlockGate();
-        } else {
-          resetDrainTimer();
-        }
-      }
-    };
-
-    const handleTouchEnd = () => {
-      touchStartY = null;
-      resetDrainTimer();
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-
-      const docHeight = document.documentElement.scrollHeight;
-      const winHeight = window.innerHeight;
-      const scrollY = window.scrollY;
-      const maxScroll = docHeight - winHeight;
-      const atBottom = scrollY >= maxScroll - 5;
-      if (!atBottom) return;
-
-      const isDownKey = e.key === "ArrowDown" || e.key === "PageDown" || (e.key === " " && !e.shiftKey);
-      if (isDownKey) {
-        e.preventDefault();
-
-        if (drainTimerRef.current) {
-          clearInterval(drainTimerRef.current);
-          drainTimerRef.current = null;
-        }
-
-        const step = e.key === "ArrowDown" ? 5 : 12;
-        const nextProgress = Math.min(100, scrollProgressRef.current + step);
-        scrollProgressRef.current = nextProgress;
-        setScrollProgress(nextProgress);
-
-        if (nextProgress >= 100) {
-          unlockGate();
-        } else {
-          resetDrainTimer();
-        }
-      }
-    };
-
-    const resetDrainTimer = () => {
-      if (drainTimerRef.current) clearInterval(drainTimerRef.current);
-      drainTimerRef.current = setInterval(() => {
-        const nextProgress = Math.max(0, scrollProgressRef.current - 8);
-        scrollProgressRef.current = nextProgress;
-        setScrollProgress(nextProgress);
-        if (nextProgress === 0 && drainTimerRef.current) {
-          clearInterval(drainTimerRef.current);
-          drainTimerRef.current = null;
-        }
-      }, 40);
-    };
-
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
-    window.addEventListener("touchend", handleTouchEnd, { passive: true });
-    window.addEventListener("keydown", handleKeyDown, { passive: false });
-
-    return () => {
-      window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
-      window.removeEventListener("keydown", handleKeyDown);
-      if (drainTimerRef.current) clearInterval(drainTimerRef.current);
-    };
-  }, [isSeoUnlocked, unlockGate]);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Run initial check on load or state updates
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isSeoUnlocked]);
 
 
   /** Apply a preset theme: sets bgColor, textColor, lightSurface in one shot. */
@@ -3952,76 +3777,41 @@ export default function Notepad() {
         <NotepadSeoContent seo={seo} onScrolledPastEditor={setScrolledPastEditor} />
       </motion.div>
 
-      {/* Floating Scroll Gate Indicator */}
-      <AnimatePresence>
-        {isNearBottom && !isSeoUnlocked && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      {/* ── Scroll Wall Spacer Zone ── */}
+      <div
+        style={{
+          height: isSeoUnlocked ? 0 : 1000,
+          transition: "height 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: surfBg,
+          overflow: "hidden"
+        }}
+      >
+        {/* Subtle 20px progress line centered */}
+        <div 
+          style={{ 
+            width: 20, 
+            height: 2, 
+            background: effectiveDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.15)", 
+            borderRadius: 1,
+            position: "relative"
+          }}
+        >
+          <div
             style={{
-              position: "fixed",
-              bottom: 24,
-              right: 24,
-              background: effectiveDark ? "rgba(20, 22, 27, 0.85)" : "rgba(255, 255, 255, 0.85)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              border: `1px solid ${effectiveDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}`,
-              borderRadius: 20,
-              padding: "6px 12px 6px 8px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              zIndex: 100,
-              boxShadow: `0 8px 30px ${effectiveDark ? "rgba(0, 0, 0, 0.4)" : "rgba(0, 0, 0, 0.08)"}`,
-              cursor: "pointer",
-              userSelect: "none",
+              width: `${scrollProgress}%`,
+              height: "100%",
+              background: surfAccent,
+              borderRadius: 1,
+              transition: "width 0.1s ease-out"
             }}
-            onClick={unlockGate}
-            title="Click to unlock documentation"
-          >
-            <div style={{ position: "relative", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="24" height="24" viewBox="0 0 24 24">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  fill="transparent"
-                  stroke={effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}
-                  strokeWidth="2"
-                />
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  fill="transparent"
-                  stroke={surfAccent}
-                  strokeWidth="2"
-                  strokeDasharray={2 * Math.PI * 10}
-                  strokeDashoffset={(2 * Math.PI * 10) - (scrollProgress / 100) * (2 * Math.PI * 10)}
-                  strokeLinecap="round"
-                  style={{
-                    transform: "rotate(-90deg)",
-                    transformOrigin: "12px 12px",
-                    transition: "stroke-dashoffset 80ms linear",
-                  }}
-                />
-              </svg>
-              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {scrollProgress >= 100 ? (
-                  <Check size={10} style={{ color: surfAccent }} />
-                ) : (
-                  <Lock size={10} style={{ color: surfAccent }} />
-                )}
-              </div>
-            </div>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: effectiveDark ? "#FFFFFF" : "#1A1A1A", fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em" }}>
-              Unlock Guide
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          />
+        </div>
+      </div>
 
       {contextMenu && (() => {
         const targetDoc = docs.find((d) => d.id === contextMenu.tabId);
