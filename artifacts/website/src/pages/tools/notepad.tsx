@@ -1677,8 +1677,8 @@ export default function Notepad() {
                         <div
                           style={{
                             position: "absolute",
-                            left: 12,
-                            right: 12,
+                            left: 11,
+                            right: 11,
                             top: -1,
                             height: 2,
                             background: activeTabStroke,
