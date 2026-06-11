@@ -57,7 +57,7 @@ const CodeBlockNodeView = ({ node }: any) => {
 
   return (
     <NodeViewWrapper className="notepad-code-block-wrapper">
-      <pre className="notepad-code-block-pre" data-lenis-prevent>
+      <pre className="notepad-code-block-pre">
         <code className="notepad-code-block-code">
           <NodeViewContent />
         </code>
@@ -2034,8 +2034,8 @@ export default function Notepad() {
 
       if (scrollBottom > editorBottom) {
         const scrolledPast = scrollBottom - editorBottom;
-        // Map 0px to 1000px scroll into 0% to 100% progress
-        const progress = Math.min(100, (scrolledPast / 1000) * 100);
+        // Map 0px to 300px scroll into 0% to 100% progress
+        const progress = Math.min(100, (scrolledPast / 300) * 100);
         setScrollProgress(progress);
         if (progress >= 100) {
           setIsSeoUnlocked(true);
@@ -3788,7 +3788,7 @@ export default function Notepad() {
       {/* ── Scroll Wall Spacer Zone ── */}
       <div
         style={{
-          height: isSeoUnlocked ? 0 : 1000,
+          height: isSeoUnlocked ? 0 : 300,
           transition: "height 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
           position: "relative",
           display: "flex",
@@ -3796,9 +3796,25 @@ export default function Notepad() {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: surfBg,
-          overflow: "hidden"
+          overflow: "hidden",
+          gap: 12,
         }}
       >
+        {/* Faded instruction label */}
+        <span
+          style={{
+            fontSize: 10.5,
+            fontWeight: 600,
+            fontFamily: "'Sora', sans-serif",
+            color: effectiveDark ? "rgba(255, 255, 255, 0.22)" : "rgba(0, 0, 0, 0.24)",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            userSelect: "none",
+          }}
+        >
+          Scroll to explore guide
+        </span>
+
         {/* Subtle 20px progress line centered */}
         <div 
           style={{ 
