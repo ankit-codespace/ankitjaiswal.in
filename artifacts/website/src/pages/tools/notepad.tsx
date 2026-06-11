@@ -1407,6 +1407,21 @@ export default function Notepad() {
     return () => window.removeEventListener("scroll", handleScrollRelock);
   }, [isSeoUnlocked]);
 
+  // Component-level unlock gate callback
+  const unlockGate = useCallback(() => {
+    setIsSeoUnlocked(true);
+    setIsNearBottom(false);
+    setScrollProgress(100);
+    scrollProgressRef.current = 100;
+
+    setTimeout(() => {
+      window.scrollBy({ top: 160, behavior: "smooth" });
+      toast.success("Documentation unlocked", {
+        description: "You can now scroll down to read the guide.",
+      });
+    }, 100);
+  }, []);
+
   // Intercept scroll wheel, touch swipe, and key downs when locked at bottom of the page
   useEffect(() => {
     if (isSeoUnlocked) return;
@@ -1519,20 +1534,6 @@ export default function Notepad() {
       }
     };
 
-    const unlockGate = () => {
-      setIsSeoUnlocked(true);
-      setIsNearBottom(false);
-      setScrollProgress(100);
-      scrollProgressRef.current = 100;
-
-      setTimeout(() => {
-        window.scrollBy({ top: 160, behavior: "smooth" });
-        toast.success("Documentation unlocked", {
-          description: "You can now scroll down to read the guide.",
-        });
-      }, 100);
-    };
-
     const resetDrainTimer = () => {
       if (drainTimerRef.current) clearInterval(drainTimerRef.current);
       drainTimerRef.current = setInterval(() => {
@@ -1560,7 +1561,7 @@ export default function Notepad() {
       window.removeEventListener("keydown", handleKeyDown);
       if (drainTimerRef.current) clearInterval(drainTimerRef.current);
     };
-  }, [isSeoUnlocked]);
+  }, [isSeoUnlocked, unlockGate]);
 
 
   /** Apply a preset theme: sets bgColor, textColor, lightSurface in one shot. */
@@ -2915,103 +2916,69 @@ export default function Notepad() {
       <AnimatePresence>
         {isNearBottom && !isSeoUnlocked && (
           <motion.div
-            initial={{ opacity: 0, x: "-50%", y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
-            exit={{ opacity: 0, x: "-50%", y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: "fixed",
               bottom: 24,
-              left: "50%",
-              background: effectiveDark ? "rgba(15, 17, 22, 0.82)" : "rgba(255, 255, 255, 0.82)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
+              right: 24,
+              background: effectiveDark ? "rgba(20, 22, 27, 0.85)" : "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
               border: `1px solid ${effectiveDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}`,
-              borderRadius: 14,
-              padding: "10px 16px 10px 12px",
+              borderRadius: 20,
+              padding: "6px 12px 6px 8px",
               display: "flex",
               alignItems: "center",
-              gap: 12,
+              gap: 8,
               zIndex: 100,
-              boxShadow: `0 12px 40px ${effectiveDark ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.12)"}`,
-              width: "max-content",
-              maxWidth: "90vw",
+              boxShadow: `0 8px 30px ${effectiveDark ? "rgba(0, 0, 0, 0.4)" : "rgba(0, 0, 0, 0.08)"}`,
+              cursor: "pointer",
+              userSelect: "none",
             }}
+            onClick={unlockGate}
+            title="Click to unlock documentation"
           >
-            <div style={{ position: "relative", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="36" height="36" viewBox="0 0 36 36">
+            <div style={{ position: "relative", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24">
                 <circle
-                  cx="18"
-                  cy="18"
-                  r="14"
+                  cx="12"
+                  cy="12"
+                  r="10"
                   fill="transparent"
                   stroke={effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)"}
-                  strokeWidth="3"
+                  strokeWidth="2"
                 />
                 <circle
-                  cx="18"
-                  cy="18"
-                  r="14"
+                  cx="12"
+                  cy="12"
+                  r="10"
                   fill="transparent"
                   stroke={surfAccent}
-                  strokeWidth="3"
-                  strokeDasharray={2 * Math.PI * 14}
-                  strokeDashoffset={(2 * Math.PI * 14) - (scrollProgress / 100) * (2 * Math.PI * 14)}
+                  strokeWidth="2"
+                  strokeDasharray={2 * Math.PI * 10}
+                  strokeDashoffset={(2 * Math.PI * 10) - (scrollProgress / 100) * (2 * Math.PI * 10)}
                   strokeLinecap="round"
                   style={{
                     transform: "rotate(-90deg)",
-                    transformOrigin: "18px 18px",
+                    transformOrigin: "12px 12px",
                     transition: "stroke-dashoffset 80ms linear",
                   }}
                 />
               </svg>
               <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {scrollProgress >= 100 ? (
-                  <Check size={14} style={{ color: surfAccent }} />
+                  <Check size={10} style={{ color: surfAccent }} />
                 ) : (
-                  <ChevronDown size={14} style={{ color: surfAccent }} />
+                  <Lock size={10} style={{ color: surfAccent }} />
                 )}
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: effectiveDark ? "#FFFFFF" : "#1A1A1A", fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em" }}>
-                Scroll down to unlock guide
-              </span>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 11, color: effectiveDark ? "rgba(255, 255, 255, 0.45)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif" }}>
-                  Accidental scroll protection
-                </span>
-                <span style={{ color: effectiveDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.15)", fontSize: 10 }}>•</span>
-                <button
-                  onClick={() => {
-                    setIsSeoUnlocked(true);
-                    setIsNearBottom(false);
-                    setScrollProgress(100);
-                    scrollProgressRef.current = 100;
-                    setTimeout(() => {
-                      window.scrollBy({ top: 180, behavior: "smooth" });
-                      toast.success("Documentation unlocked", {
-                        description: "You can now scroll down to read the guide.",
-                      });
-                    }, 100);
-                  }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    outline: "none",
-                    color: surfAccent,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                    padding: 0,
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  Show guide
-                </button>
-              </div>
-            </div>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: effectiveDark ? "#FFFFFF" : "#1A1A1A", fontFamily: "'Sora', sans-serif", letterSpacing: "-0.01em" }}>
+              Unlock Guide
+            </span>
           </motion.div>
         )}
       </AnimatePresence>
