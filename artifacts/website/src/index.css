@@ -613,15 +613,47 @@ html.lenis, html.lenis body {
   font-size: 0.875em;
 }
 .surface-light .notepad-editor code { background: rgba(0,0,0,0.07); }
-.notepad-editor pre {
-  background: rgba(255,255,255,0.05);
-  border-radius: 8px;
-  padding: 1em 1.25em;
-  overflow-x: auto;
+
+/* Monospace Code Block Styles */
+.notepad-code-block-wrapper {
+  position: relative;
   margin: 0.8em 0;
 }
-.surface-light .notepad-editor pre { background: rgba(0,0,0,0.04); }
-.notepad-editor pre code { background: none; padding: 0; }
+.notepad-code-block-pre {
+  background-color: var(--code-bg, rgba(255,255,255,0.05)) !important;
+  border: 1px solid var(--code-border, rgba(255,255,255,0.06)) !important;
+  border-radius: 8px;
+  padding: 14px 18px;
+  overflow-x: auto;
+  margin: 0;
+}
+.notepad-code-block-code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Fira Mono', Monaco, Consolas, 'Courier New', monospace !important;
+  font-size: 0.88em !important;
+  line-height: 1.65 !important;
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  display: block;
+  color: inherit;
+}
+.notepad-code-block-copy-btn {
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+}
+.notepad-code-block-wrapper:hover .notepad-code-block-copy-btn {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.notepad-code-block-copy-btn:hover {
+  background: var(--code-btn-border) !important;
+}
+.notepad-code-block-copy-btn:active {
+  transform: scale(0.95);
+}
 
 /* Horizontal rule */
 .notepad-editor hr {
@@ -981,6 +1013,18 @@ html, body { overflow-x: clip; max-width: 100%; }
 .notepad-ruled .notepad-editor table {
   margin: 1.5rem 0 !important;
 }
+
+/* Bypass ruled lines for code blocks and all children within code blocks */
+.notepad-ruled .notepad-editor > .notepad-code-block-wrapper::after,
+.notepad-ruled .notepad-editor .notepad-code-block-wrapper::after,
+.notepad-ruled .notepad-editor .notepad-code-block-wrapper *::after {
+  display: none !important;
+}
+.notepad-ruled .notepad-editor > .notepad-code-block-wrapper {
+  margin-top: 1.2em !important;
+  margin-bottom: 1.2em !important;
+}
+
 
 
 

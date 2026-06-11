@@ -6,7 +6,44 @@
   "display": "standalone",
   "background_color": "#0A0C10",
   "theme_color": "#0A0C10",
+  "categories": ["productivity", "utilities"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
   "icons": [
-    { "src": "/favicon.webp?v=aj2", "sizes": "192x192", "type": "image/webp", "purpose": "any" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Note",
+      "short_name": "New Note",
+      "description": "Create a new blank note",
+      "url": "/online-notepad",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/opengraph.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "AJ Notepad Editor Interface"
+    }
   ]
 }

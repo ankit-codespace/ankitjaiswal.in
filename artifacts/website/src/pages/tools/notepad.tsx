@@ -16,12 +16,13 @@ import {
 } from "@/components/tool/ToolSEOArticle";
 import { ToolFooter } from "@/components/tool/ToolFooter";
 import { tokens } from "@/components/tool/tokens";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from "@tiptap/react";
 import { motion, AnimatePresence } from "framer-motion";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import TipTapImage from "@tiptap/extension-image";
+import CodeBlock from "@tiptap/extension-code-block";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
@@ -42,6 +43,59 @@ const ResizableImage = TipTapImage.extend({
     };
   },
 });
+
+// Custom React Node View for Tiptap Code Block extension
+const CodeBlockNodeView = ({ node }: any) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(node.textContent || "");
+    setCopied(true);
+    toast.success("Code copied to clipboard", { duration: 2000 });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <NodeViewWrapper className="notepad-code-block-wrapper">
+      <pre className="notepad-code-block-pre" data-lenis-prevent>
+        <code className="notepad-code-block-code">
+          <NodeViewContent />
+        </code>
+      </pre>
+      <button
+        onClick={handleCopy}
+        className="notepad-code-block-copy-btn"
+        contentEditable={false}
+        title="Copy code"
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 28,
+          borderRadius: 6,
+          border: "1px solid var(--code-btn-border, rgba(255,255,255,0.08))",
+          background: "var(--code-btn-bg, rgba(0,0,0,0.5))",
+          color: copied ? "var(--ok, #52C47A)" : "var(--t2, #A5A29B)",
+          cursor: "pointer",
+          zIndex: 10,
+        }}
+      >
+        {copied ? <Check size={14} /> : <CopyIcon size={14} />}
+      </button>
+    </NodeViewWrapper>
+  );
+};
+
+const CustomCodeBlock = CodeBlock.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CodeBlockNodeView);
+  },
+});
+
 type ImgSize = "small" | "medium" | "large" | "full";
 import TipTapLink from "@tiptap/extension-link";
 import TaskList from "@tiptap/extension-task-list";
@@ -357,6 +411,7 @@ function buildNotepadJsonLd(seo: NotepadSeo) {
         "Autosave",
         "Multiple documents",
         "Dark mode",
+        "Code blocks with copy button",
         "Export to PDF, DOCX, Markdown and HTML",
         "Find and replace",
         "Focus mode",
@@ -638,7 +693,11 @@ export default function Notepad() {
   const [docMenuLeft, setDocMenuLeft] = useState(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorMenuLeft, setColorMenuLeft] = useState(0);
+  const colorBtnRef = useRef<HTMLButtonElement>(null);
   const [showTableMenu, setShowTableMenu] = useState(false);
+  const [tableActionsMenuLeft, setTableActionsMenuLeft] = useState(0);
+  const tableActionsBtnRef = useRef<HTMLButtonElement>(null);
   const [showTableGrid, setShowTableGrid] = useState(false);
   const [hoveredRows, setHoveredRows] = useState(0);
   const [hoveredCols, setHoveredCols] = useState(0);
@@ -717,7 +776,9 @@ export default function Notepad() {
         // Provided separately with custom config below — disable StarterKit's built-ins
         link: false,
         underline: false,
+        codeBlock: false,
       }),
+      CustomCodeBlock,
       TextStyle,
       Color,
       Underline,
@@ -1356,6 +1417,68 @@ export default function Notepad() {
   // Derive light/dark for marker colors etc. based on effective bg
   const effectiveDark = settings.bgColor ? !isLightHex(settings.bgColor) : !settings.lightSurface;
 
+  // Look up code block styles dynamically for theme compatibility
+  const codeBlockStyles = (() => {
+    const isSlate = surfBg === "#161615";
+    const isMidnight = surfBg === "#0F0F0E";
+    const isPaper = surfBg === "#FAF8F2";
+    const isSepia = surfBg === "#F4ECD8";
+    const isMist = surfBg === "#EAE6DF";
+
+    if (isSlate) {
+      return {
+        bg: "#0d0d0c",
+        border: "rgba(255,255,255,0.06)",
+        btnBg: "rgba(22,22,21,0.8)",
+        btnBorder: "rgba(255,255,255,0.08)",
+      };
+    } else if (isMidnight) {
+      return {
+        bg: "#060606",
+        border: "rgba(255,255,255,0.05)",
+        btnBg: "rgba(15,15,14,0.8)",
+        btnBorder: "rgba(255,255,255,0.08)",
+      };
+    } else if (isPaper) {
+      return {
+        bg: "#f2eedf",
+        border: "rgba(0,0,0,0.06)",
+        btnBg: "rgba(250,248,242,0.9)",
+        btnBorder: "rgba(0,0,0,0.08)",
+      };
+    } else if (isSepia) {
+      return {
+        bg: "#eadcb8",
+        border: "rgba(0,0,0,0.06)",
+        btnBg: "rgba(244,236,216,0.9)",
+        btnBorder: "rgba(0,0,0,0.08)",
+      };
+    } else if (isMist) {
+      return {
+        bg: "#ded8cc",
+        border: "rgba(0,0,0,0.06)",
+        btnBg: "rgba(234,230,223,0.9)",
+        btnBorder: "rgba(0,0,0,0.08)",
+      };
+    } else {
+      if (effectiveDark) {
+        return {
+          bg: `color-mix(in srgb, ${surfBg} 60%, #000 40%)`,
+          border: "rgba(255,255,255,0.06)",
+          btnBg: "rgba(0,0,0,0.45)",
+          btnBorder: "rgba(255,255,255,0.08)",
+        };
+      } else {
+        return {
+          bg: `color-mix(in srgb, ${surfBg} 92%, #000 8%)`,
+          border: "rgba(0,0,0,0.06)",
+          btnBg: "rgba(255,255,255,0.8)",
+          btnBorder: "rgba(0,0,0,0.08)",
+        };
+      }
+    }
+  })();
+
   // ── Toolbar helpers ────────────────────────────────────────────────────────
   const tb = (active?: boolean): React.CSSProperties => {
     const fg = effectiveDark 
@@ -1370,6 +1493,26 @@ export default function Notepad() {
       background: bg,
       color: fg,
       transition: "background 0.14s, color 0.14s", flexShrink: 0,
+    };
+  };
+
+  const ddBtnStyle = (isErr?: boolean): React.CSSProperties => {
+    return {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      width: "100%",
+      padding: "6px 10px",
+      fontSize: 11.5,
+      fontFamily: "Inter, sans-serif",
+      borderRadius: 6,
+      border: "none",
+      cursor: "pointer",
+      background: "transparent",
+      color: isErr 
+        ? "var(--err)" 
+        : (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.72)"),
+      transition: "background 0.12s, color 0.12s",
     };
   };
 
@@ -2024,6 +2167,7 @@ export default function Notepad() {
             {/* Text Color Dropdown */}
             <div className="notepad-color-picker-trigger" style={{ position: "relative", display: "inline-block" }}>
               <button
+                ref={colorBtnRef}
                 title={getTooltip("Text Color")}
                 style={{
                   ...tb(showColorPicker),
@@ -2037,6 +2181,8 @@ export default function Notepad() {
                   position: "relative"
                 }}
                 onClick={() => {
+                  const r = colorBtnRef.current?.getBoundingClientRect();
+                  if (r) setColorMenuLeft(r.left);
                   setShowColorPicker(!showColorPicker);
                   setShowTableMenu(false);
                   setShowTableGrid(false);
@@ -2048,16 +2194,16 @@ export default function Notepad() {
               {showColorPicker && (
                 <div
                   style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
+                    position: "fixed",
+                    top: 80,
+                    left: colorMenuLeft,
                     marginTop: 4,
-                    background: "var(--bg1)",
-                    border: "1px solid var(--b0)",
+                    background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+                    border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
                     borderRadius: "var(--r)",
                     padding: "8px",
-                    zIndex: 100,
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                    zIndex: 200,
+                    boxShadow: effectiveDark ? "0 10px 30px rgba(0,0,0,0.5)" : "0 10px 30px rgba(0,0,0,0.1)",
                     display: "flex",
                     gap: 6,
                     alignItems: "center",
@@ -2095,7 +2241,7 @@ export default function Notepad() {
                       />
                     );
                   })}
-                  <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)", margin: "0 2px" }} />
+                  <div style={{ width: 1, height: 16, background: effectiveDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)", margin: "0 2px" }} />
                   <button
                     title="Custom color"
                     onClick={() => colorInputRef.current?.click()}
@@ -2156,6 +2302,7 @@ export default function Notepad() {
             <button title={getTooltip("Heading 2", "Ctrl+Alt+2")} style={tb(editor?.isActive("heading", { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={14} /></button>
             <button title={getTooltip("Heading 3", "Ctrl+Alt+3")} style={tb(editor?.isActive("heading", { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={14} /></button>
             <button title={getTooltip("Blockquote", "Ctrl+Shift+B")} style={tb(editor?.isActive("blockquote"))} onClick={() => editor?.chain().focus().toggleBlockquote().run()}><Quote size={13} /></button>
+            <button title={getTooltip("Code Block", "Ctrl+Alt+C")} style={tb(editor?.isActive("codeBlock"))} onClick={() => editor?.chain().focus().toggleCodeBlock().run()}><Code2 size={14} /></button>
             {sep}
 
             {/* LISTS */}
@@ -2191,8 +2338,11 @@ export default function Notepad() {
                 {sep}
                 <div className="notepad-table-menu-trigger" style={{ position: "relative", display: "inline-block" }}>
                   <button
+                    ref={tableActionsBtnRef}
                     style={{ ...tb(showTableMenu), width: "auto", padding: "0 8px", gap: 4, height: 26, fontSize: 11.5 }}
                     onClick={() => {
+                      const r = tableActionsBtnRef.current?.getBoundingClientRect();
+                      if (r) setTableActionsMenuLeft(r.left);
                       setShowTableMenu(!showTableMenu);
                       setShowColorPicker(false);
                       setShowTableGrid(false);
@@ -2206,16 +2356,16 @@ export default function Notepad() {
                   {showTableMenu && (
                     <div
                       style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
+                        position: "fixed",
+                        top: 80,
+                        left: tableActionsMenuLeft,
                         marginTop: 4,
-                        background: "var(--bg1)",
-                        border: "1px solid var(--b0)",
+                        background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+                        border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
                         borderRadius: "var(--r)",
                         padding: "6px",
-                        zIndex: 100,
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                        zIndex: 200,
+                        boxShadow: effectiveDark ? "0 10px 30px rgba(0,0,0,0.5)" : "0 10px 30px rgba(0,0,0,0.1)",
                         display: "flex",
                         flexDirection: "column",
                         minWidth: 140,
@@ -2223,49 +2373,63 @@ export default function Notepad() {
                       }}
                     >
                       <button
-                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif" }}
+                        style={ddBtnStyle()}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                         onClick={() => { editor.chain().focus().addRowBefore().run(); setShowTableMenu(false); }}
                       >
                         Row Above
                       </button>
                       <button
-                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif" }}
+                        style={ddBtnStyle()}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                         onClick={() => { editor.chain().focus().addRowAfter().run(); setShowTableMenu(false); }}
                       >
                         Row Below
                       </button>
                       <button
-                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif", color: "var(--err)" }}
+                        style={ddBtnStyle(true)}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "rgba(196,72,62,0.1)" : "rgba(196,72,62,0.08)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                         onClick={() => { editor.chain().focus().deleteRow().run(); setShowTableMenu(false); }}
                       >
                         Delete Row
                       </button>
                       
-                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", margin: "4px 0" }} />
+                      <div style={{ borderTop: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
                       
                       <button
-                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif" }}
+                        style={ddBtnStyle()}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                         onClick={() => { editor.chain().focus().addColumnBefore().run(); setShowTableMenu(false); }}
                       >
                         Column Left
                       </button>
                       <button
-                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif" }}
+                        style={ddBtnStyle()}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                         onClick={() => { editor.chain().focus().addColumnAfter().run(); setShowTableMenu(false); }}
                       >
                         Column Right
                       </button>
                       <button
-                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif", color: "var(--err)" }}
+                        style={ddBtnStyle(true)}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "rgba(196,72,62,0.1)" : "rgba(196,72,62,0.08)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                         onClick={() => { editor.chain().focus().deleteColumn().run(); setShowTableMenu(false); }}
                       >
                         Delete Column
                       </button>
                       
-                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", margin: "4px 0" }} />
+                      <div style={{ borderTop: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
                       
                       <button
-                        style={{ ...tb(), width: "100%", justifyContent: "flex-start", padding: "5px 8px", fontSize: 11.5, fontFamily: "Inter, sans-serif", color: "var(--err)", fontWeight: 600 }}
+                        style={{ ...ddBtnStyle(true), fontWeight: 600 }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "rgba(196,72,62,0.15)" : "rgba(196,72,62,0.12)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                         onClick={() => { editor.chain().focus().deleteTable().run(); setShowTableMenu(false); }}
                       >
                         Delete Table
@@ -2315,11 +2479,12 @@ export default function Notepad() {
                 fontSize: 12.5,
                 fontWeight: 600,
                 color: copyState === "copied"
-                  ? "rgba(140, 230, 170, 0.95)"
+                  ? (effectiveDark ? "rgba(140, 230, 170, 0.95)" : "#0E7A3E")
                   : copyState === "error"
-                  ? "rgba(255, 150, 150, 0.95)"
-                  : "rgba(255,255,255,0.75)",
-                background: "rgba(255,255,255,0.04)",
+                  ? (effectiveDark ? "rgba(255, 150, 150, 0.95)" : "#A8201A")
+                  : (effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)"),
+                background: effectiveDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
+                border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
                 borderRadius: 6,
                 flexShrink: 0,
               }}
@@ -2343,7 +2508,19 @@ export default function Notepad() {
             <button
               className="notepad-export-btn"
               title={getTooltip("Export", "Ctrl+D")}
-              style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5, fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.07)", borderRadius: 6, flexShrink: 0 }}
+              style={{
+                ...tb(),
+                width: "auto",
+                padding: "0 10px",
+                gap: 5,
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)",
+                background: effectiveDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)",
+                border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+                borderRadius: 6,
+                flexShrink: 0
+              }}
               onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); }}
             >
               {exportingPdf ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={12} />}
@@ -2361,7 +2538,18 @@ export default function Notepad() {
 
         {/* ── DOC MENU PANEL — position: fixed so it escapes the overflow context ── */}
         {showDocMenu && (
-          <div style={{ position: "fixed", top: 80, left: docMenuLeft, background: "var(--bg1)", border: "1px solid var(--b0)", borderRadius: "var(--r)", minWidth: 240, padding: "6px 0", zIndex: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.65)" }}>
+          <div style={{
+            position: "fixed",
+            top: 80,
+            left: docMenuLeft,
+            background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+            border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
+            borderRadius: "var(--r)",
+            minWidth: 240,
+            padding: "6px 0",
+            zIndex: 200,
+            boxShadow: effectiveDark ? "0 16px 48px rgba(0,0,0,0.65)" : "0 16px 48px rgba(0,0,0,0.1)",
+          }}>
             {sortedDocs.map((d) => {
               return (
                 <div
@@ -2369,25 +2557,37 @@ export default function Notepad() {
                   style={{
                     display: "flex", alignItems: "center", padding: "7px 12px",
                     cursor: "pointer",
-                    background: d.id === activeId ? "var(--bg2)" : "transparent",
+                    background: d.id === activeId 
+                      ? (effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.06)") 
+                      : "transparent",
                     transition: "background 140ms ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (d.id !== activeId) {
+                      e.currentTarget.style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.04)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (d.id !== activeId) {
+                      e.currentTarget.style.background = "transparent";
+                    }
                   }}
                 >
                   <span
-                    style={{ flex: 1, color: "var(--t1)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center" }}
+                    style={{ flex: 1, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center" }}
                     onClick={() => { setActiveId(d.id); setShowDocMenu(false); }}
                   >
                     {d.title || "Untitled"}
                     {d.isPinned && (
-                      <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, color: "var(--t3)" }} />
+                      <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)" }} />
                     )}
                   </span>
                   {d.id === activeId && (
-                    <Check size={12} style={{ color: "var(--t2)", flexShrink: 0 }} />
+                    <Check size={12} style={{ color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", flexShrink: 0 }} />
                   )}
                   {docs.length > 1 && (
                     <button
-                      style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55, color: "var(--t2)" }}
+                      style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)" }}
                       onClick={(e) => {
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
@@ -2399,7 +2599,7 @@ export default function Notepad() {
                         });
                       }}
                       onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "1"; el.style.color = "var(--err)"; el.style.background = "color-mix(in srgb, var(--err) 12%, transparent)"; }}
-                      onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.55"; el.style.color = "var(--t2)"; el.style.background = "transparent"; }}
+                      onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.55"; el.style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)"; el.style.background = "transparent"; }}
                       title="Delete note"
                     >
                       <X size={10} />
@@ -2408,19 +2608,19 @@ export default function Notepad() {
                 </div>
               );
             })}
-            <div style={{ borderTop: "1px solid var(--b0)", margin: "4px 0" }} />
+            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
             <button
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 12, transition: "background 0.12s, color 0.12s" }}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", fontSize: 12, transition: "background 0.12s, color 0.12s" }}
               onClick={createDoc}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg2)"; (e.currentTarget as HTMLElement).style.color = "var(--t1)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "var(--t2)"; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"; }}
             >
               <Plus size={12} /> New document
             </button>
-            <div style={{ borderTop: "1px solid var(--b0)", margin: "4px 0" }} />
+            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
             {confirmClearAll ? (
               <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", background: "color-mix(in srgb, var(--err) 8%, transparent)" }}>
-                <span style={{ fontSize: 11.5, color: "var(--t1)", fontFamily: "Inter,sans-serif", flex: 1 }}>
+                <span style={{ fontSize: 11.5, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontFamily: "Inter,sans-serif", flex: 1 }}>
                   {docs.length === 1 ? "Delete this note?" : `Delete all ${docs.length} notes?`}
                 </span>
                 <button
@@ -2439,19 +2639,19 @@ export default function Notepad() {
                   style={{
                     fontSize: 11, fontFamily: "Inter,sans-serif", fontWeight: 500,
                     padding: "3px 9px", borderRadius: 999,
-                    background: "transparent", color: "var(--t2)",
-                    border: "1px solid var(--b0)", cursor: "pointer",
+                    background: "transparent", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)",
+                    border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.15)", cursor: "pointer",
                   }}
                   title="Cancel"
                 >No</button>
               </div>
             ) : (
               <button
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 11.5, fontFamily: "Inter,sans-serif", transition: "background 0.12s, color 0.12s" }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", fontSize: 11.5, fontFamily: "Inter,sans-serif", transition: "background 0.12s, color 0.12s" }}
                 onClick={() => armConfirm(null, true)}
                 title={docs.length === 1 ? "Clear this note" : "Clear all notes"}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--err)"; (e.currentTarget as HTMLElement).style.background = "var(--bg2)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--t2)"; (e.currentTarget as HTMLElement).style.background = "none"; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--err)"; (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"; (e.currentTarget as HTMLElement).style.background = "none"; }}
               >
                 <Trash2 size={11} /> {docs.length === 1 ? "Clear note" : "Clear all"}
               </button>
@@ -2466,12 +2666,12 @@ export default function Notepad() {
               position: "fixed",
               top: 80,
               left: tableMenuLeft,
-              background: "var(--bg1)",
-              border: "1px solid var(--b0)",
+              background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+              border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
               borderRadius: "var(--r)",
               padding: 12,
               zIndex: 200,
-              boxShadow: "0 16px 48px rgba(0,0,0,0.65)",
+              boxShadow: effectiveDark ? "0 16px 48px rgba(0,0,0,0.65)" : "0 16px 48px rgba(0,0,0,0.1)",
               display: "flex",
               flexDirection: "column",
               gap: 8,
@@ -2482,9 +2682,9 @@ export default function Notepad() {
               setHoveredCols(0);
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "var(--t1)", fontSize: 12, fontFamily: "Inter, sans-serif", fontWeight: 600, paddingBottom: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 12, fontFamily: "Inter, sans-serif", fontWeight: 600, paddingBottom: 4 }}>
               <span>Insert Table</span>
-              <span style={{ color: hoveredCols > 0 ? surfAccent : "var(--t3)" }}>
+              <span style={{ color: hoveredCols > 0 ? surfAccent : (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)") }}>
                 {hoveredCols > 0 ? `${hoveredCols} × ${hoveredRows}` : "0 × 0"}
               </span>
             </div>
@@ -2515,10 +2715,10 @@ export default function Notepad() {
                         borderRadius: 3,
                         background: isHighlighted
                           ? surfAccent
-                          : "rgba(255, 255, 255, 0.08)",
+                          : (effectiveDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"),
                         border: isHighlighted
                           ? `1px solid ${surfAccent}`
-                          : "1px solid rgba(255, 255, 255, 0.15)",
+                          : (effectiveDark ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid rgba(0, 0, 0, 0.1)"),
                         cursor: "pointer",
                         transition: "background 100ms ease, border-color 100ms ease"
                       }}
@@ -2690,7 +2890,20 @@ export default function Notepad() {
 
         {/* ── EXPORT PANEL — position: fixed anchored top-right ── */}
         {showExportMenu && (
-          <div style={{ position: "fixed", top: 82, right: 10, background: "var(--bg1)", border: "1px solid var(--b0)", borderRadius: "var(--r)", minWidth: 216, padding: "6px 0", zIndex: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+          <div style={{
+            position: "fixed",
+            top: 82,
+            right: 10,
+            background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+            border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
+            borderRadius: "var(--r)",
+            minWidth: 216,
+            padding: "6px 0",
+            zIndex: 200,
+            boxShadow: effectiveDark 
+              ? "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)" 
+              : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02)",
+          }}>
             {[
               { label: "Smart Export", sub: "Ctrl+D · auto-detect format", fn: handleSmartExport, accent: true },
               null,
@@ -2700,17 +2913,17 @@ export default function Notepad() {
               { label: "HTML (.html)", sub: "Full web-ready format", fn: exportHtml, accent: false },
             ].map((item, i) =>
               item === null ? (
-                <div key={i} style={{ borderTop: "1px solid var(--b0)", margin: "4px 0" }} />
+                <div key={i} style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
               ) : (
                 <button
                   key={item.label}
                   style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", padding: "8px 14px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.12s" }}
                   onClick={item.fn}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg2)"; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
                 >
-                  <span style={{ color: "var(--t1)", fontSize: 13, fontWeight: item.accent ? 600 : 400, fontFamily: "Inter,sans-serif" }}>{item.label}</span>
-                  <span style={{ color: "var(--t3)", fontSize: 11, marginTop: 1, fontFamily: "Inter,sans-serif" }}>{item.sub}</span>
+                  <span style={{ color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, fontWeight: item.accent ? 600 : 400, fontFamily: "Inter,sans-serif" }}>{item.label}</span>
+                  <span style={{ color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)", fontSize: 11, marginTop: 1, fontFamily: "Inter,sans-serif" }}>{item.sub}</span>
                 </button>
               )
             )}
@@ -2796,6 +3009,10 @@ export default function Notepad() {
           overflowX: "clip",
           // Per-theme accent — caret, selection, links pick this up via var().
           ["--np-accent" as string]: surfAccent,
+          ["--code-bg" as string]: codeBlockStyles.bg,
+          ["--code-border" as string]: codeBlockStyles.border,
+          ["--code-btn-bg" as string]: codeBlockStyles.btnBg,
+          ["--code-btn-border" as string]: codeBlockStyles.btnBorder,
         } as React.CSSProperties}
         onClick={(e) => {
           if (e.target === editorWrapRef.current) editor?.commands.focus("end");
