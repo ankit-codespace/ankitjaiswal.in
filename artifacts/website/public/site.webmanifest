@@ -1,11 +1,14 @@
 {
-  "name": "Ankit Jaiswal — Online Notepad & Web Tools",
-  "short_name": "AJ Notepad",
-  "description": "Free online notepad with rich text, image paste, autosave, and PDF export. Privacy-first browser tools.",
+  "name": "Online Notepad — Private Rich Text Editor",
+  "short_name": "Private Notepad",
+  "description": "Free, secure, privacy-first online notepad with rich text editing, image pasting, offline support, and professional PDF/Markdown export. Your data never touches a server.",
   "start_url": "/online-notepad",
+  "id": "/online-notepad",
   "display": "standalone",
   "background_color": "#0A0C10",
   "theme_color": "#0A0C10",
+  "orientation": "any",
+  "prefer_related_applications": false,
   "categories": ["productivity", "utilities"],
   "display_override": [
     "window-controls-overlay",
@@ -40,7 +43,7 @@
   "screenshots": [
     {
       "src": "/opengraph.jpg",
-      "sizes": "1200x630",
+      "sizes": "1280x720",
       "type": "image/jpeg",
       "form_factor": "wide",
       "label": "AJ Notepad Editor Interface"
