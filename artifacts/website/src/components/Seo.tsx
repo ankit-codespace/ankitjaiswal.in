@@ -12,6 +12,7 @@ export interface SeoProps {
   noIndex?: boolean;
   jsonLd?: object | object[];
   keywords?: string;
+  favicon?: string;
 }
 
 export function Seo({
@@ -24,6 +25,7 @@ export function Seo({
   noIndex = false,
   jsonLd,
   keywords,
+  favicon,
 }: SeoProps) {
   const canonical = absUrl(canonicalPath ?? path);
   const ogImage = absUrl(image ?? SITE.defaultOg);
@@ -38,6 +40,7 @@ export function Seo({
       <meta name="description" content={description} />
       {keywords && <meta name="keywords" content={keywords} />}
       <link rel="canonical" href={canonical} />
+      {favicon && <link rel="icon" href={favicon} />}
       {noIndex
         ? <meta name="robots" content="noindex, nofollow" />
         : <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />}

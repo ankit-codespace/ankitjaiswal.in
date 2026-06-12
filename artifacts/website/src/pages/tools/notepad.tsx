@@ -2103,6 +2103,7 @@ export default function Notepad() {
         canonicalPath="/online-notepad"
         keywords={seo.keywords}
         jsonLd={jsonLd}
+        favicon="/icons/icon-192.png"
       />
 
       {/*
