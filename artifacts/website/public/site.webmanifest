@@ -1,6 +1,6 @@
 {
   "name": "Online Notepad — Private Rich Text Editor",
-  "short_name": "Private Notepad",
+  "short_name": "Online Notepad",
   "description": "Free, secure, privacy-first online notepad with rich text editing, image pasting, offline support, and professional PDF/Markdown export. Your data never touches a server.",
   "start_url": "/online-notepad",
   "id": "/online-notepad",
