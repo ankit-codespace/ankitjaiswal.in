@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Microsoft Store Screenshot 1 — Online Notepad</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Sora:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* App Colors matching user's exact light theme */
+      --app-bg: #EDEAE4;
+      --app-chrome: #E1DED8;
+      --app-border: #D1CDC5;
+      --app-text: #0D1117;
+      --app-muted: #575E6A;
+      --app-highlight: #FDE047;
+      
+      /* Premium SaaS Frame Colors */
+      --page-bg: #0C111E;
+      --accent: #10B981;
+      --accent-glow: rgba(16, 185, 129, 0.18);
+      --t1: #F3F4F6;
+      --t2: #9CA3AF;
+      --glass-bg: rgba(13, 17, 24, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--page-bg);
+      color: var(--t1);
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 70px 80px 80px 80px;
+      perspective: 1800px; /* Enable 3D environment perspective */
+    }
+
+    /* Vector grid overlay */
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 48px 48px;
+      background-position: center;
+      mask-image: radial-gradient(circle at 50% 50%, black 20%, transparent 80%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* High-fidelity ambient mesh glows */
+    .glow-left {
+      position: absolute;
+      width: 1100px;
+      height: 1100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+      top: -300px;
+      left: -300px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-right {
+      position: absolute;
+      width: 1100px;
+      height: 1100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+      bottom: -300px;
+      right: -300px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-center {
+      position: absolute;
+      width: 1300px;
+      height: 1000px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.28) 0%, rgba(59, 130, 246, 0.18) 35%, rgba(0, 0, 0, 0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -45%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Fine grain texture overlay */
+    .noise-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Soft vignette overlay to focus attention */
+    .vignette-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(3, 5, 8, 0.65) 100%);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Marketing Header */
+    .header-zone {
+      text-align: center;
+      z-index: 10;
+      max-width: 1200px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 18px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 100px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 54px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #FFFFFF 50%, #9CA3AF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      font-size: 18px;
+      color: var(--t2);
+      font-weight: 400;
+      max-width: 850px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* 3D Viewport Container */
+    .viewport-container {
+      width: 100%;
+      height: 700px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      transform-style: preserve-3d;
+    }
+
+    /* The App Mockup Container (3D Tilted & Elevated) */
+    .app-window {
+      width: 1320px;
+      height: 660px;
+      background-color: var(--app-chrome);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      transform: rotateX(8deg) rotateY(-8deg) rotateZ(1.5deg); /* Majestic 3D perspective angle */
+      transform-style: preserve-3d; /* Enable cards to float above it in parallel 3D space */
+      box-shadow: 
+        -25px 35px 80px -15px rgba(0, 0, 0, 0.8),
+        -5px 10px 20px -5px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: visible; /* Must be visible so floating cards can hang outside boundaries */
+      position: relative;
+      z-index: 5;
+    }
+
+    /* TAB BAR - RESTORED PRODUCTION STYLES */
+    .tabs-bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      height: 40px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* Soft production tab border */
+      padding: 0 10px;
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--app-chrome);
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+      user-select: none;
+      position: relative;
+      z-index: 2;
+    }
+
+    .tabs-left {
+      display: flex;
+      align-items: flex-end;
+      height: 100%;
+      gap: 2px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 34px;
+      border-radius: 6px 6px 0 0;
+      color: rgba(0, 0, 0, 0.48);
+      align-self: flex-end;
+      margin-bottom: -2px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .tabs-separator {
+      width: 1px;
+      height: 20px;
+      background: var(--app-border);
+      margin: 0 8px;
+      flex-shrink: 0;
+      align-self: flex-end;
+      margin-bottom: 5px;
+    }
+
+    .tabs-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 0;
+      height: 100%;
+      flex: 1;
+      padding-left: 8px;
+      padding-right: 8px;
+      overflow: visible;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 12px 12px 0 0;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      min-width: 80px;
+      max-width: 150px;
+      margin-bottom: -2px;
+      z-index: 1;
+      color: rgba(0, 0, 0, 0.48);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+    }
+
+    .tab.active {
+      background: var(--app-bg);
+      color: var(--app-text);
+      font-weight: 600;
+      font-family: 'Sora', sans-serif;
+      z-index: 3;
+      box-shadow: none;
+    }
+
+    .tab-close {
+      border: none;
+      background: transparent;
+      color: rgba(0, 0, 0, 0.42);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab.active .tab-close {
+      color: rgba(0, 0, 0, 0.55);
+    }
+
+    .tab-divider {
+      position: absolute;
+      right: 0;
+      top: 9px;
+      width: 1px;
+      height: 14px;
+      background: rgba(0, 0, 0, 0.12);
+      pointer-events: none;
+    }
+
+    .add-tab-btn {
+      border: none;
+      background: transparent;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-end;
+      margin-bottom: 5px;
+      margin-left: 8px;
+      flex-shrink: 0;
+      color: rgba(0, 0, 0, 0.48);
+      cursor: pointer;
+    }
+
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--app-muted);
+    }
+
+    .status-icon {
+      flex-shrink: 0;
+    }
+
+    /* Toolbar matching user UI (Height 38px in production) */
+    .toolbar {
+      height: 38px;
+      background-color: var(--app-bg);
+      border-bottom: 1px solid var(--app-border);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 2px;
+      width: 100%;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 6px;
+      border-right: 1px solid var(--app-border);
+    }
+
+    .btn-group:last-child {
+      border-right: none;
+    }
+
+    .tool-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(0, 0, 0, 0.54);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.14s, color 0.14s;
+    }
+
+    .tool-btn.active {
+      background-color: rgba(0, 0, 0, 0.08);
+      color: #111111;
+    }
+
+    .tool-btn:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    .toolbar-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      padding-left: 6px;
+    }
+
+    .action-btn {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      font-size: 12.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0, 0, 0, 0.04);
+      color: rgba(0, 0, 0, 0.72);
+      font-family: 'Sora', sans-serif;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: background 0.14s, border-color 0.14s;
+    }
+
+    .action-btn:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    /* Canvas Area with lined paper effect */
+    .editor-canvas {
+      flex: 1;
+      background-color: var(--app-bg);
+      padding: 35px 80px;
+      overflow: hidden; /* Hide scrollbars entirely for mockup */
+      position: relative;
+      /* Lined paper lines */
+      background-image: linear-gradient(#e3dfd6 1px, transparent 1px);
+      background-size: 100% 36px;
+      line-height: 36px;
+      border-bottom-left-radius: 15px;
+      border-bottom-right-radius: 15px;
+    }
+
+    .document-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #0D1117;
+      margin-bottom: 24px;
+      line-height: 1.2;
+      border-bottom: 2px dashed #0D1117;
+      padding-bottom: 8px;
+      display: inline-block;
+    }
+
+    .editor-text {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--app-text);
+    }
+
+    .editor-text h2 {
+      font-family: 'Sora', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: #0D1117;
+      margin: 14px 0 6px 0;
+      line-height: 1.3;
+    }
+
+    .editor-text hr {
+      border: none;
+      border-top: 2px dashed rgba(13, 17, 23, 0.2);
+      margin: 12px 0;
+    }
+
+    .editor-text blockquote {
+      position: relative;
+      border-left: 4px solid var(--accent);
+      margin: 12px 0;
+      padding: 10px 16px 10px 24px;
+      background: rgba(16, 185, 129, 0.05);
+      border-radius: 0 10px 10px 0;
+      color: rgba(13, 17, 23, 0.7);
+      font-size: 15px;
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    .editor-text blockquote::before {
+      content: "“";
+      position: absolute;
+      left: 8px;
+      top: -10px;
+      font-size: 3em;
+      font-family: Georgia, serif;
+      color: var(--accent);
+      opacity: 0.18;
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .line-p {
+      height: 36px;
+      display: flex;
+      align-items: center;
+    }
+
+    .mark-hl {
+      background-color: var(--app-highlight);
+      color: #000000;
+      padding: 0px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      display: inline-block;
+      line-height: 24px;
+      height: 24px;
+    }
+
+    .code-block {
+      background-color: #E5E2DB;
+      border: 1px solid var(--app-border);
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin-top: 18px;
+      line-height: 1.5;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      color: #0D1117;
+      display: block;
+    }
+
+    /* FLOATING CALLOUT CARDS (Pushed down to 130px to clear tab bar completely) */
+    .floating-card {
+      position: absolute;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 16px 20px;
+      box-shadow: 
+        0 30px 60px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 20;
+    }
+
+    /* Left Side Cards */
+    .card-privacy {
+      left: 0;
+      top: 130px;
+      transform: translate3d(-200px, 0, 100px);
+      width: 320px;
+    }
+
+    .card-offline {
+      left: 0;
+      bottom: 80px;
+      transform: translate3d(-200px, 0, 100px);
+      width: 320px;
+    }
+
+    /* Right Side Cards */
+    .card-frictionless {
+      right: 0;
+      top: 130px;
+      transform: translate3d(200px, 0, 100px);
+      width: 330px;
+    }
+
+    .card-export {
+      right: 0;
+      bottom: 80px;
+      transform: translate3d(200px, 0, 100px);
+      width: 330px;
+    }
+
+    .icon-wrapper {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 2px;
+      letter-spacing: -0.01em;
+    }
+
+    .card-desc {
+      font-size: 11.5px;
+      color: var(--t2);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-overlay"></div>
+  <div class="glow-left"></div>
+  <div class="glow-right"></div>
+  <div class="glow-center"></div>
+  
+  <!-- Tactile grain overlay -->
+  <svg class="noise-overlay" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.08; mix-blend-mode: overlay;">
+    <filter id="noise-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" stitchTiles="stitch" />
+    </filter>
+    <rect width="100%" height="100%" filter="url(#noise-filter)" />
+  </svg>
+
+  <div class="vignette-overlay"></div>
+
+  <!-- Header Section -->
+  <div class="header-zone">
+    <div class="badge">Privacy-first design</div>
+    <h1>Lightning-Fast Notepad. <span>100% Private.</span></h1>
+    <p class="subtitle">A fast, security-first rich text editor. Format lists, tables, and code blocks while keeping your data 100% on your device—no cloud database, no sync risk.</p>
+  </div>
+
+  <!-- 3D Viewport Container -->
+  <div class="viewport-container">
+
+    <!-- The App Window Mockup (3D Tilted & Elevated) -->
+    <div class="app-window">
+      
+      <!-- Top-Left Card: Privacy Shield -->
+      <div class="floating-card card-privacy">
+        <div class="icon-wrapper" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: #3B82F6;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <div>
+          <div class="card-title">100% Privacy Lock</div>
+          <div class="card-desc">Zero cloud connections. Data stays strictly local.</div>
+        </div>
+      </div>
+
+      <!-- Bottom-Left Card: Offline-First -->
+      <div class="floating-card card-offline">
+        <div class="icon-wrapper" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #10B981;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1t22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.5M5 12.5a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M12 18h.01"></path></svg>
+        </div>
+        <div>
+          <div class="card-title">Offline-First Design</div>
+          <div class="card-desc">Runs entirely without internet. Auto-saves locally.</div>
+        </div>
+      </div>
+
+      <!-- Top-Right Card: Zero Friction Frictionless -->
+      <div class="floating-card card-frictionless">
+        <div class="icon-wrapper" style="background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.2); color: #A855F7;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>
+        </div>
+        <div>
+          <div class="card-title">No Account Required</div>
+          <div class="card-desc">Instant start. No email, zero ads, runs in 50ms.</div>
+        </div>
+      </div>
+
+      <!-- Bottom-Right Card: PDF Export Badge -->
+      <div class="floating-card card-export">
+        <div class="icon-wrapper" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.2); color: #F59E0B;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        </div>
+        <div>
+          <div class="card-title">PDF & Markdown Export</div>
+          <div class="card-desc">Download formatted drafts or raw code in one click.</div>
+        </div>
+      </div>
+
+      <!-- Restored Production Tab Bar Structure -->
+      <div class="tabs-bar">
+        <div class="tabs-left">
+          
+          <!-- Back button Link styled exactly like notepad-back-link -->
+          <div class="back-btn" title="Back to Tools">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </div>
+
+          <!-- Production vertical line separator -->
+          <div class="tabs-separator"></div>
+
+          <!-- Chrome-style scrollable tab container -->
+          <div class="tabs-container">
+            
+            <!-- Inactive Tab 1 (Next-Active is True, so NO divider) -->
+            <div class="tab">
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">OOP Concepts</span>
+              <button class="tab-close">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            <!-- Active Tab: Class (Includes the actual flaring tail SVGs and top border line) -->
+            <div class="tab active">
+              
+              <!-- Left Flare Curve SVG - height 36 and paths extended to Y=34 to overlap bottom border -->
+              <svg width="30" height="36" viewBox="-1 -1 30 36" fill="none" style="position: absolute; left: -17px; top: -1px; overflow: visible; pointer-events: none; z-index: 0;">
+                <path d="M 28 34 L 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 Z" fill="#EDEAE4" />
+                <path d="M 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 L 30 0" stroke="#8F8F8E" stroke-width="2" fill="none" />
+              </svg>
+
+              <!-- Top Edge Line - SVG line for consistent 3D vector rendering -->
+              <svg width="100%" height="2" viewBox="0 0 100 2" preserveAspectRatio="none" style="position: absolute; left: 11px; right: 11px; top: -1px; width: calc(100% - 22px); pointer-events: none; z-index: 1;">
+                <line x1="0" y1="1" x2="100" y2="1" stroke="#8F8F8E" stroke-width="2" />
+              </svg>
+
+              <span style="font-size: 12px; font-weight: 600; font-family: 'Sora', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; position: relative; z-index: 1;">Class</span>
+              
+              <button class="tab-close" style="position: relative; z-index: 1;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+
+              <!-- Right Flare Curve SVG - height 36 and paths extended to Y=34 to overlap bottom border -->
+              <svg width="30" height="36" viewBox="-1 -1 30 36" fill="none" style="position: absolute; right: -17px; top: -1px; overflow: visible; pointer-events: none; z-index: 0;">
+                <path d="M 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34 L 2 34 Z" fill="#EDEAE4" />
+                <path d="M 0 0 L 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34" stroke="#8F8F8E" stroke-width="2" fill="none" />
+              </svg>
+
+            </div>
+
+            <!-- Inactive Tab 2 (showDivider is True) -->
+            <div class="tab">
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Python Sandbox</span>
+              <button class="tab-close">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+              <div class="tab-divider"></div>
+            </div>
+
+            <!-- Inactive Tab 3 (Last tab, showDivider is False) -->
+            <div class="tab">
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Todo List</span>
+              <button class="tab-close">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            <!-- Plus Tab Button -->
+            <button class="add-tab-btn" title="New note">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Right status zone -->
+        <div class="status-right">
+          <span>Saved 4m ago</span>
+          <svg class="status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <svg class="status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+      </div>
+
+      <!-- Notepad Toolbar (Restored exact SVG vectors and heights matching production tiptap toolbar) -->
+      <div class="toolbar">
+        <div class="btn-group">
+          <!-- BoldIcon -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 12a4 4 0 0 0 0-8H6v8"></path><path d="M15 20a4 4 0 0 0 0-8H6v8Z"></path></svg>
+          </div>
+          <!-- ItalicIcon -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>
+          </div>
+          <!-- UnderlineIcon -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a6 6 0 0 0 12 0V3"></path><line x1="4" y1="21" x2="20" y2="21"></line></svg>
+          </div>
+          <!-- Strikethrough -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4H9a3 3 0 0 0-2.83 4"></path><path d="M14 12a4 4 0 0 1 0 8H6"></path><line x1="4" y1="12" x2="20" y2="12"></line></svg>
+          </div>
+          <!-- Highlighter (Highlight) -->
+          <div class="tool-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"></path><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path></svg>
+          </div>
+          <!-- Eraser -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21Z"></path><path d="M22 21H7"></path><path d="m5 11 9 9"></path></svg>
+          </div>
+          <!-- Text Color trigger style with Serif 'A' and underline -->
+          <div class="tool-btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <span style="font-size: 13px; font-weight: 700; line-height: 12px; font-family: 'Inter', serif; color: rgba(0, 0, 0, 0.54);">A</span>
+            <div style="width: 14px; height: 3px; background: #0D1117; border-radius: 1px; margin-top: 1px;"></div>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <!-- AlignLeft -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="6" x2="3" y2="6"></line><line x1="15" y1="12" x2="3" y2="12"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <!-- Heading 1 -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"></path><path d="M4 18V6"></path><path d="M12 18V6"></path><path d="m17 12 3-2v8"></path></svg>
+          </div>
+          <!-- Heading 2 -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"></path><path d="M4 18V6"></path><path d="M12 18V6"></path><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-3.5-1"></path></svg>
+          </div>
+          <!-- Heading 3 -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"></path><path d="M4 18V6"></path><path d="M12 18V6"></path><path d="M17.5 10.5c.2-.2.5-.3.9-.3a2.4 2.4 0 0 1 2.2 2.2c0 .9-.5 1.5-1.3 1.8.8.3 1.3.9 1.3 1.8a2.4 2.4 0 0 1-2.2 2.2c-.4 0-.7-.1-.9-.3"></path></svg>
+          </div>
+          <!-- Quote -->
+          <div class="tool-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.016-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.016-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 0 .25.5.25 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path></svg>
+          </div>
+          <!-- Code2 -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"></path><path d="m6 8-4 4 4 4"></path><path d="m14.5 4-5 16"></path></svg>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <!-- List -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          </div>
+          <!-- ListOrdered -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+          </div>
+          <!-- CheckSquare -->
+          <div class="tool-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <!-- LinkIcon -->
+          <div class="tool-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          </div>
+          <!-- ImageIcon -->
+          <div class="tool-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          </div>
+          <!-- Table2 -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+          </div>
+          <!-- Minus -->
+          <div class="tool-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <!-- Undo2 -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"></path></svg>
+          </div>
+          <!-- Redo2 -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"></path></svg>
+          </div>
+        </div>
+
+        <div class="toolbar-actions">
+          <!-- Search -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
+          <!-- Maximize2 -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+          </div>
+          <!-- Settings -->
+          <div class="tool-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </div>
+
+          <button class="action-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            Copy
+          </button>
+          <button class="action-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export
+            <span style="font-size: 8px;">▼</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor Canvas -->
+      <div class="editor-canvas">
+        <div class="document-title">Class and Object</div>
+        
+        <div class="editor-text">
+          <div class="line-p">
+            <span class="mark-hl">Class</span>&nbsp;is basically a blueprint of an object.
+          </div>
+          <div class="line-p">
+            <span class="mark-hl">Object</span>&nbsp;is a real-world entity containing state and behavior.
+          </div>
+
+          <hr>
+
+          <h2>Object-Oriented Programming (OOP)</h2>
+          
+          <blockquote>
+            OOP simplifies software design and maintenance by partitioning problems into modular, reusable components.
+          </blockquote>
+
+          <div class="line-p">
+            Let's implement a company class representing our specific state:
+          </div>
+
+          <!-- Python Code block -->
+          <div class="code-block" style="line-height: 1.4; padding: 14px 20px;">
+            class Company:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;boss = "Ankit"<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;loc = "Punjab"<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;email = "contact@ankitjaiswal.in"<br>
+            <div style="height: 6px;"></div>
+            &nbsp;&nbsp;&nbsp;&nbsp;ob1 = Company()<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;print(ob1.boss)
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

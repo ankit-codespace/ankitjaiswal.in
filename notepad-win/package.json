@@ -1,0 +1,45 @@
+{
+  "name": "notepad-win",
+  "version": "1.0.0",
+  "description": "Native offline-first Windows Notepad app",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:renderer": "npm run --prefix src/renderer build",
+    "build": "npm run build:renderer && electron-builder",
+    "pack": "npm run build:renderer && electron-builder --dir"
+  },
+  "keywords": [],
+  "author": "Ankit Jaiswal",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.ankitjaiswal.notepad",
+    "productName": "Our Notepad",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Our Notepad"
+    },
+    "fileAssociations": [
+      {
+        "ext": "txt",
+        "name": "Text Document",
+        "description": "Text Document",
+        "role": "Editor"
+      }
+    ],
+    "files": [
+      "src/main/**/*",
+      "src/renderer/dist/**/*"
+    ]
+  }
+}
