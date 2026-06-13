@@ -20,7 +20,15 @@
     "appId": "com.ankitjaiswal.notepad",
     "productName": "Our Notepad",
     "win": {
-      "target": "nsis"
+      "target": [
+        "nsis",
+        "appx"
+      ]
+    },
+    "appx": {
+      "identityName": "com.ankitjaiswal.notepad",
+      "publisherDisplayName": "Ankit Jaiswal",
+      "publisher": "CN=PLEASE_REPLACE_WITH_YOUR_PUBLISHER_ID_FROM_PARTNER_CENTER"
     },
     "nsis": {
       "oneClick": false,

@@ -53,7 +53,9 @@ function createWindow() {
     }
   });
 
-  mainWindow.webContents.openDevTools();
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
   mainWindow.webContents.session.clearCache();
 
   // Load the compiled renderer index.html
