@@ -322,7 +322,7 @@ const LS_SETTINGS = "notepad_settings_v1";
 
 const DEFAULT_SETTINGS: NotepadSettings = {
   fontSize: 18,
-  lineHeight: 2.1,
+  lineHeight: 2.15,
   writingWidth: "wide",
   lightSurface: false,
   spellCheck: false,
@@ -331,7 +331,7 @@ const DEFAULT_SETTINGS: NotepadSettings = {
   ruledLines: true,
   paperGrain: true,
   imageBorder: true,
-  zoom: 1.0,
+  zoom: 1.1,
 };
 
 /**
@@ -400,7 +400,14 @@ function loadActiveId(docs: NotepadDoc[]): string {
 function loadSettings(): NotepadSettings {
   try {
     const raw = localStorage.getItem(LS_SETTINGS);
-    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.zoom === undefined) parsed.zoom = 1.1;
+      if (parsed.lineHeight === 2.1) parsed.lineHeight = 2.15;
+      if (parsed.lineHeight === 2.6 || parsed.lineHeight === 1.95) parsed.lineHeight = 2.65;
+      if (parsed.lineHeight === 1.5 || parsed.lineHeight === 1.45) parsed.lineHeight = 1.65;
+      return { ...DEFAULT_SETTINGS, ...parsed };
+    }
   } catch {}
   // First-time visitor: pick Slate (dark) or Paper (light) based on OS preference.
   const prefersDark =
@@ -3190,9 +3197,27 @@ export default function Notepad() {
 
             {sep}
 
+            {/* Note switcher menu trigger */}
+            <button
+              style={tb(showDocMenu)}
+              onClick={(e) => {
+                e.stopPropagation();
+                const r = e.currentTarget.getBoundingClientRect();
+                setDocMenuLeft(r.left - 200);
+                setShowDocMenu(!showDocMenu);
+                setShowFileMenu(false);
+                setShowExportMenu(false);
+                setShowSettings(false);
+              }}
+              title="All Notes"
+              className="notepad-shortcuts-btn"
+            >
+              <Clock size={13} />
+            </button>
+
             {/* Shortcuts */}
             <button style={tb(showShortcuts)} onClick={() => setShowShortcuts(!showShortcuts)} title="Keyboard Shortcuts" className="notepad-shortcuts-btn">
-              <Clock size={13} />
+              <Keyboard size={13} />
             </button>
 
             {/* Feedback */}
@@ -3208,6 +3233,20 @@ export default function Notepad() {
           
           {/* Row 2 Left Zone: Formatting buttons (scrollable) */}
           <div className="notepad-toolbar" style={{ display: "flex", alignItems: "center", height: "100%", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
+            {/* Table of Contents / Outline Sidebar Toggle */}
+            <button
+              title={getTooltip("Table of Contents", "Ctrl+\\")}
+              style={tb(showOutline)}
+              onClick={() => {
+                setShowOutline(!showOutline);
+                setShowSettings(false);
+              }}
+            >
+              <PanelLeft size={14} />
+            </button>
+
+            {sep}
+
             {/* FORMAT */}
             <button title={getTooltip("Bold", "Ctrl+B")} style={tb(editor?.isActive("bold"))} onClick={() => editor?.chain().focus().toggleBold().run()}><BoldIcon size={14} /></button>
             <button title={getTooltip("Italic", "Ctrl+I")} style={tb(editor?.isActive("italic"))} onClick={() => editor?.chain().focus().toggleItalic().run()}><ItalicIcon size={14} /></button>
@@ -3579,9 +3618,6 @@ export default function Notepad() {
               <Search size={14} />
             </button>
 
-            {/* OUTLINE / TABLE OF CONTENTS */}
-            <button title={getTooltip("Outline Sidebar", "Ctrl+\\")} style={tb(showOutline)} onClick={() => setShowOutline(!showOutline)}><PanelLeft size={14} /></button>
-
             {/* FOCUS / FULLSCREEN */}
             <button title={getTooltip("Focus Mode", "Ctrl+Shift+\\")} style={tb(focusMode)} onClick={toggleFocus}>{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
 
@@ -3855,163 +3891,185 @@ export default function Notepad() {
           </div>
         )}
 
-        {/* ── SETTINGS PANEL — position: fixed anchored top-right ── */}
-        {showSettings && (
-          <div
-            className="notepad-settings-panel"
-            // data-lenis-prevent tells the global Lenis smooth-scroll engine
-            // (which hijacks wheel/touch on the page) to leave this element
-            // alone, so its own overflow:auto can scroll natively.
-            data-lenis-prevent
-            style={{
-              position: "fixed", top: 82, right: 10,
-              background: "var(--bg1)", border: "1px solid var(--b0)",
-              borderRadius: "var(--r)", width: 316, padding: "14px",
-              zIndex: 200,
-              boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)",
-              maxHeight: "calc(100vh - 88px)",
-              overflowY: "auto",
-              overflowX: "hidden",
-              scrollbarWidth: "thin" as React.CSSProperties["scrollbarWidth"],
-              scrollbarColor: "rgba(255,255,255,0.18) transparent",
-              overscrollBehavior: "contain",
-            }}
-          >
-            {/* Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ color: "var(--t1)", fontSize: 13, fontWeight: 600, fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Editor Settings</span>
-              <button style={{ ...tb(), width: 24, height: 24 }} onClick={() => setShowSettings(false)}><X size={12} /></button>
-            </div>
-
-            {/* Font size — preset pills + inline stepper on a single row */}
-            <div style={{ paddingTop: 14, marginBottom: 4 }}>
-              <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Font size</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ display: "flex", gap: 6, flex: 1, minWidth: 0, justifyContent: "flex-start" }}>
-                  {[12, 14, 16, 18, 22].map((s) => {
-                    const active = settings.fontSize === s;
-                    return (
-                      <button
-                        key={s}
-                        onClick={() => updateSetting("fontSize", s)}
-                        style={{
-                          display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          height: 26, minWidth: 30, padding: "0 6px",
-                          borderRadius: 6, border: "1px solid",
-                          borderColor: active ? "var(--b1)" : "var(--b0)",
-                          background: active ? "var(--bg3)" : "transparent",
-                          color: active ? "var(--t1)" : "var(--t2)",
-                          fontSize: 12, lineHeight: 1, cursor: "pointer", fontFamily: "Inter, sans-serif",
-                          transition: "all 0.12s",
-                        }}
-                      >{s}</button>
-                    );
-                  })}
+        {/* ── SETTINGS PANEL — position: fixed centered modal ── */}
+        <AnimatePresence>
+          {showSettings && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: effectiveDark ? "rgba(0, 0, 0, 0.45)" : "rgba(0, 0, 0, 0.15)",
+                backdropFilter: "blur(6px)",
+                zIndex: 1000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onClick={() => setShowSettings(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="notepad-settings-panel"
+                onClick={(e) => e.stopPropagation()}
+                data-lenis-prevent
+                style={{
+                  background: "var(--bg1)",
+                  border: "1px solid var(--b0)",
+                  borderRadius: "16px",
+                  width: 440,
+                  padding: "20px",
+                  boxShadow: effectiveDark ? "0 24px 64px rgba(0,0,0,0.65)" : "0 24px 64px rgba(0,0,0,0.15)",
+                  maxHeight: "85vh",
+                  overflowY: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  scrollbarWidth: "none",
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <span style={{ color: "var(--t1)", fontSize: 13, fontWeight: 600, fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Editor Settings</span>
+                  <button style={{ ...tb(), width: 24, height: 24 }} onClick={() => setShowSettings(false)}><X size={12} /></button>
                 </div>
-                <div aria-hidden style={{ width: 1, height: 18, background: "var(--b0)", flexShrink: 0 }} />
-                <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--b0)", borderRadius: 6, overflow: "hidden", flexShrink: 0, height: 26, boxSizing: "border-box" }}>
-                  <button onClick={() => updateSetting("fontSize", Math.max(10, settings.fontSize - 1))} style={{ width: 22, height: "100%", background: "transparent", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>−</button>
-                  <input type="number" min={10} max={72} step={1} value={settings.fontSize} onChange={(e) => { const v = Math.min(72, Math.max(10, parseInt(e.target.value) || 10)); updateSetting("fontSize", v); }} style={{ width: 32, height: "100%", background: "transparent", border: "none", outline: "none", textAlign: "center", color: "var(--t1)", fontSize: 12, fontFamily: "Inter,sans-serif", padding: 0 } as React.CSSProperties} />
-                  <button onClick={() => updateSetting("fontSize", Math.min(72, settings.fontSize + 1))} style={{ width: 22, height: "100%", background: "transparent", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>+</button>
-                </div>
-              </div>
-            </div>
 
-            {/* Writing width */}
-            <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
-              <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Writing width</div>
-              <div style={{ display: "flex", gap: 4 }}>
-                {(["wide", "focused", "narrow"] as const).map((w) => pill(settings.writingWidth === w, () => updateSetting("writingWidth", w), w.charAt(0).toUpperCase() + w.slice(1)))}
-              </div>
-            </div>
-
-            {/* Line height */}
-            <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
-              <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Line height</div>
-              <div style={{ display: "flex", gap: 4 }}>
-                {[{ v: 1.5, l: "Compact" }, { v: 2.1, l: "Normal" }, { v: 2.6, l: "Relaxed" }].map(({ v, l }) => pill(settings.lineHeight === v, () => updateSetting("lineHeight", v), l))}
-              </div>
-            </div>
-
-            {/* Theme presets — all 5 swatches in ONE row at 28×28px */}
-            <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
-              <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Themes</div>
-              <div style={{ display: "flex", gap: 5 }}>
-                {THEMES.map((t) => {
-                  const isActive = settings.bgColor === t.bg && settings.textColor === t.text;
-                  return (
-                    <button
-                      key={t.label}
-                      title={t.label}
-                      onClick={() => applyTheme(t.bg, t.text)}
-                      style={{
-                        width: 28, height: 28, borderRadius: 7, border: "none", flexShrink: 0,
-                        background: t.bg, cursor: "pointer", position: "relative",
-                        outline: isActive ? "2px solid var(--t1)" : "2px solid var(--b0)",
-                        outlineOffset: 1,
-                      }}
-                    >
-                      <span style={{ position: "absolute", bottom: 3, right: 3, width: 7, height: 7, borderRadius: "50%", background: t.text, display: "block" }} />
-                      {isActive && <Check size={9} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "var(--t1)" }} />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Custom colours */}
-            <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
-              <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Custom colours</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--bg2)", borderRadius: 7, padding: "5px 9px", cursor: "pointer", border: "1px solid var(--b0)" }}>
-                  <div style={{ width: 14, height: 14, borderRadius: 3, background: surfBg, border: "1px solid var(--b0)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
-                    <input type="color" value={surfBg.startsWith("#") ? surfBg : "#111318"} onChange={(e) => { updateSetting("bgColor", e.target.value); updateSetting("lightSurface", isLightHex(e.target.value)); }} style={{ position: "absolute", opacity: 0, width: "200%", height: "200%", top: "-50%", left: "-50%", cursor: "pointer" }} />
+                {/* Font size — preset pills + inline stepper on a single row */}
+                <div style={{ paddingTop: 14, marginBottom: 4 }}>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Font size</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 6, flex: 1, minWidth: 0, justifyContent: "flex-start" }}>
+                      {[12, 14, 16, 18, 22].map((s) => {
+                        const active = settings.fontSize === s;
+                        return (
+                          <button
+                            key={s}
+                            onClick={() => updateSetting("fontSize", s)}
+                            style={{
+                              display: "inline-flex", alignItems: "center", justifyContent: "center",
+                              height: 26, minWidth: 30, padding: "0 6px",
+                              borderRadius: 6, border: "1px solid",
+                              borderColor: active ? "var(--b1)" : "var(--b0)",
+                              background: active ? "var(--bg3)" : "transparent",
+                              color: active ? "var(--t1)" : "var(--t2)",
+                              fontSize: 12, lineHeight: 1, cursor: "pointer", fontFamily: "Inter, sans-serif",
+                              transition: "all 0.12s",
+                            }}
+                          >{s}</button>
+                        );
+                      })}
+                    </div>
+                    <div aria-hidden style={{ width: 1, height: 18, background: "var(--b0)", flexShrink: 0 }} />
+                    <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--b0)", borderRadius: 6, overflow: "hidden", flexShrink: 0, height: 26, boxSizing: "border-box" }}>
+                      <button onClick={() => updateSetting("fontSize", Math.max(10, settings.fontSize - 1))} style={{ width: 22, height: "100%", background: "transparent", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>−</button>
+                      <input type="number" min={10} max={72} step={1} value={settings.fontSize} onChange={(e) => { const v = Math.min(72, Math.max(10, parseInt(e.target.value) || 10)); updateSetting("fontSize", v); }} style={{ width: 32, height: "100%", background: "transparent", border: "none", outline: "none", textAlign: "center", color: "var(--t1)", fontSize: 12, fontFamily: "Inter,sans-serif", padding: 0 } as React.CSSProperties} />
+                      <button onClick={() => updateSetting("fontSize", Math.min(72, settings.fontSize + 1))} style={{ width: 22, height: "100%", background: "transparent", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>+</button>
+                    </div>
                   </div>
-                  <span style={{ fontSize: 12, color: "var(--t2)", fontFamily: "Inter,sans-serif" }}>Background</span>
-                </label>
-                <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--bg2)", borderRadius: 7, padding: "5px 9px", cursor: "pointer", border: "1px solid var(--b0)" }}>
-                  <div style={{ width: 14, height: 14, borderRadius: 3, background: surfTxt.startsWith("rgba") ? "#c9d1d9" : surfTxt, border: "1px solid var(--b0)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
-                    <input type="color" value={surfTxt.startsWith("#") ? surfTxt : "#c9d1d9"} onChange={(e) => updateSetting("textColor", e.target.value)} style={{ position: "absolute", opacity: 0, width: "200%", height: "200%", top: "-50%", left: "-50%", cursor: "pointer" }} />
-                  </div>
-                  <span style={{ fontSize: 12, color: "var(--t2)", fontFamily: "Inter,sans-serif" }}>Text</span>
-                </label>
-              </div>
-            </div>
+                </div>
 
-            {/* Binary toggles arranged in a 2×2 grid — visually grouped, with
-                generous row spacing so each setting reads as its own block. */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 14, rowGap: 22, paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)" }}>
-              <div>
-                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Lines</div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {pill(!settings.ruledLines, () => updateSetting("ruledLines", false), "None")}
-                  {pill(settings.ruledLines, () => updateSetting("ruledLines", true), "Ruled")}
+                {/* Writing width */}
+                <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Writing width</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {(["wide", "focused", "narrow"] as const).map((w) => pill(settings.writingWidth === w, () => updateSetting("writingWidth", w), w.charAt(0).toUpperCase() + w.slice(1)))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Underline typos as you write">Spell check</div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {pill(settings.spellCheck, () => updateSetting("spellCheck", true), "On")}
-                  {pill(!settings.spellCheck, () => updateSetting("spellCheck", false), "Off")}
+
+                {/* Line height */}
+                <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Line height</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {[{ v: 1.65, l: "Compact" }, { v: 2.15, l: "Normal" }, { v: 2.65, l: "Relaxed" }].map(({ v, l }) => pill(settings.lineHeight === v, () => updateSetting("lineHeight", v), l))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Subtle paper-fiber texture overlay on the canvas">Paper grain</div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {pill(!settings.paperGrain, () => updateSetting("paperGrain", false), "Off")}
-                  {pill(settings.paperGrain, () => updateSetting("paperGrain", true), "On")}
+
+                {/* Theme presets — all 5 swatches in ONE row at 28×28px */}
+                <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Themes</div>
+                  <div style={{ display: "flex", gap: 5 }}>
+                    {THEMES.map((t) => {
+                      const isActive = settings.bgColor === t.bg && settings.textColor === t.text;
+                      return (
+                        <button
+                          key={t.label}
+                          title={t.label}
+                          onClick={() => applyTheme(t.bg, t.text)}
+                          style={{
+                            width: 28, height: 28, borderRadius: 7, border: "none", flexShrink: 0,
+                            background: t.bg, cursor: "pointer", position: "relative",
+                            outline: isActive ? "2px solid var(--t1)" : "2px solid var(--b0)",
+                            outlineOffset: 1,
+                          }}
+                        >
+                          <span style={{ position: "absolute", bottom: 3, right: 3, width: 7, height: 7, borderRadius: "50%", background: t.text, display: "block" }} />
+                          {isActive && <Check size={9} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "var(--t1)" }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Soft hairline frame around inline images">Image border</div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {pill(settings.imageBorder, () => updateSetting("imageBorder", true), "On")}
-                  {pill(!settings.imageBorder, () => updateSetting("imageBorder", false), "Off")}
+
+                {/* Custom colours */}
+                <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Custom colours</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--bg2)", borderRadius: 7, padding: "5px 9px", cursor: "pointer", border: "1px solid var(--b0)" }}>
+                      <div style={{ width: 14, height: 14, borderRadius: 3, background: surfBg, border: "1px solid var(--b0)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
+                        <input type="color" value={surfBg.startsWith("#") ? surfBg : "#111318"} onChange={(e) => { updateSetting("bgColor", e.target.value); updateSetting("lightSurface", isLightHex(e.target.value)); }} style={{ position: "absolute", opacity: 0, width: "200%", height: "200%", top: "-50%", left: "-50%", cursor: "pointer" }} />
+                      </div>
+                      <span style={{ fontSize: 12, color: "var(--t2)", fontFamily: "Inter,sans-serif" }}>Background</span>
+                    </label>
+                    <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--bg2)", borderRadius: 7, padding: "5px 9px", cursor: "pointer", border: "1px solid var(--b0)" }}>
+                      <div style={{ width: 14, height: 14, borderRadius: 3, background: surfTxt.startsWith("rgba") ? "#c9d1d9" : surfTxt, border: "1px solid var(--b0)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
+                        <input type="color" value={surfTxt.startsWith("#") ? surfTxt : "#c9d1d9"} onChange={(e) => updateSetting("textColor", e.target.value)} style={{ position: "absolute", opacity: 0, width: "200%", height: "200%", top: "-50%", left: "-50%", cursor: "pointer" }} />
+                      </div>
+                      <span style={{ fontSize: 12, color: "var(--t2)", fontFamily: "Inter,sans-serif" }}>Text</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
+
+                {/* Binary toggles arranged in a 2×2 grid — visually grouped, with
+                    generous row spacing so each setting reads as its own block. */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 14, rowGap: 22, paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)" }}>
+                  <div>
+                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Lines</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {pill(!settings.ruledLines, () => updateSetting("ruledLines", false), "None")}
+                      {pill(settings.ruledLines, () => updateSetting("ruledLines", true), "Ruled")}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Underline typos as you write">Spell check</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {pill(settings.spellCheck, () => updateSetting("spellCheck", true), "On")}
+                      {pill(!settings.spellCheck, () => updateSetting("spellCheck", false), "Off")}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Subtle paper-fiber texture overlay on the canvas">Paper grain</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {pill(!settings.paperGrain, () => updateSetting("paperGrain", false), "Off")}
+                      {pill(settings.paperGrain, () => updateSetting("paperGrain", true), "On")}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Soft hairline frame around inline images">Image border</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {pill(settings.imageBorder, () => updateSetting("imageBorder", true), "On")}
+                      {pill(!settings.imageBorder, () => updateSetting("imageBorder", false), "Off")}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── FILE MENU PANEL — position: fixed anchored top-left ── */}
         {showFileMenu && (
@@ -5054,6 +5112,180 @@ export default function Notepad() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Keyboard Shortcuts Modal ── */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setShowShortcuts(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: effectiveDark ? "rgba(5, 7, 10, 0.65)" : "rgba(0, 0, 0, 0.15)",
+              backdropFilter: "blur(6px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: 24,
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+              data-lenis-prevent
+              style={{
+                width: "100%",
+                maxWidth: 680,
+                maxHeight: "85vh",
+                background: "var(--bg1)",
+                border: "1px solid var(--b0)",
+                borderRadius: 16,
+                boxShadow: effectiveDark ? "0 24px 64px rgba(0,0,0,0.65)" : "0 24px 64px rgba(0,0,0,0.15)",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--b0)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Keyboard size={18} style={{ color: surfAccent }} />
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--t1)", fontFamily: "Inter, sans-serif" }}>Keyboard Shortcuts</span>
+                </div>
+                <button
+                  onClick={() => setShowShortcuts(false)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--t3)",
+                    width: 32,
+                    height: 32,
+                    borderRadius: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg3)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Content Body */}
+              <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, fontFamily: "Inter, sans-serif" }}>
+                {/* Column 1: File & Application */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: surfAccent, marginBottom: 10 }}>File & App</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {[
+                        { keys: ["Ctrl", "N"], desc: "New Note" },
+                        { keys: ["Ctrl", "O"], desc: "Open Text File" },
+                        { keys: ["Ctrl", "S"], desc: "Save Text File" },
+                        { keys: ["Ctrl", "P"], desc: "Export PDF" },
+                        { keys: ["Ctrl", "W"], desc: "Close Current Note" },
+                        { keys: ["Ctrl", "Shift", "T"], desc: "Restore Closed Note" },
+                      ].map((item, idx) => (
+                        <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                          <span style={{ color: "var(--t2)" }}>{item.desc}</span>
+                          <div style={{ display: "flex", gap: 3 }}>
+                            {item.keys.map((k, kIdx) => (
+                              <kbd key={kIdx} style={{ background: "var(--bg2)", border: "1px solid var(--b0)", borderRadius: 4, padding: "2px 6px", fontSize: 11, fontWeight: 600, color: "var(--t1)", fontFamily: "monospace" }}>{k}</kbd>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: surfAccent, marginBottom: 10 }}>Tab Navigation</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {[
+                        { keys: ["Ctrl", "Tab"], desc: "Next Tab" },
+                        { keys: ["Ctrl", "Shift", "Tab"], desc: "Previous Tab" },
+                        { keys: ["Ctrl", "1-8"], desc: "Switch to Tab 1-8" },
+                        { keys: ["Ctrl", "9"], desc: "Switch to Last Tab" }
+                      ].map((item, idx) => (
+                        <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                          <span style={{ color: "var(--t2)" }}>{item.desc}</span>
+                          <div style={{ display: "flex", gap: 3 }}>
+                            {item.keys.map((k, kIdx) => (
+                              <kbd key={kIdx} style={{ background: "var(--bg2)", border: "1px solid var(--b0)", borderRadius: 4, padding: "2px 6px", fontSize: 11, fontWeight: 600, color: "var(--t1)", fontFamily: "monospace" }}>{k}</kbd>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 2: Formatting & Tools */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: surfAccent, marginBottom: 10 }}>Text Formatting</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {[
+                        { keys: ["Ctrl", "B"], desc: "Bold Text" },
+                        { keys: ["Ctrl", "I"], desc: "Italic Text" },
+                        { keys: ["Ctrl", "U"], desc: "Underline Text" },
+                        { keys: ["Ctrl", "H"], desc: "Highlight Text" },
+                        { keys: ["Ctrl", "Shift", "X"], desc: "Strikethrough" },
+                        { keys: ["Ctrl", "Shift", "C"], desc: "Toggle Code Block" },
+                        { keys: ["Ctrl", "Shift", "B"], desc: "Toggle Blockquote" },
+                        { keys: ["Ctrl", "Shift", "U"], desc: "Bullet List" },
+                        { keys: ["Ctrl", "Shift", "L"], desc: "Numbered List" },
+                        { keys: ["Ctrl", "Shift", "K"], desc: "Checklist" }
+                      ].map((item, idx) => (
+                        <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                          <span style={{ color: "var(--t2)" }}>{item.desc}</span>
+                          <div style={{ display: "flex", gap: 3 }}>
+                            {item.keys.map((k, kIdx) => (
+                              <kbd key={kIdx} style={{ background: "var(--bg2)", border: "1px solid var(--b0)", borderRadius: 4, padding: "2px 6px", fontSize: 11, fontWeight: 600, color: "var(--t1)", fontFamily: "monospace" }}>{k}</kbd>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: surfAccent, marginBottom: 10 }}>Editor Controls</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {[
+                        { keys: ["Ctrl", "F"], desc: "Find & Replace" },
+                        { keys: ["Ctrl", "Z"], desc: "Undo last edit" },
+                        { keys: ["Ctrl", "Y"], desc: "Redo last edit" },
+                        { keys: ["Ctrl", "/"], desc: "Toggle Help Dialog" }
+                      ].map((item, idx) => (
+                        <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                          <span style={{ color: "var(--t2)" }}>{item.desc}</span>
+                          <div style={{ display: "flex", gap: 3 }}>
+                            {item.keys.map((k, kIdx) => (
+                              <kbd key={kIdx} style={{ background: "var(--bg2)", border: "1px solid var(--b0)", borderRadius: 4, padding: "2px 6px", fontSize: 11, fontWeight: 600, color: "var(--t1)", fontFamily: "monospace" }}>{k}</kbd>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
