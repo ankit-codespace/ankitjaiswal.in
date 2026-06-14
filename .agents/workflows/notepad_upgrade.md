@@ -31,7 +31,7 @@ Runs the full pipeline — analyze both versions, backup, plan, execute, audit �
 
 ---
 
-### STEP 2 — Analyze
+## STEP 2 — Analyze
 
 Execute `.agents/skills/analyze_notepad_upgrade.md` fully:
 
@@ -45,7 +45,7 @@ Do not proceed to Step 3 until analysis is complete and self-audits pass.
 
 ---
 
-### STEP 3 — Backup
+## STEP 3 — Backup
 
 Execute Phase 0 from `.agents/skills/plan_notepad_upgrade.md`:
 
@@ -60,7 +60,7 @@ Execute Phase 0 from `.agents/skills/plan_notepad_upgrade.md`:
 
 ---
 
-### STEP 4 — Plan
+## STEP 4 — Plan
 
 Execute `.agents/skills/plan_notepad_upgrade.md` fully:
 
@@ -71,7 +71,7 @@ Execute `.agents/skills/plan_notepad_upgrade.md` fully:
 
 ---
 
-### STEP 5 — Execute
+## STEP 5 — Execute
 
 Execute `.agents/skills/execute_phase.md` for all phases in sequence:
 
@@ -89,7 +89,7 @@ Do not skip phases. Do not batch sub-steps. Do not ask the user anything.
 
 ---
 
-### STEP 6 — Final Report
+## STEP 6 — Final Report
 
 When Phase 6 is complete, output this to the user:
 

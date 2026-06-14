@@ -273,7 +273,7 @@ import {
   ArrowUpRight, FileDown, Eye, Save,
   Keyboard, BookOpen, Shield, ListChecks, Table2, Lightbulb, MousePointer2,
   Wand2, Globe,
-  Copy as CopyIcon, MessageSquarePlus, Pin,
+  Copy as CopyIcon, MessageSquarePlus, Pin, PanelLeft,
 } from "lucide-react";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -311,7 +311,8 @@ interface NotepadSettings {
   textColor: string;  // hex; empty = use lightSurface default
   ruledLines: boolean;
   paperGrain: boolean; // subtle paper-fiber texture on the canvas
-  imageBorder: boolean; // soft hairline border around inline images
+  imageBorder: boolean; // soft hairline frame around inline images
+  zoom?: number;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -330,6 +331,7 @@ const DEFAULT_SETTINGS: NotepadSettings = {
   ruledLines: true,
   paperGrain: true,
   imageBorder: true,
+  zoom: 1.0,
 };
 
 /**
@@ -676,7 +678,7 @@ const NOTEPAD_SHORTCUTS: { group: string; rows: { keys: string; action: string }
       { keys: "Cmd/Ctrl + U", action: "Underline" },
       { keys: "Cmd/Ctrl + Shift + X", action: "Strikethrough" },
       { keys: "Cmd/Ctrl + E", action: "Inline code" },
-      { keys: "Cmd/Ctrl + Shift + H", action: "Highlight" },
+      { keys: "Cmd/Ctrl + H or Cmd/Ctrl + Shift + H", action: "Highlight" },
     ],
   },
   {
@@ -693,14 +695,20 @@ const NOTEPAD_SHORTCUTS: { group: string; rows: { keys: string; action: string }
     ],
   },
   {
-    group: "Document",
+    group: "Document & App",
     rows: [
-      { keys: "Cmd/Ctrl + Z", action: "Undo (also restores deleted notes)" },
+      { keys: "Cmd/Ctrl + Z", action: "Undo" },
       { keys: "Cmd/Ctrl + Shift + Z", action: "Redo" },
       { keys: "Cmd/Ctrl + F", action: "Find in document" },
       { keys: "Cmd/Ctrl + Shift + F", action: "Find and replace" },
-      { keys: "Cmd/Ctrl + V", action: "Paste text or image from clipboard" },
-      { keys: "Cmd/Ctrl + K", action: "Insert link" },
+      { keys: "Cmd/Ctrl + O", action: "Open File..." },
+      { keys: "Cmd/Ctrl + S", action: "Save File" },
+      { keys: "Cmd/Ctrl + Shift + S", action: "Save As..." },
+      { keys: "Cmd/Ctrl + P", action: "Print / Save PDF" },
+      { keys: "Cmd/Ctrl + \\", action: "Toggle Outline sidebar" },
+      { keys: "Cmd/Ctrl + Shift + \\", action: "Toggle Focus Mode" },
+      { keys: "Cmd/Ctrl + + / -", action: "Zoom In / Out" },
+      { keys: "Cmd/Ctrl + 0", action: "Reset Zoom" },
     ],
   },
 ];
@@ -813,6 +821,12 @@ export default function Notepad() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState | null>(null);
+  const [showFileMenu, setShowFileMenu] = useState(false);
+  const [fileMenuLeft, setFileMenuLeft] = useState(0);
+  const [showOutline, setShowOutline] = useState(false);
+  const [headings, setHeadings] = useState<{ text: string; level: number; index: number }[]>([]);
+  const [activeHeadingIndex, setActiveHeadingIndex] = useState<number | null>(null);
+  const fileHandlesRef = useRef<Record<string, FileSystemFileHandle>>({});
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "unsaved">("saved");
@@ -1367,45 +1381,460 @@ export default function Notepad() {
     }
   }, [editor]);
 
+  // Debounced Outline Generator
+  useEffect(() => {
+    if (!editor || !showOutline) return undefined;
+
+    const timer = setTimeout(() => {
+      const headingElements = editor.view.dom.querySelectorAll("h1, h2, h3");
+      const list = Array.from(headingElements).map((el, i) => ({
+        text: el.textContent || "Untitled Heading",
+        level: parseInt(el.tagName.charAt(1), 10),
+        index: i
+      }));
+      setHeadings(list);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [activeDoc?.content, editor, showOutline]);
+
+  // Active heading tracker during scroll
+  useEffect(() => {
+    if (!showOutline || !editor) return undefined;
+
+    const handleScroll = () => {
+      const headingElements = editor.view.dom.querySelectorAll("h1, h2, h3");
+      let currentActive: number | null = null;
+      let minDiff = Infinity;
+      const threshold = 140;
+
+      headingElements.forEach((el, index) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= threshold + 60) {
+          const diff = Math.abs(rect.top - threshold);
+          if (diff < minDiff) {
+            minDiff = diff;
+            currentActive = index;
+          }
+        }
+      });
+
+      if (currentActive === null && headingElements.length > 0) {
+        currentActive = 0;
+      }
+
+      setActiveHeadingIndex(currentActive);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    editor.on("selectionUpdate", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      editor.off("selectionUpdate", handleScroll);
+    };
+  }, [editor, showOutline, headings]);
+
+  // Ctrl + Mouse Wheel Zoom Listener
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        setSettings((prev) => {
+          const current = prev.zoom || 1.0;
+          let nextVal = current;
+          if (e.deltaY < 0) {
+            nextVal = Math.min(1.5, parseFloat((current + 0.1).toFixed(1)));
+          } else {
+            nextVal = Math.max(0.8, parseFloat((current - 0.1).toFixed(1)));
+          }
+          if (nextVal !== current) {
+            const next = { ...prev, zoom: nextVal };
+            localStorage.setItem(LS_SETTINGS, JSON.stringify(next));
+            return next;
+          }
+          return prev;
+        });
+      }
+    };
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  const getSmartSaveExtension = (html: string): string => {
+    const hasImages = html.includes("<img");
+    const hasTables = html.includes("<table") || html.includes("<tr") || html.includes("<td");
+    const hasHighlight = html.includes("<mark");
+    if (hasImages || hasTables || hasHighlight) return "html";
+    const hasRichFormatting = html.includes("<strong") || html.includes("<em") || html.includes("<u") || html.includes("<s") || html.includes("<h1") || html.includes("<h2") || html.includes("<h3") || html.includes("<ul") || html.includes("<ol");
+    if (hasRichFormatting) return "md";
+    return "txt";
+  };
+
+  const htmlToMarkdown = async (html: string): Promise<string> => {
+    const TDS = (await import("turndown")) as any;
+    const TurndownService = TDS.default ?? TDS;
+    const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-", codeBlockStyle: "fenced" });
+    td.addRule("task", {
+      filter: (n: Element) => n.nodeName === "LI" && n.getAttribute("data-type") === "taskItem",
+      replacement: (content: string, node: Element) =>
+        `- [${node.getAttribute("data-checked") === "true" ? "x" : " "}] ${content.replace(/^\n+/, "").trimEnd()}\n`,
+    });
+    td.addRule("codeBlock", {
+      filter: (n: Element) => n.nodeName === "PRE",
+      replacement: (_content: string, node: Element) => {
+        const code = node.querySelector("code");
+        const text = code ? code.textContent || "" : node.textContent || "";
+        return `\n\n\`\`\`\n${text.trimEnd()}\n\`\`\`\n\n`;
+      },
+    });
+    td.addRule("highlight", { filter: ["mark"], replacement: (content: string) => `==${content}==` });
+    td.addRule("table", { filter: ["table"], replacement: (_content: string, node: Element) => `\n\n${node.outerHTML}\n\n` });
+    td.addRule("image", {
+      filter: ["img"],
+      replacement: (_content: string, node: Element) => {
+        const src = node.getAttribute("src") || "";
+        const alt = node.getAttribute("alt") || "image";
+        if (src.startsWith("data:")) return `\n\n![${alt}](embedded-image)\n\n`;
+        return `\n\n![${alt}](${src})\n\n`;
+      },
+    });
+    return td.turndown(html);
+  };
+
+  const generateFullHtml = (title: string, bodyContent: string): string => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; padding: 20px 24px; max-width: 720px; margin: 0 auto; color: #1a1a1a; background: #ffffff; }
+    h1, h2, h3 { font-family: 'Sora', sans-serif; font-weight: 700; color: #0d1117; margin-top: 1.6em; margin-bottom: 0.5em; }
+    h1 { font-size: 22pt; } h2 { font-size: 17pt; } h3 { font-size: 13pt; }
+    p { margin-bottom: 0.75em; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; background: #f0f0f0; border: 1px solid #e0e0e0; border-radius: 3px; padding: 0.1em 0.35em; color: #c7254e; }
+    pre { font-family: 'JetBrains Mono', monospace; font-size: 9pt; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 14px 18px; margin: 1em 0; white-space: pre-wrap; }
+    pre code { background: none; border: none; padding: 0; color: #24292f; }
+    blockquote { border-left: 4px solid #6366f1; margin: 1.2em 0; padding: 10px 16px; background: #f8f7ff; border-radius: 0 6px 6px 0; color: #374151; font-style: italic; }
+    ul, ol { margin: 0.5em 0 0.75em 1.5em; }
+    li { margin-bottom: 0.3em; }
+    table { width: 100%; border-collapse: collapse; margin: 1.2em 0; }
+    th, td { border: 1px solid #d1d5db; padding: 8px 12px; }
+    th { background: #f3f4f6; }
+  </style>
+</head>
+<body>
+  ${bodyContent}
+</body>
+</html>`;
+  };
+
+  const handleOpenFileAccess = async () => {
+    try {
+      if (typeof window !== "undefined" && "showOpenFilePicker" in window) {
+        const [handle] = await (window as any).showOpenFilePicker({
+          types: [{ description: "Text/HTML Files", accept: { "text/plain": [".txt"], "text/markdown": [".md"], "text/html": [".html", ".htm"] } }],
+        });
+        const file = await handle.getFile();
+        const text = await file.text();
+        const title = file.name.replace(/\.[^/.]+$/, "");
+        
+        const newDoc: NotepadDoc = {
+          id: Math.random().toString(36).substring(2, 11),
+          title: title,
+          content: text.includes("<p>") || text.includes("</div>") ? text : text.split("\n").map((l: string) => `<p>${l}</p>`).join(""),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        fileHandlesRef.current[newDoc.id] = handle;
+        setDocs(prev => [newDoc, ...prev]);
+        setActiveId(newDoc.id);
+        setSaveStatus("saved");
+        toast.success(`Opened ${file.name}`);
+      } else {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".txt,.md,.html,.htm";
+        input.onchange = async (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (!file) return;
+          const text = await file.text();
+          const title = file.name.replace(/\.[^/.]+$/, "");
+          const newDoc: NotepadDoc = {
+            id: Math.random().toString(36).substring(2, 11),
+            title: title,
+            content: text.includes("<p>") || text.includes("</div>") ? text : text.split("\n").map((l: string) => `<p>${l}</p>`).join(""),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          setDocs(prev => [newDoc, ...prev]);
+          setActiveId(newDoc.id);
+          setSaveStatus("saved");
+          toast.success(`Opened ${file.name}`);
+        };
+        input.click();
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        console.error(err);
+        toast.error("Error opening file");
+      }
+    }
+  };
+
+  const handleSaveFileAccess = async (saveAs: boolean = false) => {
+    if (!editor || !activeDoc) return;
+    try {
+      let handle = saveAs ? null : fileHandlesRef.current[activeDoc.id];
+      const html = editor.getHTML();
+
+      if (!handle) {
+        const ext = getSmartSaveExtension(html);
+        let defaultName = activeDoc.title || "Untitled";
+        defaultName = defaultName.replace(/\.(txt|md|html|htm)$/i, "");
+        defaultName = `${defaultName}.${ext}`;
+
+        if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
+          handle = await (window as any).showSaveFilePicker({
+            suggestedName: defaultName,
+            types: [
+              {
+                description: ext === "html" ? "HTML Files" : ext === "md" ? "Markdown Files" : "Text Files",
+                accept: {
+                  [ext === "html" ? "text/html" : ext === "md" ? "text/markdown" : "text/plain"]: [`.${ext}`],
+                },
+              },
+            ],
+          });
+        }
+      }
+
+      if (handle) {
+        const file = await handle.getFile();
+        const fileExt = file.name.split('.').pop()?.toLowerCase();
+        let contentToWrite = "";
+
+        if (fileExt === 'md') {
+          contentToWrite = await htmlToMarkdown(html);
+        } else if (fileExt === 'html' || fileExt === 'htm') {
+          contentToWrite = generateFullHtml(activeDoc.title, html);
+        } else {
+          contentToWrite = editor.getText();
+        }
+
+        const writable = await handle.createWritable();
+        await writable.write(contentToWrite);
+        await writable.close();
+
+        const newTitle = file.name.replace(/\.[^/.]+$/, "");
+        fileHandlesRef.current[activeDoc.id] = handle;
+        
+        setDocs(prev => prev.map(d => d.id === activeDoc.id ? { ...d, title: newTitle } : d));
+        setLastSaved(new Date());
+        setSaveStatus("saved");
+        toast.success(`Saved to ${file.name}`);
+      } else {
+        const ext = getSmartSaveExtension(html);
+        let defaultName = activeDoc.title || "Untitled";
+        defaultName = defaultName.replace(/\.(txt|md|html|htm)$/i, "");
+        defaultName = `${defaultName}.${ext}`;
+
+        let contentToWrite = "";
+        let mime = "text/plain";
+        if (ext === 'md') {
+          contentToWrite = await htmlToMarkdown(html);
+          mime = "text/markdown";
+        } else if (ext === 'html') {
+          contentToWrite = generateFullHtml(activeDoc.title, html);
+          mime = "text/html";
+        } else {
+          contentToWrite = editor.getText();
+        }
+        dl(contentToWrite, defaultName, mime);
+        setLastSaved(new Date());
+        setSaveStatus("saved");
+        toast.success(`Exported ${defaultName}`);
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        console.error(err);
+        toast.error("Error saving file");
+      }
+    }
+  };
+
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const ctrl = e.ctrlKey || e.metaKey;
-      if (ctrl && e.key === "d") { e.preventDefault(); handleSmartExport(); }
-      if (ctrl && e.key === "f") {
+
+      // Ctrl + = or Ctrl + + (Zoom In)
+      if (ctrl && (e.key === "=" || e.key === "+")) {
         e.preventDefault();
-        if (showFind) {
-          findInputRef.current?.select();
-        } else {
-          setShowFind(true);
-          setShowReplace(false);
-          setTimeout(() => {
-            findInputRef.current?.focus();
-            findInputRef.current?.select();
-          }, 50);
+        setSettings((prev) => {
+          const current = prev.zoom || 1.0;
+          const nextVal = Math.min(1.5, parseFloat((current + 0.1).toFixed(1)));
+          const next = { ...prev, zoom: nextVal };
+          localStorage.setItem(LS_SETTINGS, JSON.stringify(next));
+          return next;
+        });
+        return;
+      }
+
+      // Ctrl + - (Zoom Out)
+      if (ctrl && e.key === "-") {
+        e.preventDefault();
+        setSettings((prev) => {
+          const current = prev.zoom || 1.0;
+          const nextVal = Math.max(0.8, parseFloat((current - 0.1).toFixed(1)));
+          const next = { ...prev, zoom: nextVal };
+          localStorage.setItem(LS_SETTINGS, JSON.stringify(next));
+          return next;
+        });
+        return;
+      }
+
+      // Ctrl + 0 (Reset Zoom)
+      if (ctrl && e.key === "0" && !e.shiftKey) {
+        e.preventDefault();
+        setSettings((prev) => {
+          const next = { ...prev, zoom: 1.0 };
+          localStorage.setItem(LS_SETTINGS, JSON.stringify(next));
+          return next;
+        });
+        return;
+      }
+
+      // Ctrl + , (Settings)
+      if (ctrl && e.key === ",") {
+        e.preventDefault();
+        setShowSettings(prev => !prev);
+        setShowFileMenu(false);
+        setShowExportMenu(false);
+        return;
+      }
+
+      // Ctrl + / (Keyboard Shortcuts dialog)
+      if (ctrl && e.key === "/") {
+        e.preventDefault();
+        setShowShortcuts(prev => !prev);
+        return;
+      }
+
+      // Ctrl + Shift + S (Save As)
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        handleSaveFileAccess(true);
+        return;
+      }
+
+      // Ctrl + S (Save)
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        handleSaveFileAccess(false);
+        return;
+      }
+
+      // Ctrl + O (Open)
+      if (ctrl && e.key.toLowerCase() === "o") {
+        e.preventDefault();
+        handleOpenFileAccess();
+        return;
+      }
+
+      // Ctrl + P (Print / PDF Export)
+      if (ctrl && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        exportPdf();
+        return;
+      }
+
+      // Ctrl + \ (Toggle Outline sidebar)
+      if (ctrl && !e.shiftKey && (e.key === "\\" || e.code === "Backslash")) {
+        e.preventDefault();
+        setShowOutline(prev => !prev);
+        return;
+      }
+
+      // Ctrl + Shift + \ (Focus Mode)
+      if (ctrl && e.shiftKey && (e.key === "\\" || e.code === "Backslash")) {
+        e.preventDefault();
+        toggleFocus();
+        return;
+      }
+
+      // Ctrl + D (Smart Export)
+      if (ctrl && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        handleSmartExport();
+        return;
+      }
+
+      // Editor-level focus check helpers
+      const ae = document.activeElement as HTMLElement | null;
+      const inEditor = ae?.closest?.(".ProseMirror");
+      const inInput = ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable);
+
+      // Ctrl + H / Ctrl + Shift + H (Highlight) - editor focused only
+      if (ctrl && e.key.toLowerCase() === "h") {
+        if (inEditor) {
+          e.preventDefault();
+          editor?.chain().focus().toggleHighlight().run();
+          return;
         }
       }
-      if (ctrl && e.key === "h") {
+
+      // Ctrl + Shift + F (Replace Pane)
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
-        if (!showFind) {
+        if (showFind && showReplace) {
+          closeFind();
+        } else {
           setShowFind(true);
-          setShowReplace(true);
-          setTimeout(() => {
-            findInputRef.current?.focus();
-            findInputRef.current?.select();
-          }, 50);
-        } else if (!showReplace) {
           setShowReplace(true);
           setTimeout(() => {
             replaceInputRef.current?.focus();
             replaceInputRef.current?.select();
           }, 50);
-        } else {
-          setShowReplace(false);
+        }
+        return;
+      }
+
+      // Ctrl + F (Find Pane)
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === "f") {
+        if (inEditor || inInput || showFind) {
+          e.preventDefault();
+          if (showFind && !showReplace) {
+            findInputRef.current?.select();
+          } else {
+            setShowFind(true);
+            setShowReplace(false);
+            setTimeout(() => {
+              findInputRef.current?.focus();
+              findInputRef.current?.select();
+            }, 50);
+          }
         }
       }
-      if (ctrl && e.key === "\\") { e.preventDefault(); toggleFocus(); }
-      if (e.key === "Escape") { closeFind(); setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowColorPicker(false); setShowTableMenu(false); setContextMenu(null); setEditingTabId(null); cancelConfirm(); }
+
+      if (e.key === "Escape") {
+        closeFind();
+        setShowDocMenu(false);
+        setShowExportMenu(false);
+        setShowSettings(false);
+        setShowShortcuts(false);
+        setShowFileMenu(false);
+        setShowColorPicker(false);
+        setShowTableMenu(false);
+        setContextMenu(null);
+        setEditingTabId(null);
+        cancelConfirm();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -2285,6 +2714,7 @@ export default function Notepad() {
       // to setProperty() and the browser may ignore non-string custom property values,
       // silently falling back to the var() default (1.78) for every option.
       lineHeight: settings.lineHeight,
+      zoom: settings.zoom || 1.0,
       // Keep --np-lh as a properly-quoted string so the task-list checkbox CSS
       // (which uses calc(var(--np-lh) * var(--np-fs))) still works.
       ["--np-lh" as string]: String(settings.lineHeight),
@@ -2375,6 +2805,48 @@ export default function Notepad() {
               <ArrowLeft size={15} />
             </Link>
             {/* Separator — aligned to the optical center of the back button and tabs */}
+            <div
+              style={{
+                width: 1,
+                height: 20,
+                background: sepColor,
+                margin: "0 8px",
+                flexShrink: 0,
+                alignSelf: "flex-end",
+                marginBottom: 5,
+              }}
+            />
+            {/* File Menu Trigger Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const r = e.currentTarget.getBoundingClientRect();
+                setFileMenuLeft(r.left);
+                setShowFileMenu(!showFileMenu);
+                setShowDocMenu(false);
+                setShowExportMenu(false);
+                setShowSettings(false);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 30,
+                height: 34,
+                borderRadius: "6px 6px 0 0",
+                background: showFileMenu ? (effectiveDark ? "#202124" : surfBg) : "transparent",
+                color: effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)",
+                border: "none",
+                cursor: "pointer",
+                alignSelf: "flex-end",
+                marginBottom: -2,
+                flexShrink: 0,
+                transition: "background 140ms ease, color 140ms ease",
+              }}
+              title="File Menu"
+            >
+              <FileText size={15} />
+            </button>
             <div
               style={{
                 width: 1,
@@ -3107,8 +3579,11 @@ export default function Notepad() {
               <Search size={14} />
             </button>
 
+            {/* OUTLINE / TABLE OF CONTENTS */}
+            <button title={getTooltip("Outline Sidebar", "Ctrl+\\")} style={tb(showOutline)} onClick={() => setShowOutline(!showOutline)}><PanelLeft size={14} /></button>
+
             {/* FOCUS / FULLSCREEN */}
-            <button title={getTooltip("Focus Mode", "Ctrl+\\")} style={tb(focusMode)} onClick={toggleFocus}>{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
+            <button title={getTooltip("Focus Mode", "Ctrl+Shift+\\")} style={tb(focusMode)} onClick={toggleFocus}>{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
 
             {sep}
 
@@ -3538,6 +4013,164 @@ export default function Notepad() {
           </div>
         )}
 
+        {/* ── FILE MENU PANEL — position: fixed anchored top-left ── */}
+        {showFileMenu && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              top: 78,
+              left: fileMenuLeft,
+              background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+              border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
+              borderRadius: "var(--r)",
+              minWidth: 220,
+              padding: "6px",
+              zIndex: 200,
+              boxShadow: effectiveDark 
+                ? "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)" 
+                : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 2
+            }}
+          >
+            <button
+              onClick={() => { createDoc(); setShowFileMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+              className="notepad-file-menu-item"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <Plus size={13} style={{ opacity: 0.7 }} />
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>New Tab</span>
+              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+N</span>
+            </button>
+            
+            <button
+              onClick={() => { handleOpenFileAccess(); setShowFileMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+              className="notepad-file-menu-item"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <FileText size={13} style={{ opacity: 0.7 }} />
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Open File...</span>
+              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+O</span>
+            </button>
+
+            <button
+              onClick={() => { setShowSettings(true); setShowFileMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+              className="notepad-file-menu-item"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <Settings size={13} style={{ opacity: 0.7 }} />
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Editor Settings...</span>
+              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+,</span>
+            </button>
+
+            {/* Interface Zoom Control */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}>
+              <Maximize2 size={13} style={{ opacity: 0.7, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)" }} />
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif", fontSize: 13, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)" }}>Interface Zoom</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, background: effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", borderRadius: 6, padding: "2px 4px" }}>
+                <button
+                  disabled={(settings.zoom || 1.0) <= 0.8}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const current = settings.zoom || 1.0;
+                    const next = Math.max(0.8, parseFloat((current - 0.1).toFixed(1)));
+                    updateSetting("zoom", next);
+                  }}
+                  style={{
+                    background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
+                    cursor: "pointer", fontSize: 13, fontWeight: 700, width: 18, height: 18,
+                    display: "flex", alignItems: "center", justifyContent: "center", opacity: (settings.zoom || 1.0) <= 0.8 ? 0.3 : 1
+                  }}
+                  title="Zoom Out (Ctrl+-)"
+                >
+                  −
+                </button>
+                <span style={{ fontSize: 11, fontWeight: 600, minWidth: 32, textAlign: "center", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontFamily: "Inter,sans-serif" }}>
+                  {Math.round((settings.zoom || 1.0) * 100)}%
+                </span>
+                <button
+                  disabled={(settings.zoom || 1.0) >= 1.5}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const current = settings.zoom || 1.0;
+                    const next = Math.min(1.5, parseFloat((current + 0.1).toFixed(1)));
+                    updateSetting("zoom", next);
+                  }}
+                  style={{
+                    background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
+                    cursor: "pointer", fontSize: 13, fontWeight: 700, width: 18, height: 18,
+                    display: "flex", alignItems: "center", justifyContent: "center", opacity: (settings.zoom || 1.0) >= 1.5 ? 0.3 : 1
+                  }}
+                  title="Zoom In (Ctrl++)"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+            <button
+              onClick={() => { handleSaveFileAccess(false); setShowFileMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+              className="notepad-file-menu-item"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <Save size={13} style={{ opacity: 0.7 }} />
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Save</span>
+              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+S</span>
+            </button>
+
+            <button
+              onClick={() => { handleSaveFileAccess(true); setShowFileMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+              className="notepad-file-menu-item"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <Save size={13} style={{ opacity: 0.7 }} />
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Save As...</span>
+              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+Shift+S</span>
+            </button>
+
+            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+            <button
+              onClick={() => { setDeleteConfirm({ docId: activeId, source: "menu", x: fileMenuLeft + 20, y: 320 }); setShowFileMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+              className="notepad-file-menu-item"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <X size={13} style={{ opacity: 0.7 }} />
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Close Tab</span>
+              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+W</span>
+            </button>
+            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+            <button
+              onClick={() => { setShowShortcuts(true); setShowFileMenu(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+              className="notepad-file-menu-item"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Keyboard Shortcuts</span>
+              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+/</span>
+            </button>
+          </div>
+        )}
+
         {/* ── EXPORT PANEL — position: fixed anchored top-right ── */}
         {showExportMenu && (
           <div style={{
@@ -3840,36 +4473,135 @@ export default function Notepad() {
         </div>
       )}
 
-      {/* ── EDITOR AREA ─────────────────────────────────────────────────────── */}
-      <div
-        ref={editorWrapRef}
-        className={[
-          effectiveDark ? "surface-dark" : "surface-light",
-          settings.paperGrain ? "notepad-grain" : "",
-        ].filter(Boolean).join(" ")}
-        style={{
-          backgroundColor: surfBg,
-          color: surfTxt,
-          minHeight: "calc(100vh - 78px - 38px)",
-          transition: "background 0.3s, color 0.3s",
-          cursor: "text",
-          // Clip overflow-x so the full-width ::after rule lines (width: 100vw) on
-          // each paragraph don't cause a horizontal scrollbar.
-          overflowX: "clip",
-          // Per-theme accent — caret, selection, links pick this up via var().
-          ["--np-accent" as string]: surfAccent,
-          ["--code-bg" as string]: codeBlockStyles.bg,
-          ["--code-border" as string]: codeBlockStyles.border,
-          ["--code-btn-bg" as string]: codeBlockStyles.btnBg,
-          ["--code-btn-border" as string]: codeBlockStyles.btnBorder,
-        } as React.CSSProperties}
-        onClick={(e) => {
-          if (e.target === editorWrapRef.current) editor?.commands.focus("end");
-          setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowShortcuts(false); cancelConfirm();
-        }}
-      >
-        <div style={editorInnerStyle} className={[settings.ruledLines ? "notepad-ruled" : "", settings.imageBorder ? "notepad-img-border" : ""].filter(Boolean).join(" ")}>
-          <EditorContent editor={editor} />
+      {/* ── EDITOR SPLIT-VIEW ROW ─────────────────────────────────────────── */}
+      <div style={{ display: "flex", flex: 1, minWidth: 0, position: "relative" }} onClick={() => setShowFileMenu(false)}>
+        {/* ── Collapsible Outline / Table of Contents Sidebar ── */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`notepad-outline-sidebar ${showOutline ? 'is-open' : ''}`}
+          style={{
+            borderRight: showOutline ? (effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.1)") : "none",
+            borderRadius: "0 12px 12px 0",
+            background: effectiveDark ? "var(--bg1)" : "#FAFAFA",
+            display: "flex",
+            flexDirection: "column",
+            flexShrink: 0,
+            height: "calc(100vh - 78px)",
+            position: "sticky",
+            top: 78,
+            zIndex: 10
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <PanelLeft size={14} style={{ color: "var(--t2)", opacity: 0.8 }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontFamily: "Inter,sans-serif" }}>Outline</span>
+              {headings.length > 0 && (
+                <span style={{ fontSize: 10, background: effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.06)", color: "var(--t2)", padding: "2px 6px", borderRadius: 10, fontWeight: 500, fontFamily: "Inter,sans-serif" }}>
+                  {headings.length}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setShowOutline(false)}
+              style={{ background: "transparent", border: "none", outline: "none", cursor: "pointer", color: "var(--t2)", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center" }}
+              title="Close Outline"
+            >
+              <X size={12} />
+            </button>
+          </div>
+
+          {/* List Content */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2, scrollbarWidth: "thin" }}>
+            {headings.length === 0 ? (
+              <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--t3)", fontSize: 12.5, lineHeight: 1.5, fontFamily: "Inter,sans-serif" }}>
+                Add headings (H1, H2, H3) to see the table of contents.
+              </div>
+            ) : (
+              headings.map((h, i) => {
+                const isActive = activeHeadingIndex === i;
+                const indent = (h.level - 1) * 12;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      const headingElements = editor?.view.dom.querySelectorAll("h1, h2, h3");
+                      if (headingElements && headingElements[h.index]) {
+                        headingElements[h.index].scrollIntoView({ behavior: "smooth", block: "center" });
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "6px 10px 6px 8px",
+                      marginLeft: indent,
+                      width: `calc(100% - ${indent}px)`,
+                      background: isActive ? (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)") : "transparent",
+                      border: "none",
+                      borderLeft: `3px solid ${isActive ? surfAccent : "transparent"}`,
+                      borderRadius: "0 8px 8px 0",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      color: isActive ? (effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.85)") : (effectiveDark ? "rgba(240, 237, 232, 0.6)" : "rgba(0, 0, 0, 0.6)"),
+                      fontWeight: isActive ? 600 : 400,
+                      fontSize: 12.5,
+                      fontFamily: "Inter,sans-serif",
+                      transition: "all 0.12s"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) e.currentTarget.style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.03)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <span style={{ fontSize: 9.5, opacity: 0.5, fontWeight: 700, textTransform: "uppercase", background: effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)", padding: "1px 4px", borderRadius: 3, flexShrink: 0, fontFamily: "monospace" }}>
+                      H{h.level}
+                    </span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                      {h.text}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* ── EDITOR AREA ─────────────────────────────────────────────────────── */}
+        <div
+          ref={editorWrapRef}
+          className={[
+            effectiveDark ? "surface-dark" : "surface-light",
+            settings.paperGrain ? "notepad-grain" : "",
+          ].filter(Boolean).join(" ")}
+          style={{
+            flex: 1,
+            backgroundColor: surfBg,
+            color: surfTxt,
+            minHeight: "calc(100vh - 78px - 38px)",
+            transition: "background 0.3s, color 0.3s",
+            cursor: "text",
+            // Clip overflow-x so the full-width ::after rule lines (width: 100vw) on
+            // each paragraph don't cause a horizontal scrollbar.
+            overflowX: "clip",
+            // Per-theme accent — caret, selection, links pick this up via var().
+            ["--np-accent" as string]: surfAccent,
+            ["--code-bg" as string]: codeBlockStyles.bg,
+            ["--code-border" as string]: codeBlockStyles.border,
+            ["--code-btn-bg" as string]: codeBlockStyles.btnBg,
+            ["--code-btn-border" as string]: codeBlockStyles.btnBorder,
+          } as React.CSSProperties}
+          onClick={(e) => {
+            if (e.target === editorWrapRef.current) editor?.commands.focus("end");
+            setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowShortcuts(false); cancelConfirm();
+          }}
+        >
+          <div style={editorInnerStyle} className={[settings.ruledLines ? "notepad-ruled" : "", settings.imageBorder ? "notepad-img-border" : ""].filter(Boolean).join(" ")}>
+            <EditorContent editor={editor} />
+          </div>
         </div>
       </div>
 
