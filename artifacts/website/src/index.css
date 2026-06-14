@@ -891,10 +891,10 @@ html, body { overflow-x: clip; max-width: 100%; }
 ──────────────────────────────────────────────────────────────────────────── */
 
 .notepad-ruled {
-  --np-rule-color: rgba(255, 255, 255, 0.16);
+  --np-rule-color: rgba(255, 255, 255, 0.07);
 }
 .surface-light .notepad-ruled {
-  --np-rule-color: rgba(0, 0, 0, 0.18);
+  --np-rule-color: rgba(0, 0, 0, 0.08);
 }
 
 /* Base: position context + zero margins for every direct block child */
@@ -935,52 +935,20 @@ html, body { overflow-x: clip; max-width: 100%; }
   pointer-events: none;
 }
 
-/* Full-width repeating rule lines via ::after — draws a line under EVERY text line, including soft-wrapped lines */
-.notepad-ruled .notepad-editor > *::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  pointer-events: none;
-  background-image: linear-gradient(to bottom, transparent calc(100% - 1px), var(--np-rule-color) 1px);
-  background-size: 100% calc(var(--np-lh) * 1em);
-  background-repeat: repeat-y;
-}
-
-/* List containers: no rule of their own (each <li> draws its own) */
-.notepad-ruled .notepad-editor > ul::after,
-.notepad-ruled .notepad-editor > ol::after {
-  display: none !important;
-}
+/* List containers: no rule of their own */
 .notepad-ruled .notepad-editor > ul,
 .notepad-ruled .notepad-editor > ol {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
 
-/* Each list item = one visual line → its own repeating full-width rule */
+/* Each list item = one visual line */
 .notepad-ruled .notepad-editor li {
   position: relative;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-}
-.notepad-ruled .notepad-editor li::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  pointer-events: none;
-  background-image: linear-gradient(to bottom, transparent calc(100% - 1px), var(--np-rule-color) 1px);
-  background-size: 100% calc(var(--np-lh) * 1em);
-  background-repeat: repeat-y;
 }
 
 /* ── TipTap Table Styling ────────────────────────────────────────────────── */
