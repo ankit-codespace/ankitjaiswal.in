@@ -1238,5 +1238,597 @@ div:hover > .notepad-guide-trigger-icon {
   background: rgba(0, 0, 0, 0.05) !important;
 }
 
+/* ── Ruled Lines ── */
+.notepad-ruled {
+  /* line size = font-size * line-height; fallback covers default 18px * 2.15 ≈ 38.7px */
+  --ruled-size: calc(var(--np-fs, 18px) * var(--np-lh, 2.15));
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--ruled-size) - 1px),
+    rgba(255, 255, 255, 0.07) calc(var(--ruled-size) - 1px),
+    rgba(255, 255, 255, 0.07) var(--ruled-size)
+  );
+  background-size: 100% var(--ruled-size);
+  background-origin: content-box;
+  background-attachment: local;
+}
+
+.surface-light .notepad-ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--ruled-size) - 1px),
+    rgba(0, 0, 0, 0.08) calc(var(--ruled-size) - 1px),
+    rgba(0, 0, 0, 0.08) var(--ruled-size)
+  );
+}
+
+/* In ruled mode, list elements have zero margin to align perfectly with the lines */
+.notepad-ruled .notepad-editor ul,
+.notepad-ruled .notepad-editor ol,
+.notepad-ruled .notepad-editor li {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Headings in ruled mode lock line-heights and margins to exact grid multiples */
+.notepad-ruled .notepad-editor h1,
+.notepad-ruled .notepad-editor h2,
+.notepad-ruled .notepad-editor h3 {
+  margin-bottom: 0 !important;
+}
+.notepad-ruled .notepad-editor h1 {
+  line-height: calc(var(--np-lh) / 2) !important;
+  margin-top: var(--ruled-size) !important;
+}
+.notepad-ruled .notepad-editor h2 {
+  line-height: calc(var(--np-lh) / 1.45) !important;
+  margin-top: var(--ruled-size) !important;
+}
+.notepad-ruled .notepad-editor h3 {
+  line-height: calc(var(--np-lh) / 1.18) !important;
+  margin-top: var(--ruled-size) !important;
+}
+.notepad-ruled .notepad-editor h1:first-child,
+.notepad-ruled .notepad-editor h2:first-child,
+.notepad-ruled .notepad-editor h3:first-child {
+  margin-top: 0 !important;
+}
+
+
+.notepad-editor code {
+  font-family: 'Inter', sans-serif;
+  background: rgba(255,255,255,0.08);
+  padding: 0.12em 0.35em;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+.surface-light .notepad-editor code { background: rgba(0,0,0,0.07); }
+
+.notepad-code-block-wrapper {
+  position: relative;
+  margin: 0.8em 0;
+}
+.notepad-code-block-pre {
+  background-color: var(--code-bg, rgba(255,255,255,0.05)) !important;
+  border: 1px solid var(--code-border, rgba(255,255,255,0.06)) !important;
+  border-radius: 8px;
+  padding: 14px 18px;
+  overflow-x: auto;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+.notepad-code-block-code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Fira Mono', Monaco, Consolas, 'Courier New', monospace !important;
+  font-size: 0.88em !important;
+  line-height: 1.65 !important;
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  display: block;
+  color: inherit;
+}
+.notepad-code-block-copy-btn {
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+}
+.notepad-code-block-wrapper:hover .notepad-code-block-copy-btn {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.notepad-code-block-copy-btn:hover {
+  background: var(--code-btn-border) !important;
+}
+.notepad-code-block-copy-btn:active {
+  transform: scale(0.95);
+}
+
+/* ── Tables and Cells ── */
+.notepad-editor table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1.5em 0;
+  overflow: hidden;
+  border-radius: 8px;
+  border-style: hidden;
+  box-shadow: 0 0 0 1px var(--table-border);
+}
+
+.notepad-editor {
+  --table-border: rgba(255, 255, 255, 0.22);
+  --table-header-bg: rgba(255, 255, 255, 0.04);
+  --table-zebra-bg: rgba(255, 255, 255, 0.015);
+}
+
+.surface-light .notepad-editor {
+  --table-border: rgba(0, 0, 0, 0.18);
+  --table-header-bg: rgba(0, 0, 0, 0.03);
+  --table-zebra-bg: rgba(0, 0, 0, 0.01);
+}
+
+.notepad-editor th,
+.notepad-editor td {
+  min-width: 1em;
+  border: 1px solid var(--table-border);
+  padding: 5px 10px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+  text-align: left;
+}
+
+.notepad-editor th {
+  font-weight: 600;
+  background-color: var(--table-header-bg);
+}
+
+.notepad-editor tr:nth-child(even) {
+  background-color: var(--table-zebra-bg);
+}
+
+.notepad-editor th.selectedCell,
+.notepad-editor td.selectedCell {
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.notepad-editor .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--np-accent, #10B981);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.notepad-editor th:hover .column-resize-handle,
+.notepad-editor td:hover .column-resize-handle {
+  opacity: 0.3;
+}
+
+.notepad-editor .column-resize-handle.active {
+  opacity: 1;
+}
+
+.notepad-editor hr {
+  border: none;
+  border-top: 2px dashed #ffffff94;
+  margin: 1.5em 0;
+}
+
+.surface-light .notepad-editor hr {
+  border-top: 2px dashed rgba(0, 0, 0, 0.58);
+}
+
+.notepad-editor img {
+  height: auto;
+  border-radius: 8px;
+  margin: 1.6em 0 1em 0;
+  display: block;
+  cursor: zoom-in;
+  transition: max-width 0.18s ease, box-shadow 0.18s ease;
+}
+
+.notepad-img-border .notepad-editor img {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.surface-light .notepad-img-border .notepad-editor img {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.notepad-img-border .notepad-editor img.ProseMirror-selectednode {
+  box-shadow: none;
+}
+.notepad-editor hr + p img,
+.notepad-editor hr + img,
+.notepad-editor hr + div img {
+  margin-top: 2em;
+}
+.notepad-editor img[data-size="small"]  { max-width: 25%; }
+.notepad-editor img[data-size="medium"] { max-width: 45%; }
+.notepad-editor img[data-size="large"]  { max-width: 75%; }
+.notepad-editor img[data-size="full"]   { max-width: 100%; }
+.notepad-editor img:not([data-size])    { max-width: 45%; }
+.notepad-editor img.ProseMirror-selectednode {
+  outline: 2px solid #10B981;
+  outline-offset: 3px;
+}
+
+.notepad-editor .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: rgba(237,234,228,0.2);
+  pointer-events: none;
+  float: left;
+  height: 0;
+  font-style: italic;
+}
+.surface-light .notepad-editor .is-editor-empty:first-child::before { color: rgba(0,0,0,0.2); }
+
+/* Hide placeholder if the editor starts with a table, code block, list, or image */
+.notepad-editor .is-editor-empty:has(> table:first-child)::before,
+.notepad-editor .is-editor-empty:has(> pre:first-child)::before,
+.notepad-editor .is-editor-empty:has(> ul:first-child)::before,
+.notepad-editor .is-editor-empty:has(> ol:first-child)::before,
+.notepad-editor .is-editor-empty:has(> [data-type="taskList"]:first-child)::before,
+.notepad-editor .is-editor-empty:has(> [data-type="image"]:first-child)::before {
+  display: none !important;
+}
+
+.notepad-editor ::selection {
+  background: color-mix(in srgb, var(--np-accent, #10B981) 28%, transparent);
+}
+
+.notepad-grain { position: relative; }
+.notepad-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}
+
+/* ── Custom Elegant Scrollbars (SaaS-First Design) ── */
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-track-piece,
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track-piece {
+  background: transparent !important;
+}
+
+/* Scrollbar Buttons (Arrows) */
+::-webkit-scrollbar-button:vertical:decrement,
+*::-webkit-scrollbar-button:vertical:decrement {
+  display: block !important;
+  height: 8px !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='rgba(255,255,255,0.25)'><path d='M7 14l5-5 5 5z'/></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 6px !important;
+}
+
+::-webkit-scrollbar-button:vertical:increment,
+*::-webkit-scrollbar-button:vertical:increment {
+  display: block !important;
+  height: 8px !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='rgba(255,255,255,0.25)'><path d='M7 10l5 5 5-5z'/></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 6px !important;
+}
+
+/* Handle horizontal scrollbar buttons (just in case) */
+::-webkit-scrollbar-button:horizontal,
+*::-webkit-scrollbar-button:horizontal {
+  display: none !important;
+}
+
+/* Light Theme Arrows */
+.surface-light ::-webkit-scrollbar-button:vertical:decrement,
+.surface-light::-webkit-scrollbar-button:vertical:decrement,
+.surface-light *::-webkit-scrollbar-button:vertical:decrement {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='rgba(0,0,0,0.25)'><path d='M7 14l5-5 5 5z'/></svg>") !important;
+}
+.surface-light ::-webkit-scrollbar-button:vertical:increment,
+.surface-light::-webkit-scrollbar-button:vertical:increment,
+.surface-light *::-webkit-scrollbar-button:vertical:increment {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='rgba(0,0,0,0.25)'><path d='M7 10l5 5 5-5z'/></svg>") !important;
+}
+
+/* Thumb style */
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.28) !important;
+  border-radius: 9999px !important;
+}
+
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.48) !important;
+}
+
+/* Light Theme Thumb overrides */
+.surface-light::-webkit-scrollbar-thumb,
+.surface-light ::-webkit-scrollbar-thumb,
+.surface-light *::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.28) !important;
+}
+
+.surface-light::-webkit-scrollbar-thumb:hover,
+.surface-light ::-webkit-scrollbar-thumb:hover,
+.surface-light *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.48) !important;
+}
+
+/* Dark Theme Thumb overrides */
+.surface-dark::-webkit-scrollbar-thumb,
+.surface-dark ::-webkit-scrollbar-thumb,
+.surface-dark *::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.surface-dark::-webkit-scrollbar-thumb:hover,
+.surface-dark ::-webkit-scrollbar-thumb:hover,
+.surface-dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.48) !important;
+}
+
+/* Tab Context Menu Item Styling */
+.tab-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: var(--t2);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-context-menu-item:hover:not(:disabled) {
+  background: var(--bg3) !important;
+  color: var(--t1) !important;
+}
+
+.tab-context-menu-item:disabled {
+  color: var(--t3) !important;
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Tab close button hover opacity rule */
+.notepad-tab-item:hover .tab-close-btn {
+  opacity: 1 !important;
+}
+
+/* File menu dropdown item hover behavior */
+.notepad-file-menu-item:hover {
+  background: var(--bg3) !important;
+  color: var(--t1) !important;
+}
+
+/* Hide scrollbar for the modern modal settings panel */
+.notepad-settings-panel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Window Controls for Custom Title Bar */
+.win-control-btn:hover {
+  background: var(--bg3) !important;
+  color: var(--t1) !important;
+}
+.win-control-btn.close-btn:hover {
+  background: #E81123 !important;
+  color: #FFFFFF !important;
+}
+
+/* Responsive Toolbar & Layout Adjustments */
+@media (max-width: 680px) {
+  /* Hide text labels on Copy & Export split buttons to rely solely on premium icons */
+  .toolbar-btn-text {
+    display: none !important;
+  }
+  
+  /* Shrink non-active tabs max-width to allow more tabs to be visible concurrently */
+  .notepad-tab-item {
+    max-width: 95px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Hide the status text ("Saved 30s ago") so tabs have maximum room */
+  .saved-ago-status {
+    display: none !important;
+  }
+  
+  /* Trim side margins/paddings on the editor canvas for tight viewports */
+  .notepad-editor-inner {
+    padding: 24px 16px 64px !important;
+  }
+  
+  /* Slightly scale down tab fonts for readability on compact views */
+  .notepad-tab-item span {
+    font-size: 11px !important;
+  }
+}
+
+/* Collapsible Outline Table of Contents Sidebar styles */
+.notepad-outline-sidebar {
+  width: 0px;
+  opacity: 0;
+  transition: width 0.2s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+.notepad-outline-sidebar.is-open {
+  width: 260px;
+  opacity: 1;
+}
+
+@media (max-width: 800px) {
+  .notepad-outline-sidebar.is-open {
+    width: 190px;
+  }
+}
+
+@media (max-width: 600px) {
+  .notepad-outline-sidebar.is-open {
+    width: 160px;
+  }
+}
+
+/* In inactive tab hover styling */
+.notepad-tab-item:not(.active):hover {
+  background: var(--inactive-tab-hover) !important;
+}
+
+/* TaskList Checkboxes styling */
+.notepad-editor ul[data-type="taskList"] {
+  list-style: none !important;
+  padding-left: 0 !important;
+}
+.notepad-editor ul[data-type="taskList"] > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.notepad-editor ul[data-type="taskList"] > li > label {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: calc((var(--np-lh, 2.15) * var(--np-fs, 18px) - 18px) / 2);
+  cursor: pointer;
+}
+
+/* ── Premium Custom Checkbox ── */
+.notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  flex-shrink: 0;
+  display: block;
+}
+.notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"]:hover {
+  border-color: var(--np-accent, #10B981);
+  transform: scale(1.08);
+}
+.notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"]:checked {
+  background: var(--np-accent, #10B981);
+  border-color: var(--np-accent, #10B981);
+}
+/* SVG checkmark via clip-path */
+.notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 2.5px;
+  left: 5px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* Light theme overrides */
+.surface-light .notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"] {
+  border-color: rgba(0, 0, 0, 0.25);
+}
+.surface-light .notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"]:hover {
+  border-color: var(--np-accent, #10B981);
+}
+
+.notepad-editor ul[data-type="taskList"] > li[data-checked="true"] > div {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.notepad-editor ul[data-type="taskList"] > li > div {
+  flex: 1;
+}
+
+/* CSS Variables for line height and font size custom inputs */
+.notepad-ruled {
+  --np-fs: 18px;
+  --np-lh: 2.15;
+}
+
+/* Tab Context Menu Item Styling */
+.tab-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: var(--t2);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-context-menu-item:hover:not(:disabled) {
+  background: var(--bg3) !important;
+  color: var(--t1) !important;
+}
+
+.tab-context-menu-item:disabled {
+  color: var(--t3) !important;
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Collapsible Outline Table of Contents Sidebar styles */
+.notepad-outline-sidebar {
+  width: 0px;
+  opacity: 0;
+  transition: width 0.2s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+.notepad-outline-sidebar.is-open {
+  width: 260px;
+  opacity: 1;
+}
+
+@media (max-width: 800px) {
+  .notepad-outline-sidebar.is-open {
+    width: 190px;
+  }
+}
+
+@media (max-width: 600px) {
+  .notepad-outline-sidebar.is-open {
+    width: 160px;
+  }
+}
+
 
 

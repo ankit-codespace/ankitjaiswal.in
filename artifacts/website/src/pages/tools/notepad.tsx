@@ -290,7 +290,9 @@ interface NotepadDoc {
   updatedAt: number;
   driveFileId?: string;
   isPinned?: boolean;
+  color?: string;
 }
+
 
 interface DeleteConfirmState {
   docId: string;
@@ -347,6 +349,15 @@ const THEMES = [
   // Warm-neutral light grey
   { label: "Mist",     bg: "#EAE6DF", tabStripBg: "#DAD6CE", text: "#1F1B16", accent: "#7A7874", dark: false },
 ] as const;
+
+const TAB_COLORS = [
+  { id: "red", name: "Coral Red", value: "#EC7063" },
+  { id: "orange", name: "Amber Orange", value: "#E59866" },
+  { id: "yellow", name: "Warm Yellow", value: "#F4D03F" },
+  { id: "green", name: "Sage Green", value: "#58D68D" },
+  { id: "blue", name: "Slate Blue", value: "#5DADE2" },
+  { id: "purple", name: "Lavender", value: "#AF7AC5" },
+];
 
 /** Returns true if the hex colour is perceptually light (>128 brightness). */
 function isLightHex(hex: string): boolean {
@@ -878,6 +889,7 @@ export default function Notepad() {
 
   const contextMenuOpenTimeRef = useRef<number>(0);
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
+  const [imageContextMenu, setImageContextMenu] = useState<{ x: number; y: number; src: string; pos: number } | null>(null);
 
   const togglePin = useCallback((id: string) => {
     setDocs((prev) => {
@@ -887,16 +899,73 @@ export default function Notepad() {
     });
   }, []);
 
+  const duplicateDoc = useCallback((id: string) => {
+    const target = docs.find((d) => d.id === id);
+    if (!target) return;
+    const fresh: NotepadDoc = {
+      ...target,
+      id: genId(),
+      title: `${target.title} (Copy)`,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      driveFileId: undefined,
+    };
+    setDocs((prev) => {
+      const idx = prev.findIndex((d) => d.id === id);
+      const next = [...prev];
+      if (idx !== -1) {
+        next.splice(idx + 1, 0, fresh);
+      } else {
+        next.push(fresh);
+      }
+      saveDocs(next);
+      return next;
+    });
+    setActiveId(fresh.id);
+    toast.success(`Duplicated "${target.title}"`);
+  }, [docs]);
+
+  const closeOtherDocs = useCallback((idToKeep: string) => {
+    const target = docs.find((d) => d.id === idToKeep);
+    if (!target) return;
+    setDocs([target]);
+    saveDocs([target]);
+    setActiveId(target.id);
+    toast.success("Other tabs closed");
+  }, [docs]);
+
   const sortedDocs = useMemo(() => {
     const pinned = docs.filter((d) => d.isPinned);
     const unpinned = docs.filter((d) => !d.isPinned);
     return [...pinned, ...unpinned];
   }, [docs]);
 
+  const closeDocsToTheRight = useCallback((id: string) => {
+    const idx = sortedDocs.findIndex((d) => d.id === id);
+    if (idx === -1) return;
+    const idsToKeep = new Set(sortedDocs.slice(0, idx + 1).map((d) => d.id));
+    if (!idsToKeep.has(activeId)) {
+      setActiveId(id);
+    }
+    const nextDocs = docs.filter((d) => idsToKeep.has(d.id));
+    setDocs(nextDocs);
+    saveDocs(nextDocs);
+    toast.success("Tabs to the right closed");
+  }, [docs, sortedDocs, activeId]);
+
+  const setTabColor = useCallback((id: string, color?: string) => {
+    setDocs((prev) => {
+      const next = prev.map((d) => d.id === id ? { ...d, color } : d);
+      saveDocs(next);
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     const handleClose = (e: MouseEvent) => {
       if (Date.now() - contextMenuOpenTimeRef.current >= 100) {
         setContextMenu(null);
+        setImageContextMenu(null);
       }
       const target = e.target as HTMLElement;
       if (target && !target.closest(".notepad-color-picker-trigger")) {
@@ -965,6 +1034,23 @@ export default function Notepad() {
         // state update. Direct DOM manipulation (editor.view.dom.style.*) gets
         // wiped when ProseMirror re-applies editorProps.attributes via setProps().
         style: `line-height: ${settings.lineHeight}; font-size: ${settings.fontSize}px;`,
+      },
+      handleDOMEvents: {
+        contextmenu: (view, event) => {
+          const target = event.target as HTMLElement;
+          if (target && target.nodeName === "IMG") {
+            event.preventDefault();
+            setContextMenu(null);
+            setImageContextMenu({
+              x: event.clientX,
+              y: event.clientY,
+              src: target.getAttribute("src") || "",
+              pos: view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos ?? 0,
+            });
+            return true;
+          }
+          return false;
+        }
       },
       handleKeyDown(view, event) {
         // Top-priority Enter handler: when the cursor is in an empty paragraph
@@ -1109,6 +1195,88 @@ export default function Notepad() {
     const el = document.querySelector(".notepad-editor");
     if (el) el.setAttribute("spellcheck", String(settings.spellCheck));
   }, [settings.spellCheck]);
+
+  // ── Snap rich blocks to baseline grid for ruled lines to prevent alignment drift ──
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+
+    const alignBlocksToGrid = () => {
+      if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
+      const editorEl = document.querySelector(".notepad-editor");
+      if (!editorEl) return;
+
+      const blocks = editorEl.querySelectorAll("pre, table, blockquote, hr, img, .image-node");
+
+      if (!settings.ruledLines) {
+        // Clear snaps if ruled lines are turned off
+        blocks.forEach((el: any) => {
+          if (el.style.paddingBottom) el.style.paddingBottom = "";
+          if (el.style.marginTop) el.style.marginTop = "";
+          if (el.style.marginBottom) el.style.marginBottom = "";
+        });
+        return;
+      }
+
+      const G = settings.fontSize * settings.lineHeight; // exact grid height in pixels
+
+      blocks.forEach((el: any) => {
+        const currentPadding = parseFloat(el.style.paddingBottom) || 0;
+        const currentHeight = el.offsetHeight;
+        if (currentHeight === 0) return;
+
+        // Calculate natural height by subtracting current custom padding
+        const naturalHeight = currentHeight - currentPadding;
+        const remainder = naturalHeight % G;
+        
+        let needed = 0;
+        if (remainder > 0.5) {
+          needed = G - remainder;
+        }
+
+        const neededStr = needed > 0 ? `${needed}px` : "";
+        
+        // Only mutate DOM if value actually changed
+        if (el.style.paddingBottom !== neededStr) {
+          el.style.paddingBottom = neededStr;
+        }
+        if (el.style.marginTop) el.style.marginTop = "";
+        if (el.style.marginBottom) el.style.marginBottom = "";
+      });
+    };
+
+    // Run initial alignment
+    alignBlocksToGrid();
+
+    // Observe changes inside the editor
+    editor.on("update", alignBlocksToGrid);
+    editor.on("selectionUpdate", alignBlocksToGrid);
+
+    // Watch for window resize changes
+    window.addEventListener("resize", alignBlocksToGrid);
+
+    // Set up a MutationObserver to react to structural changes
+    let observer: MutationObserver | null = null;
+    if (editor.view && editor.view.dom) {
+      observer = new MutationObserver(alignBlocksToGrid);
+      observer.observe(editor.view.dom, {
+        childList: true,
+        subtree: true,
+        attributes: false, // Crucial: false to prevent triggering loops on style updates
+        characterData: true
+      });
+    }
+
+    return () => {
+      if (!editor.isDestroyed) {
+        editor.off("update", alignBlocksToGrid);
+        editor.off("selectionUpdate", alignBlocksToGrid);
+      }
+      window.removeEventListener("resize", alignBlocksToGrid);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [editor, settings.ruledLines, settings.fontSize, settings.lineHeight]);
 
   // ── Load Google Identity Services ──────────────────────────────────────────
   useEffect(() => {
@@ -1338,6 +1506,64 @@ export default function Notepad() {
   const setImgSize = useCallback((size: ImgSize) => {
     if (!editor) return;
     editor.chain().focus().updateAttributes("image", { size }).run();
+  }, [editor]);
+
+  const copyImageToClipboard = useCallback(async (src: string) => {
+    try {
+      let response = await fetch(src);
+      let blob = await response.blob();
+      
+      if (blob.type !== "image/png") {
+        const img = new Image();
+        img.src = src;
+        await new Promise((resolve) => img.onload = resolve);
+        
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const pngBlob = await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob(resolve, "image/png");
+          });
+          if (pngBlob) {
+            blob = pngBlob;
+          }
+        }
+      }
+      
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ]);
+      toast.success("Image copied to clipboard");
+    } catch (err) {
+      console.error("Failed to copy image: ", err);
+      toast.error("Failed to copy image to clipboard");
+    }
+  }, []);
+
+  const downloadImage = useCallback((src: string) => {
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = "notepad_image";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("Image download started");
+  }, []);
+
+  const deleteImageAtPos = useCallback((pos: number) => {
+    if (!editor) return;
+    editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
+    toast.success("Image deleted");
+  }, [editor]);
+
+  const setImageSizeAtPos = useCallback((pos: number, size: ImgSize) => {
+    if (!editor) return;
+    editor.chain().focus().setNodeSelection(pos).updateAttributes("image", { size }).run();
   }, [editor]);
 
 
@@ -2310,6 +2536,20 @@ export default function Notepad() {
                           zIndex: 1,
                         }}
                       >
+                        {doc.color && (
+                          <div 
+                            style={{ 
+                              position: "absolute",
+                              top: 4,
+                              right: 4,
+                              width: 5, 
+                              height: 5, 
+                              borderRadius: "50%", 
+                              background: TAB_COLORS.find(c => c.id === doc.color)?.value
+                            }} 
+                            title={`${TAB_COLORS.find(c => c.id === doc.color)?.name} Category`}
+                          />
+                        )}
                         <Pin size={10} style={{ transform: "rotate(30deg)", opacity: 0.8 }} />
                         <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
                           {doc.title ? doc.title.charAt(0).toUpperCase() : "U"}
@@ -2317,6 +2557,21 @@ export default function Notepad() {
                       </div>
                     ) : (
                       <>
+                        {doc.color && (
+                          <div 
+                            style={{ 
+                              width: 6, 
+                              height: 6, 
+                              borderRadius: "50%", 
+                              background: TAB_COLORS.find(c => c.id === doc.color)?.value, 
+                              marginRight: 2, 
+                              flexShrink: 0,
+                              position: "relative",
+                              zIndex: 1
+                            }} 
+                            title={`${TAB_COLORS.find(c => c.id === doc.color)?.name} Category`}
+                          />
+                        )}
                         {editingTabId === doc.id ? (
                           <input
                             ref={titleInputRef}
@@ -4068,6 +4323,294 @@ export default function Notepad() {
             </motion.div>
           </>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {contextMenu && (() => {
+          const targetDoc = docs.find((d) => d.id === contextMenu.tabId);
+          if (!targetDoc) return null;
+
+          return (
+            <>
+              {/* Invisible click catcher overlay */}
+              <div
+                onClick={() => setContextMenu(null)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setContextMenu(null);
+                }}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 9990,
+                  background: "transparent",
+                  cursor: "default",
+                }}
+              />
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.1 }}
+                style={{
+                  position: "fixed",
+                  top: contextMenu.y,
+                  left: Math.min(contextMenu.x, window.innerWidth - 190),
+                  zIndex: 9999,
+                  background: effectiveDark ? "rgba(26, 29, 36, 0.96)" : "rgba(255, 255, 255, 0.96)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+                  borderRadius: "10px",
+                  padding: "4px 0",
+                  boxShadow: effectiveDark ? "0 10px 30px rgba(0,0,0,0.5)" : "0 10px 30px rgba(0,0,0,0.1)",
+                  minWidth: 170,
+                  fontFamily: "Inter, sans-serif"
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    togglePin(targetDoc.id);
+                    setContextMenu(null);
+                  }}
+                >
+                  <Pin size={13} style={{ opacity: 0.7, transform: targetDoc.isPinned ? "none" : "rotate(30deg)" }} />
+                  <span>{targetDoc.isPinned ? "Unpin Tab" : "Pin Tab"}</span>
+                </button>
+
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    duplicateDoc(targetDoc.id);
+                    setContextMenu(null);
+                  }}
+                >
+                  <CopyIcon size={13} style={{ opacity: 0.7 }} />
+                  <span>Duplicate Tab</span>
+                </button>
+
+                <div style={{ height: 1, background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "4px 0" }} />
+                
+                <div style={{ padding: "6px 14px 4px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontSize: 9.5, textTransform: "uppercase", fontWeight: 700, color: "var(--t3)", letterSpacing: "0.5px" }}>Tab Highlight Color</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 0" }}>
+                    <button
+                      onClick={() => {
+                        setTabColor(targetDoc.id, undefined);
+                        setContextMenu(null);
+                      }}
+                      style={{
+                        width: 16, height: 16, borderRadius: "50%", border: effectiveDark ? "1px solid rgba(255,255,255,0.25)" : "1px solid rgba(0,0,0,0.25)",
+                        background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative"
+                      }}
+                      title="Clear Color"
+                    >
+                      <div style={{ width: 1, height: 10, background: effectiveDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.55)", transform: "rotate(45deg)" }} />
+                    </button>
+                    
+                    {TAB_COLORS.map((color) => {
+                      const isSelected = targetDoc.color === color.id;
+                      return (
+                        <button
+                          key={color.id}
+                          onClick={() => {
+                            setTabColor(targetDoc.id, color.id);
+                            setContextMenu(null);
+                          }}
+                          style={{
+                            width: 16, height: 16, borderRadius: "50%", border: "none", background: color.value,
+                            cursor: "pointer", 
+                            outline: isSelected ? (effectiveDark ? "2px solid #FFFFFF" : "2px solid #000000") : "none",
+                            outlineOffset: 1,
+                            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.2)",
+                            transition: "transform 0.1s"
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.15)"}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                          title={color.name}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ height: 1, background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "4px 0" }} />
+
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    setDeleteConfirm({
+                      docId: targetDoc.id,
+                      source: "menu",
+                      x: contextMenu.x,
+                      y: contextMenu.y,
+                    });
+                    setContextMenu(null);
+                  }}
+                  disabled={docs.length <= 1}
+                >
+                  <X size={13} style={{ opacity: 0.7 }} />
+                  <span>Close Tab</span>
+                </button>
+
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    closeOtherDocs(targetDoc.id);
+                    setContextMenu(null);
+                  }}
+                  disabled={docs.length <= 1}
+                >
+                  <Trash2 size={13} style={{ opacity: 0.7 }} />
+                  <span>Close Other Tabs</span>
+                </button>
+
+                {(() => {
+                  const tabIndex = sortedDocs.findIndex((d) => d.id === targetDoc.id);
+                  const hasTabsToRight = tabIndex !== -1 && tabIndex < sortedDocs.length - 1;
+                  return (
+                    <button
+                      className="tab-context-menu-item"
+                      onClick={() => {
+                        closeDocsToTheRight(targetDoc.id);
+                        setContextMenu(null);
+                      }}
+                      disabled={!hasTabsToRight}
+                    >
+                      <Trash2 size={13} style={{ opacity: 0.7 }} />
+                      <span>Close Tabs to Right</span>
+                    </button>
+                  );
+                })()}
+              </motion.div>
+            </>
+          );
+        })()}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {imageContextMenu && (() => {
+          // Get current size:
+          const node = editor?.state.doc.nodeAt(imageContextMenu.pos);
+          const currentSize = (node?.attrs.size || "medium") as ImgSize;
+
+          return (
+            <>
+              {/* Invisible click catcher overlay */}
+              <div
+                onClick={() => setImageContextMenu(null)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setImageContextMenu(null);
+                }}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 9990,
+                  background: "transparent",
+                  cursor: "default",
+                }}
+              />
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.1 }}
+                style={{
+                  position: "fixed",
+                  top: imageContextMenu.y,
+                  left: Math.min(imageContextMenu.x, window.innerWidth - 180),
+                  zIndex: 9999,
+                  background: effectiveDark ? "rgba(26, 29, 36, 0.96)" : "rgba(255, 255, 255, 0.96)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+                  borderRadius: "10px",
+                  padding: "4px 0",
+                  boxShadow: effectiveDark ? "0 10px 30px rgba(0,0,0,0.5)" : "0 10px 30px rgba(0,0,0,0.1)",
+                  minWidth: 160,
+                  fontFamily: "Inter, sans-serif"
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    copyImageToClipboard(imageContextMenu.src);
+                    setImageContextMenu(null);
+                  }}
+                >
+                  <CopyIcon size={13} style={{ opacity: 0.7 }} />
+                  <span>Copy Image</span>
+                </button>
+
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    downloadImage(imageContextMenu.src);
+                    setImageContextMenu(null);
+                  }}
+                >
+                  <Download size={13} style={{ opacity: 0.7 }} />
+                  <span>Download Image</span>
+                </button>
+
+                <div style={{ height: 1, background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "4px 0" }} />
+                
+                <div style={{ padding: "6px 14px 4px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontSize: 9.5, textTransform: "uppercase", fontWeight: 700, color: "var(--t3)", letterSpacing: "0.5px" }}>Image Size</span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {(["small", "medium", "large", "full"] as ImgSize[]).map((s) => {
+                      const isSelected = currentSize === s;
+                      const sizeLabels: Record<ImgSize, string> = { small: "S", medium: "M", large: "L", full: "Full" };
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setImageSizeAtPos(imageContextMenu.pos, s);
+                            setImageContextMenu(null);
+                          }}
+                          style={{
+                            flex: 1,
+                            background: isSelected ? "var(--np-accent)" : (effectiveDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)"),
+                            color: isSelected ? "#FFFFFF" : "var(--t2)",
+                            border: "none",
+                            borderRadius: 4,
+                            padding: "3px 0",
+                            fontSize: 10,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            transition: "background 0.1s"
+                          }}
+                        >
+                          {sizeLabels[s]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ height: 1, background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "4px 0" }} />
+
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    deleteImageAtPos(imageContextMenu.pos);
+                    setImageContextMenu(null);
+                  }}
+                  style={{ color: "var(--err)" }}
+                >
+                  <Trash2 size={13} style={{ opacity: 0.7, color: "var(--err)" }} />
+                  <span>Delete Image</span>
+                </button>
+              </motion.div>
+            </>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
