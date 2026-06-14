@@ -46,6 +46,7 @@ function createWindow() {
     height: 700,
     frame: false, // Frameless window for custom premium title bar
     autoHideMenuBar: true,
+    icon: path.join(__dirname, '../renderer/public/favicon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

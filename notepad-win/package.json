@@ -20,6 +20,7 @@
     "appId": "com.ankitjaiswal.notepad",
     "productName": "I Love Notepad",
     "win": {
+      "icon": "icon.ico",
       "target": [
         "nsis",
         "appx"
