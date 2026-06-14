@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "com.ankitjaiswal.notepad",
-    "productName": "Our Notepad",
+    "productName": "I Love Notepad",
     "win": {
       "target": [
         "nsis",
@@ -35,7 +35,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Our Notepad"
+      "shortcutName": "I Love Notepad"
     },
     "fileAssociations": [
       {
