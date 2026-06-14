@@ -47,7 +47,14 @@ export function Seo({
           <link rel="icon" href="/icons/icon-512.png?v=2" type="image/png" sizes="512x512" />
           <link rel="apple-touch-icon" href="/icons/icon-192.png?v=2" />
         </>
-      ) : null}
+      ) : (
+        <>
+          <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+          <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+          <link rel="icon" href="/favicon.webp?v=2" type="image/webp" />
+          <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+        </>
+      )}
       {noIndex
         ? <meta name="robots" content="noindex, nofollow" />
         : <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />}
