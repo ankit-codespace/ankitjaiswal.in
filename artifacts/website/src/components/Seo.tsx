@@ -33,6 +33,11 @@ export function Seo({
     ? title
     : `${title} | ${SITE.brand}`;
   const ldArr = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+  const faviconType = favicon?.endsWith(".svg")
+    ? "image/svg+xml"
+    : favicon?.endsWith(".webp")
+      ? "image/webp"
+      : "image/png";
 
   return (
     <Helmet prioritizeSeoTags>
@@ -42,10 +47,8 @@ export function Seo({
       <link rel="canonical" href={canonical} />
       {favicon ? (
         <>
-          <link rel="icon" href={`${favicon}?v=2`} type="image/svg+xml" />
-          <link rel="icon" href="/icons/icon-192.png?v=2" type="image/png" sizes="192x192" />
-          <link rel="icon" href="/icons/icon-512.png?v=2" type="image/png" sizes="512x512" />
-          <link rel="apple-touch-icon" href="/icons/icon-192.png?v=2" />
+          <link rel="icon" href={`${favicon}?v=3`} type={faviconType} />
+          <link rel="apple-touch-icon" href={`${favicon}?v=3`} />
         </>
       ) : (
         <>

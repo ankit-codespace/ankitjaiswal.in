@@ -2329,7 +2329,7 @@ export default function Notepad() {
         canonicalPath="/online-notepad"
         keywords={seo.keywords}
         jsonLd={jsonLd}
-        favicon="/icons/notepad-favicon.svg"
+        favicon="/icons/ilovenotepad_logo_premium.png"
       />
 
       {/*
