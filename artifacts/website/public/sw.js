@@ -1,4 +1,4 @@
-const CACHE_NAME = "aj-notepad-cache-v1";
+const CACHE_NAME = "aj-notepad-cache-v2";
 const OFFLINE_URL = "/online-notepad";
 
 self.addEventListener("install", (event) => {

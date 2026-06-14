@@ -42,10 +42,10 @@ export function Seo({
       <link rel="canonical" href={canonical} />
       {favicon ? (
         <>
-          <link rel="icon" href={favicon} type="image/svg+xml" />
-          <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
-          <link rel="icon" href="/icons/icon-512.png" type="image/png" sizes="512x512" />
-          <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+          <link rel="icon" href={`${favicon}?v=2`} type="image/svg+xml" />
+          <link rel="icon" href="/icons/icon-192.png?v=2" type="image/png" sizes="192x192" />
+          <link rel="icon" href="/icons/icon-512.png?v=2" type="image/png" sizes="512x512" />
+          <link rel="apple-touch-icon" href="/icons/icon-192.png?v=2" />
         </>
       ) : null}
       {noIndex
