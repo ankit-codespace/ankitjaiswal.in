@@ -40,7 +40,14 @@ export function Seo({
       <meta name="description" content={description} />
       {keywords && <meta name="keywords" content={keywords} />}
       <link rel="canonical" href={canonical} />
-      {favicon && <link rel="icon" href={favicon} />}
+      {favicon ? (
+        <>
+          <link rel="icon" href={favicon} type="image/svg+xml" />
+          <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+          <link rel="icon" href="/icons/icon-512.png" type="image/png" sizes="512x512" />
+          <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        </>
+      ) : null}
       {noIndex
         ? <meta name="robots" content="noindex, nofollow" />
         : <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />}
