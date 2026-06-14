@@ -1,29 +1,40 @@
-# Notepad Web Upgrade — Final Summary
+# ILoveNotepad — Production Fix Final Summary
+Generated: 2026-06-14T13:16:50Z
 
-## Features Ported
-- **Notebook lines grid layout:** Snapped Tiptap document blocks to baseline grid using CSS variables and vertical rhythm styling in `index.css` to prevent alignment drift.
-- **Checkbox/Task list styling:** Customized Tiptap checklist styling to render notebook-style checkbox layout matching the desktop version.
-- **Tab styling alignment:** Imported custom SVG borders and styling for Chrome-like notebook tabs layout.
-- **React-based Custom Tab Context Menu:** Recreated the desktop context menu in React with Pin/Unpin, Rename, Duplicate, Delete, Close Other Tabs, Close Tabs to the Right, and custom Color categories.
-- **Tab Color categories:** Ported tab classification logic mapping custom category colors to tabs, persisting state in local storage.
-- **Image Right-Click Context Menu:** Ported custom options: copy image to clipboard, delete, download image, and resize layout toggles.
-- **File Menu Trigger button & dropdown:** Placed standard file menu trigger and dropdown containing: New Note, Open, Save, Save As, and Print/PDF.
-- **Outline (Table of Contents) Sidebar:** Implemented collapsable sidebar compiling list of `h1, h2, h3` from Tiptap document with scrollspy active heading tracking.
-- **Baseline Grid Snapper hook:** Added `alignBlocksToGrid` hook utilizing a `MutationObserver` on the editor view DOM to snap pre/table/blockquote/image elements vertically.
-- **Zoom controls logic:** Ported zoom-level state and listeners for Ctrl+Scroll / Ctrl+Plus/Minus/Zero, updating CSS style scaling.
-- **Duplicate/Close others/Close right actions:** Ported state handlers for tabs duplication and bulk closure.
-- **Keyboard shortcuts:**
-  - **Ctrl+H & Ctrl+Shift+H:** Both trigger text highlight.
-  - **Ctrl+Shift+F:** Triggers Find and Replace pane (replacing `Ctrl+H`).
-  - **Ctrl+F:** Custom find pane.
+I have successfully executed the autonomous production fix workflow for both the ILoveNotepad web application and the Windows desktop Electron application. Below is a detailed summary of the optimizations, resolutions, and structural improvements completed.
 
-## Features Adapted for Web
-- **File Open / Save:** Replaced Electron dialogs with Web File System Access API (`showOpenFilePicker`, `showSaveFilePicker`), falling back to standard browser downloads.
-- **Ctrl+F (Find):** Intercepts browser Find using `event.preventDefault()` only when the editor or notepad is active, allowing native browser search otherwise.
+---
 
-## Features Skipped (Desktop-Only)
-- **Ctrl+N / Ctrl+T / Ctrl+W / Ctrl+Shift+W / Ctrl+Shift+T:** Reserved by browser and Electron window lifecycle management. Skip overriding to preserve default browser operations.
+## 1. Web Layout & Navigation scoping
+- **Problem**: Global home page navbar/footer overlapping toolpages (specifically `/pomodoro`, trailing slash variations of `/online-notepad/`, `/notepad/`).
+- **Resolution**: 
+  - Updated [layout.tsx](file:///c:/Users/LENOVO-PC/Documents/Ankit%20Jaiswal%20Portfolio/Ankit%20Jaiswal%20Portfolio/ankitjaiswal.in/artifacts/website/src/components/layout.tsx) to normalize `location` by stripping trailing slashes, search params, and hash parameters.
+  - Added `/pomodoro` to `TOP_LEVEL_TOOL_ALIASES` to ensure it successfully suppresses the site-wide navigation frame.
+- **Result**: Checked and verified via autonomous browser testing on `/online-notepad`, `/online-notepad/`, `/pomodoro`, and `/` routes. No double header overlaps remain.
 
-## Files Changed
-- [index.css](file:///c:/Users/LENOVO-PC/Documents/Ankit%20Jaiswal%20Portfolio/Ankit%20Jaiswal%20Portfolio/ankitjaiswal.in/artifacts/website/src/index.css)
-- [notepad.tsx](file:///c:/Users/LENOVO-PC/Documents/Ankit%20Jaiswal%20Portfolio/Ankit%20Jaiswal%20Portfolio/ankitjaiswal.in/artifacts/website/src/pages/tools/notepad.tsx)
+---
+
+## 2. Desktop Icon Customization & Branding Strip
+- **Problem**: Desktop app was lacking custom premium branding and showed default packaging templates/icons.
+- **Resolution**:
+  - Implemented a square padding and scaling converter script inside Python (using PIL/Pillow) to process `C:\Users\LENOVO-PC\Downloads\ilovenotepad_store_assets_backup\ilovenotepad_logo_premium.png` (745x931 resolution) into a standard square multi-resolution `icon.ico` (resolutions from 16x16 up to 256x256).
+  - Saved the resulting custom icon to `notepad-win/icon.ico` and `notepad-win/src/renderer/public/favicon.ico`.
+  - Configured `main.js` window instantiation to dynamically resolve and set the window icon path in both development and production packaged states.
+  - Cleaned `productName` and `appId` metadata.
+
+---
+
+## 3. Desktop Application Performance & Size Reduction
+- **Problem**: Large output package sizes and white screen flashing on app launch.
+- **Resolution**:
+  - Excluded TypeScript sources (`.ts`), Markdown files (`.md`), and dev-only source maps (`.map`) from final build outputs inside `package.json`.
+  - Enabled **ASAR** archiving (`"asar": true`) and maximum package compression (`"compression": "maximum"`).
+  - Implemented the `'ready-to-show'` event in [main.js](file:///c:/Users/LENOVO-PC/Documents/Ankit%20Jaiswal%20Portfolio/Ankit%20Jaiswal%20Portfolio/ankitjaiswal.in/notepad-win/src/main/main.js) to keep the window hidden (`show: false`) and load a matching warm dark background (`backgroundColor: '#0F0F0E'`) until the UI is fully rendered, eliminating startup flicker.
+
+---
+
+## 4. Web Favicon Localization
+- **Problem**: Web Notepad route loaded the logo from an external URL fallback.
+- **Resolution**:
+  - Localized `ilovenotepad_logo_premium.png` inside the website's public assets at `/icons/ilovenotepad_logo_premium.png`.
+  - Linked Notepad metadata and static build route generators to the localized relative asset URL.

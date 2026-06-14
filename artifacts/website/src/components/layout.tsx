@@ -136,9 +136,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return () => observer.disconnect();
   }, []);
 
+  // Normalize location: strip trailing slash (except for "/"), search params, and hash anchors
+  const cleanLocation = location.split("?")[0].split("#")[0].replace(/\/$/, "") || "/";
+
   // On the /tools directory page the nav should always be opaque — the page is dark from the top
   // and the transparent-in-hero treatment causes the eyebrow label to bleed through the nav.
-  const isToolsIndex = location === "/tools";
+  const isToolsIndex = cleanLocation === "/tools";
   const useHeroHeader = !isToolsIndex && isInHero;
   const headerLogoSrc = useHeroHeader ? "/images/ankitjaiswal-logo-dark.png" : "/images/ankitjaiswal-logo-light.png";
 
@@ -158,8 +161,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     "/paste-to-image",
     "/clipboard-history",
     "/youtube-summary",
+    "/pomodoro",
   ]);
-  if (location.startsWith("/tools/") || TOP_LEVEL_TOOL_ALIASES.has(location)) {
+  if (cleanLocation.startsWith("/tools/") || TOP_LEVEL_TOOL_ALIASES.has(cleanLocation)) {
     return (
       <div style={{ background: "var(--layout-bg, #0A0C10)", minHeight: "100vh" }}>
         <main>{children}</main>

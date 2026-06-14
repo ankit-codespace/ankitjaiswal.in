@@ -44,14 +44,22 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
+    show: false, // Don't show until content is painted
+    backgroundColor: '#0F0F0E', // Match app background to prevent flash
     frame: false, // Frameless window for custom premium title bar
     autoHideMenuBar: true,
-    icon: path.join(__dirname, '../renderer/public/favicon.ico'),
+    icon: fs.existsSync(path.join(__dirname, '../renderer/dist/favicon.ico'))
+      ? path.join(__dirname, '../renderer/dist/favicon.ico')
+      : path.join(__dirname, '../renderer/public/favicon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
   });
 
   if (!app.isPackaged) {

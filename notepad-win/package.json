@@ -19,6 +19,8 @@
   "build": {
     "appId": "com.ankitjaiswal.notepad",
     "productName": "I Love Notepad",
+    "asar": true,
+    "compression": "maximum",
     "win": {
       "icon": "icon.ico",
       "target": [
@@ -48,7 +50,13 @@
     ],
     "files": [
       "src/main/**/*",
-      "src/renderer/dist/**/*"
+      "src/renderer/dist/**/*",
+      "!**/*.map",
+      "!**/*.ts",
+      "!**/*.md",
+      "!**/node_modules/**/*.md",
+      "!**/node_modules/**/*.map",
+      "!**/node_modules/**/*.ts"
     ]
   }
 }
