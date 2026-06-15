@@ -1,45 +1,40 @@
-# ILoveNotepad — Pre-Work Analysis Report
-Generated: 2026-06-14T13:11:30Z
+# ILoveNotepad — Pre-Work Analysis Report (MSStore AppX Submission)
+Generated: 2026-06-15T17:06:00+05:30
 
-## 1. Project Structure
-The repository is structured as a pnpm-managed monorepo with the following configuration:
-- **Root Directory**: Contains workspace configuration (`pnpm-workspace.yaml`, `package.json`, and lockfile).
-- **Web App**: Located at `artifacts/website/` (React, Vite, wouter routing).
-- **Electron App**: Located at `notepad-win/` (Electron main process, with a React renderer workspace inside `notepad-win/src/renderer`).
+## 1. Project and Build Structure
+- **Electron App Location:** `c:\Users\LENOVO-PC\Documents\Ankit Jaiswal Portfolio\Ankit Jaiswal Portfolio\ankitjaiswal.in\notepad-win`
+- **Build Configuration:** Configured inline in `notepad-win/package.json` under the `"build"` key.
+- **Package Manager:** `npm` (indicated by `package-lock.json` in `notepad-win/`).
+- **Build/Package Scripts:**
+  - `npm run start` -> Launches local Electron developer mode
+  - `npm run build:renderer` -> Compiles front-end components
+  - `npm run build` -> Compiles renderer and triggers `electron-builder`
+  - `npm run pack` -> Runs local unpacked packaging for testing
 
-## 2. Navbar Overlap — Root Cause
-- **File**: [layout.tsx](file:///c:/Users/LENOVO-PC/Documents/Ankit%20Jaiswal%20Portfolio/Ankit%20Jaiswal%20Portfolio/ankitjaiswal.in/artifacts/website/src/components/layout.tsx) (line 150-168)
-- **Issue**: The layout check for hiding the site navigation uses:
-  `if (location.startsWith("/tools/") || TOP_LEVEL_TOOL_ALIASES.has(location))`
-  This check fails when the route location has a trailing slash (e.g. `/online-notepad/` or `/notepad/`) or query/hash parameters. Additionally, `/pomodoro` is not listed in `TOP_LEVEL_TOOL_ALIASES`, causing the global site navbar and footer to overlap on the Pomodoro focus timer tool.
-- **Fix Needed**:
-  1. Normalize the location string by stripping trailing slashes and query parameters before matching.
-  2. Include `/pomodoro` in the `TOP_LEVEL_TOOL_ALIASES` list.
+## 2. Existing electron-builder Settings
+- **Win target list:** `["nsis", "appx"]`
+- **App ID:** `com.ankitjaiswal.notepad`
+- **AppX Identity Name:** `com.ankitjaiswal.notepad`
+- **AppX Publisher Name:** `Ankit Jaiswal`
+- **AppX Publisher ID:** `CN=PLEASE_REPLACE_WITH_YOUR_PUBLISHER_ID_FROM_PARTNER_CENTER`
+- **Current Icon:** `icon.ico` directly in `notepad-win/`.
 
-## 3. Web Load Speed — Issues Ranked by Impact
-1. **Unoptimized Assets & Code Splitting**: Heavy editor packages (TipTap and its extensive extensions) are loaded within the main notepad bundle.
-2. **SSR / Hydration Checks**: Dynamic theme attributes are calculated on load, causing potential repaint blocks.
-3. **Suspense Boundaries**: The fallback loading visual is minimal and can be optimized.
+## 3. AppX Logo Assets Audit
+- **Directory `notepad-win/build/`:** Currently missing entirely in `notepad-win/`.
+- **Directory `notepad-win/build/appx/`:** Missing.
+- **Required Store Assets to create:**
+  - `StoreLogo.png` (50x50)
+  - `Square150x150Logo.png` (150x150)
+  - `Square44x44Logo.png` (44x44)
+  - `Wide310x150Logo.png` (310x150)
+- **Source Logo Available:** `store-assets/ilovenotepad_logo_premium.png` is available at `c:\Users\LENOVO-PC\Documents\Ankit Jaiswal Portfolio\Ankit Jaiswal Portfolio\ankitjaiswal.in\store-assets\ilovenotepad_logo_premium.png`.
 
-## 4. Electron Icon — What's Missing
-- **Current Window Icon Config**: [main.js](file:///c:/Users/LENOVO-PC/Documents/Ankit%20Jaiswal%20Portfolio/Ankit%20Jaiswal%20Portfolio/ankitjaiswal.in/notepad-win/src/main/main.js#L49) loads `favicon.ico` from the renderer public folder.
-- **Electron Builder Config**: [package.json](file:///c:/Users/LENOVO-PC/Documents/Ankit%20Jaiswal%20Portfolio/Ankit%20Jaiswal%20Portfolio/ankitjaiswal.in/notepad-win/package.json#L23) points to `icon.ico` in the package root.
-- **Missing**: We need to generate a high-res custom multi-resolution `.ico` icon from `C:\Users\LENOVO-PC\Downloads\ilovenotepad_store_assets_backup\ilovenotepad_logo_premium.png` and update both `notepad-win/icon.ico` and `notepad-win/src/renderer/public/favicon.ico`.
+## 4. Microsoft Store Submission Rejection Root Cause
+- **Policy Violated:** 10.2.9 Security - Package Submissions
+- **Reason:** The uploaded file was a traditional Win32 executable (`ilovenotepad-setup-1.0.0.exe`) that was unsigned. Store Policy requires Win32 EXE installers to be signed with a purchased Authenticode certificate.
+- **Workaround:** Compile the app as a `.appx` (MSIX) package. Uploading `.appx` to the Store leverages Microsoft's complimentary signing process where Microsoft signs it for free with their trusted certificate.
+- **Action Required:** Change builder configuration to package `.appx` correctly and guide the developer to locate their `Publisher ID` (CN string) in the Partner Center (dashboard -> Product Identity) to replace the placeholder value.
 
-## 5. Electron Size — Bloat Sources
-- **Package Exclusions**: The `package.json` "files" array packages everything in `src/main/` and `src/renderer/dist/`, but doesn't explicitly exclude source maps (`.map` files), development assets, or unused configuration files.
-- **Dependency Classification**: Dev dependencies such as `electron` and `electron-builder` are correctly separated, but the renderer package has some dependencies that could be better tree-shaken.
-- **White Screen Cause**: The `main.js` creates the BrowserWindow and immediately shows it, instead of deferring the show call until the `'ready-to-show'` event, or loading a background color matching the app.
-
-## 6. Favicon — Current State and Scope
-- **Current Favicon Method**: Set per-route via `Seo.tsx` metadata and dynamically rewritten in static builds via `create-route-html.mjs`.
-- **Files to Update**:
-  - `notepad.tsx`
-  - `create-route-html.mjs`
-- **Scope**: Localized to Notepad route and its static build template.
-
-## 7. Proactive Findings
-- In `notepad-win/src/renderer/package.json`, `@tailwindcss/vite` is a devDependency but `@tailwindcss/postcss` and tailwind-merge are in dependencies. We will verify compile outputs.
-
-## 8. Assumptions
-- None. All paths, package references, and layout structures have been verified directly via filesystem inspection.
+## 5. Assumptions
+- It is assumed that the developer has reserved the app name "I Love Notepad" in Microsoft Partner Center and that the matching Publisher Name is "Ankit Jaiswal".
+- It is assumed that the local system has the required Windows SDK installed to enable `electron-builder` to package `.appx` files using Windows SDK `makeappx.exe` or node-appx.

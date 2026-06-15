@@ -1,167 +1,173 @@
-# Skill: Execute Phase Loop
+# Skill: Execute Phase Loop — Microsoft Store AppX Packaging
 
-## Purpose
+## The Core Rule
 
-This is the execution engine. It runs every sub-step from the plan.
-One sub-step at a time. Audit after each. Log everything. Never batch. Never skip.
+**Read → Change → Re-read → Audit → Log → Next**
 
-This loop does not stop until all 5 phases are complete.
-
----
-
-## The Golden Rule
-
-**Read → Do → Verify → Log → Next**
-
-If any of those 4 steps are skipped, you are not executing correctly. Go back.
+Every single sub-step follows this pattern. No exceptions.
+No batching two steps into one. No skipping the re-read.
+No logging "done" before you verified it actually worked.
 
 ---
 
-## Execution Loop
+## The Loop
 
 ```
-LOOP:
-  Read the next sub-step from production_artifacts/build_plan.md
-  
-  IF sub-step involves reading a file:
-    → Read it completely, not partially
-    → Extract the exact information needed
-    → Do NOT proceed if the file read failed or returned unexpected content
-  
-  IF sub-step involves writing/modifying a file:
-    → Read the current file FIRST (even if you just read it two steps ago)
-    → Make exactly the change described — no more, no less
-    → Re-read the file AFTER the change
-    → Check: did the change land correctly?
-    → Check: did the change break anything adjacent in the same file?
-    → If yes to either: fix it immediately before moving on
-  
-  IF sub-step involves running a command:
-    → Run the command
-    → Read the output completely
-    → If error: diagnose, fix, re-run before logging success
-    → If success: verify the output matches expectations
-  
-  AUDIT THE SUB-STEP:
-    → Re-read every file touched in this sub-step
-    → Ask: "Is this correct and complete?"
-    → Ask: "Could this break something else?"
-    → Ask: "Did I actually solve what this step required?"
-    → If any answer is "no" or "unsure" → fix it NOW
-  
+WHILE there are uncompleted sub-steps in build_plan.md:
+
+  PICK the next sub-step
+
+  CLASSIFY it:
+    Type A — Reading a file
+    Type B — Writing or modifying a file
+    Type C — Running a terminal command
+    Type D — Verification / audit
+    Type E — Logging / documentation
+
+  EXECUTE based on type:
+
+  --- TYPE A: Reading ---
+    Read the file COMPLETELY. Not partially.
+    Extract every relevant piece of information.
+    If the file is not where expected: search for it, update the plan, log the correction.
+    If the file doesn't exist: flag it, check if it should be created, log finding.
+
+  --- TYPE B: Writing or Modifying ---
+    FIRST: Read the current file completely (even if read 2 steps ago — things change)
+    THEN: Make exactly the change described in the sub-step
+    THEN: Re-read the file you just modified
+    CHECK:
+      - Did the change land correctly?
+      - Did it break anything adjacent in the same file?
+      - Is there a syntax error introduced?
+      - Is the indentation correct (JS/JSON formatting)?
+      - For package.json: is it still valid JSON?
+    If any check fails: fix it NOW before moving to the next step.
+
+  --- TYPE C: Running a Command ---
+    Run the command.
+    Read the FULL output.
+    If it errored:
+      Read the error message completely.
+      Diagnose the root cause (don't guess — read the stack trace).
+      Fix the root cause.
+      Re-run the command.
+      Repeat until it succeeds OR document clearly why it cannot.
+    If it succeeded:
+      Verify the output matches expectations.
+      Save relevant output to the log.
+
+  --- TYPE D: Verification ---
+    This is not a formality. Actually verify.
+    Run the grep, the ls, the file check — get real output.
+    Document what the verification showed.
+    If verification fails: return to the step that should have fixed it and fix it properly.
+    Do not proceed until verification passes.
+
+  --- TYPE E: Logging / Documentation ---
+    Write it. Don't abbreviate. Future-you needs to understand what happened.
+    Format: [STATUS] [PHASE.STEP] [TIMESTAMP] — [WHAT] — [WHY] — [FILES TOUCHED]
+
+  AFTER EVERY SUB-STEP:
+    Ask yourself three questions:
+    1. "Did this step do what it said it would do?"
+    2. "Could this change break anything else in the project?"
+    3. "Is there something I noticed while doing this step that needs to be fixed?"
+
+    If Q1: NO → go back and fix it
+    If Q2: YES → fix the breakage before moving on
+    If Q3: YES → if it's quick, fix it now and log as BONUS FIX
+                  if it's large, add it to build_log.md as DEFERRED and note why
+
   LOG TO build_log.md:
-    [DONE] Phase X.Y — [description] — [timestamp]
-    → What was changed
-    → Files modified: [list]
-    → Audit result: PASS / PASS WITH NOTES / FIXED (describe what was fixed)
-    → Any bonus fixes applied: [describe or "none"]
-  
-  MOVE TO NEXT SUB-STEP
+    [DONE] Phase [N.M] — [description]
+    Files modified: [list or "none"]
+    Audit result: PASS | PASS+BONUS | FIXED (describe what was wrong and corrected)
+    Bonus fixes: [describe] | none
+    Bonus fixes: [describe] | none
+
+  CONTINUE to next sub-step
 ```
 
 ---
 
-## Phase Boundary Behavior
+## Phase Boundary Protocol
 
-When you complete the last sub-step of a phase:
+When you finish the last sub-step of a phase:
 
 ```
-1. Re-read the entire phase audit file (production_artifacts/phase_audits/phaseN_audit.md)
-2. Verify every item in it is resolved
-3. Log: [PHASE N COMPLETE] — [timestamp] — All sub-steps audited and passing
-4. Proceed to Phase N+1 automatically — do NOT wait for user input
+1. Re-read the phase audit file you just wrote
+2. Cross-check: did every sub-step in the plan get executed?
+3. Any item marked BLOCKED or SKIPPED? Revisit now.
+4. If all clear: log PHASE N COMPLETE
+5. Immediately proceed to Phase N+1 — no pause, no waiting for user
 ```
 
 ---
 
-## Error Handling
+## AppX Asset Verification Protocol
 
-**If you hit an error you cannot resolve:**
+After Phase 1 (generating logo assets), verify with:
 
+```bash
+# Confirm the files exist and are PNGs with the correct dimensions
+# (Substitute path based on current workspace)
+ls notepad-win/build/appx/StoreLogo.png
+ls notepad-win/build/appx/Square150x150Logo.png
+ls notepad-win/build/appx/Square44x44Logo.png
+ls notepad-win/build/appx/Wide310x150Logo.png
 ```
-1. Log the error to build_log.md with full details
-2. Document what you tried
-3. Document what's blocking you
-4. Make your best judgment call — pick the safer option
-5. Log your decision and reasoning
-6. Continue to the next sub-step
-7. Come back to the blocked step after completing others if possible
-```
-
-Never halt the loop for a single stuck step unless it blocks every subsequent step.
 
 ---
 
-## Proactive Brain Rules (Use These Every Step)
+## AppX Package Config Verification Protocol
 
-These fire automatically during execution — no instruction needed:
+After Phase 2 (editing configs), verify with:
 
-**While fixing CSS:**
-- If you see other layout issues in the same file, note them in build_log.md
-- If the fix requires a z-index, ask: "Is there a structural fix instead?" Use the structural fix.
-- If you see inline styles that conflict with the component CSS, clean them up
-
-**While updating Electron config:**
-- If you see devTools: true in production — disable it
-- If you see nodeIntegration: true — flag it as a security note in the log
-- If package.json has "electron" in dependencies — move it to devDependencies
-
-**While optimizing load speed:**
-- If you see a console.log in production code — remove it (they add overhead)
-- If you see synchronous file reads (fs.readFileSync) in the renderer thread — flag them
-- If you see multiple fonts being loaded — check if they're all actually used
-
-**While handling icons:**
-- Always confirm the PNG is not corrupt before using it
-- Always set icon on BOTH BrowserWindow and electron-builder config
-- Always verify the ICO format is correct (multi-size, not just renamed PNG)
+```bash
+# Verify appx is configured correctly in package.json
+cat notepad-win/package.json | grep -A 10 '"appx"'
+# Ensure target includes appx
+cat notepad-win/package.json | grep -A 5 '"win"'
+```
 
 ---
 
-## Completion Check
+## Build Package Verification Protocol
 
-After Phase 5 sub-step 5.9:
+After Phase 3 (running the build), verify with:
+
+```bash
+# Confirm the .appx package was generated successfully in dist/ or out/
+ls notepad-win/dist/*.appx
+```
+
+---
+
+## Completion
+
+After the final sub-step of Phase 4:
 
 ```
 Write to build_log.md:
-═══════════════════════════════════════
-ALL PHASES COMPLETE
-═══════════════════════════════════════
-Total sub-steps executed: [N]
-Files modified: [list all]
-Bonus fixes applied: [list or "none"]
-Open items / known limitations: [list or "none"]
-Ready for: [build / deploy / store submission]
-═══════════════════════════════════════
 
-Print summary to user:
-"All 4 phases complete. Here's what was done: [brief summary per phase]
-Build log is at production_artifacts/build_log.md
-Phase audits are at production_artifacts/phase_audits/"
+═══════════════════════════════════════════════════
+ILOVEUNOTEPAD APPX PACKAGING — COMPLETE
+═══════════════════════════════════════════════════
+Session ended: [timestamp]
+
+RESULTS:
+  AppX visual assets generated: ✅
+  electron-builder configured: ✅
+  AppX Package built successfully: ✅
+  Submission checklist created: ✅
+
+FILES MODIFIED:
+  [complete list with what changed in each]
+
+TOTAL SUB-STEPS EXECUTED: [N]
+TOTAL BUILD LOG ENTRIES: [N]
+═══════════════════════════════════════════════════
 ```
 
----
-
-## What "Audit" Means (Be Precise)
-
-An audit is NOT just re-reading. It is answering these questions:
-
-For CSS changes:
-- Does the navbar still render correctly on other pages?
-- Does the notepad tool no longer show the navbar?
-- Is the z-index fix using the minimum necessary value?
-
-For icon changes:
-- Is the icon path absolute-safe (uses path.join, not string concat)?
-- Does the icon exist at the path specified?
-- Will this work in both dev and production builds?
-
-For size/performance changes:
-- Did the change actually reduce something, or just move the problem?
-- Is the ready-to-show pattern implemented completely (not just half-done)?
-- Are source maps excluded from production?
-
-For favicon:
-- Is it scoped to Notepad only and not leaking to other tools?
-- Is the local file path correct relative to the public folder?
-- Does the manifest also reference the correct local path?
+Deliver the final summary to the user in a clean, readable format.

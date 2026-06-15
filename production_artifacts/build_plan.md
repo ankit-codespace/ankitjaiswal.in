@@ -1,68 +1,60 @@
-# ILoveNotepad — Production Build Plan
+# ILoveNotepad Microsoft Store AppX Packaging — Build Plan
+Generated: 2026-06-15T17:07:00+05:30
 
-This build plan outlines the exact sub-steps and verification tasks required to resolve navbar overlaps, branding issues, app size, white screen flash, and favicon references.
-
----
-
-## Phase 1: Web Notepad — Navbar Overlap + Load Speed
-- **Goal**: Scope the navigation header out of `/pomodoro` and trailing slash variants of notepad routes. Optimize load speeds.
-- **Sub-steps**:
-  - **1.1**: Update `layout.tsx` to normalize location path strings (strip trailing slashes, hash anchors, and query strings).
-  - **1.2**: Add `/pomodoro` (and its variants) to `TOP_LEVEL_TOOL_ALIASES` in `layout.tsx`.
-  - **1.3**: Audit `notepad.tsx` lazy-loading code division to confirm no eager component dependencies bypass wouter routes.
-  - **1.4**: Verify the navbar header is not rendered when visiting `/online-notepad/`, `/notepad/`, or `/pomodoro`.
+This build plan is derived from the pre-work analysis and is executed step-by-step.
 
 ---
 
-## Phase 2: Windows App — Strip Electron Branding + Inject Custom Icon
-- **Goal**: Clean Electron references, assign "ILoveNotepad" product name, and inject the premium custom `.ico` assets.
-- **Sub-steps**:
-  - **2.1**: Copy `ilovenotepad_logo_premium.png` from Downloads to `notepad-win/src/renderer/public/icons/`.
-  - **2.2**: Write a Node.js utility script inside the project to generate a multi-resolution `icon.ico` file from the premium logo.
-  - **2.3**: Save the generated `icon.ico` to `notepad-win/icon.ico` and `notepad-win/src/renderer/public/favicon.ico`.
-  - **2.4**: Update the "build" configuration in `notepad-win/package.json` to use name "ILoveNotepad", appId "com.ankitjaiswal.ilovenotepad", and point to the generated icon.
-  - **2.5**: Update browser window creation in `notepad-win/src/main/main.js` to set title and correct icon path.
-  - **2.6**: Scan for any occurrence of "Electron" in window titles or packaging metadata, replacing it with "ILoveNotepad".
+## Phase 1: Generate AppX Visual Assets
+Goal: Create required AppX visual assets under `notepad-win/build/appx/` from the source image.
+
+### Sub-steps:
+* **1.1** Create the directory `notepad-win/build/appx`.
+* **1.2** Verify that `store-assets/ilovenotepad_logo_premium.png` exists.
+* **1.3** Write and execute a PowerShell script `scratch/resize_logos.ps1` that uses .NET `System.Drawing` to load the source logo and resize it to:
+  - `StoreLogo.png` (50x50)
+  - `Square150x150Logo.png` (150x150)
+  - `Square44x44Logo.png` (44x44)
+  - `Wide310x150Logo.png` (310x150)
+* **1.4** Verify the sizes and existence of the generated images.
+* **1.5** Write the Phase 1 audit report to `production_artifacts/phase_audits/phase1_audit.md`.
 
 ---
 
-## Phase 3: Windows App — Reduce Size + Fix White Screen
-- **Goal**: Exclude unnecessary assets/node_modules/source maps to shrink installer footprint. Prevent white screen launch flash.
-- **Sub-steps**:
-  - **3.1**: Move test-only or compile-time dependencies to `devDependencies` in package configuration.
-  - **3.2**: Configure the `files` array inside `notepad-win/package.json` to exclude `.md`, `.ts`, `.map`, and test directories.
-  - **3.3**: Ensure `asar` packaging is set to `true` and compression level is configured to maximum.
-  - **3.4**: Update `notepad-win/src/main/main.js` to start BrowserWindow with `show: false` and `backgroundColor: "#202124"` (dark background matching the app's default slate theme).
-  - **3.5**: Register `once('ready-to-show', ...)` on the BrowserWindow to display it only after first paint.
+## Phase 2: Configure AppX in electron-builder
+Goal: Update the build configuration in `notepad-win/package.json` to configure the AppX packaging parameters.
+
+### Sub-steps:
+* **2.1** Open `notepad-win/package.json` and inspect the existing `"build"` block.
+* **2.2** Update the `"win"` configuration to target `"appx"` (optionally keeping `"nsis"` if needed for traditional builds).
+* **2.3** Verify and ensure the `"appx"` block matches the Partner Center details:
+  - `"identityName": "com.ankitjaiswal.notepad"`
+  - `"publisherDisplayName": "Ankit Jaiswal"`
+  - Keep `"publisher"` as the variable/placeholder `CN=PLEASE_REPLACE_WITH_YOUR_PUBLISHER_ID_FROM_PARTNER_CENTER` so the developer can replace it easily, or check if we can configure it cleanly.
+* **2.4** Write the Phase 2 audit report to `production_artifacts/phase_audits/phase2_audit.md`.
 
 ---
 
-## Phase 4: Web Notepad — Replace Favicon
-- **Goal**: Migrate the external favicon URL to a localized project asset.
-- **Sub-steps**:
-  - **4.1**: Copy `ilovenotepad_logo_premium.png` from Downloads to `artifacts/website/public/icons/ilovenotepad_logo_premium.png`.
-  - **4.2**: Verify `notepad.tsx` and `create-route-html.mjs` point to `/icons/ilovenotepad_logo_premium.png`.
-  - **4.3**: Confirm web app manifest paths match the new local public path.
+## Phase 3: Build and Package the App
+Goal: Trigger the compiler and electron-builder to generate the AppX package.
+
+### Sub-steps:
+* **3.1** Verify if the node modules are installed in `notepad-win`.
+* **3.2** Run `npm run build` in the `notepad-win` directory to build the renderer and package the app.
+* **3.3** Verify if the build completes successfully and check for any packaging warnings.
+* **3.4** Write the Phase 3 audit report to `production_artifacts/phase_audits/phase3_audit.md`.
 
 ---
 
-## Phase 5: Final Review & Verification
-- **Goal**: End-to-end integration build and execution testing.
-- **Sub-steps**:
-  - **5.1**: Run root workspaces typecheck: `pnpm run typecheck`.
-  - **5.2**: Build the website project: `pnpm --filter @workspace/website run build`.
-  - **5.3**: Build/package the Electron app renderer and package structure: `pnpm --filter notepad-win run build`.
-  - **5.4**: Generate final walkthrough and logs.
+## Phase 4: Verify Output and Create Submission Checklist
+Goal: Double-check the generated packaging and write instructions for submission.
 
----
-
-## Final Shipping Checklist
-- `[x]` Web navbar overlap: FIXED
-- `[x]` Web notepad load speed: IMPROVED (lazy-loaded modules split cleanly)
-- `[x]` Electron icon: REPLACED with custom premium square `.ico`
-- `[x]` Electron branding: REMOVED (productName "I Love Notepad", appId "com.ankitjaiswal.notepad")
-- `[x]` Electron app size: REDUCED (ASAR, max compression, strict dev dependencies/file exclusions)
-- `[x]` White screen flash: FIXED (`show: false`, `backgroundColor: '#0F0F0E'`, `once('ready-to-show')`)
-- `[x]` Web favicon: REPLACED with local file (`/icons/ilovenotepad_logo_premium.png`)
-- `[x]` No regressions in other tools/pages (verified via browser agent)
-
+### Sub-steps:
+* **4.1** Locate the output `.appx` file inside the `notepad-win/dist/` directory.
+* **4.2** Record the size of the generated package.
+* **4.3** Create `production_artifacts/msstore_ready_checklist.md` with:
+  - Package metadata (filename, path, size).
+  - Detailed instructions on how the user can retrieve their exact Publisher CN from the Partner Center dashboard.
+  - Step-by-step instructions to upload the `.appx` package to Partner Center for automated free signing.
+* **4.4** Write the Phase 4 audit report to `production_artifacts/phase_audits/phase4_audit.md`.
+* **4.5** Write the final completion entry in `production_artifacts/build_log.md`.

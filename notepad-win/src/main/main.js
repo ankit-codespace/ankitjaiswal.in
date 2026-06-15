@@ -62,6 +62,32 @@ function createWindow() {
     mainWindow.show();
   });
 
+  // Handle render process crash
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    logCrash('render-process-gone', `Reason: ${details.reason}, ExitCode: ${details.exitCode}`);
+    if (mainWindow) {
+      mainWindow.reload();
+    }
+  });
+
+  // Handle window unresponsive
+  mainWindow.on('unresponsive', () => {
+    logCrash('unresponsive', 'Window became unresponsive');
+    dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: ['Wait', 'Reload', 'Close'],
+      title: 'Application Unresponsive',
+      message: 'The application is not responding. Would you like to wait, reload, or close the app?',
+      cancelId: 0
+    }).then(({ response }) => {
+      if (response === 1) {
+        mainWindow.reload();
+      } else if (response === 2) {
+        app.quit();
+      }
+    });
+  });
+
   if (!app.isPackaged) {
     mainWindow.webContents.openDevTools();
   }
@@ -70,8 +96,7 @@ function createWindow() {
   // Load the compiled renderer index.html
   const indexPath = path.join(__dirname, '../renderer/dist/index.html');
   mainWindow.loadFile(indexPath).catch(err => {
-    // If not built yet, we can load a fallback or print instruction
-    console.log("Renderer build not found. Please build renderer first.");
+    logCrash('build-missing', `Renderer build not found: ${err.message}`);
     mainWindow.loadURL('data:text/html,<h1>Please build renderer first (npm run build:renderer)</h1>');
   });
 
@@ -97,6 +122,8 @@ function openFileInWindow(filePath) {
 }
 
 app.whenReady().then(() => {
+  app.setName('ILoveNotepad');
+  app.setAppUserModelId('com.ankitjaiswal.notepad');
   Menu.setApplicationMenu(null);
   createWindow();
 
@@ -198,4 +225,27 @@ ipcMain.handle('maximize-app', () => {
       mainWindow.maximize();
     }
   }
+});
+
+// Crash Hardening and Logging
+const logPath = path.join(app.getPath('userData'), 'crash.log');
+
+function logCrash(type, error) {
+  const timestamp = new Date().toISOString();
+  const message = `[${timestamp}] [${type}] ${error?.stack || error || 'Unknown Error'}\n`;
+  try {
+    fs.appendFileSync(logPath, message);
+  } catch (err) {
+    process.stderr.write(`Failed to write to crash log: ${err.message}\n`);
+  }
+}
+
+process.on('uncaughtException', (error) => {
+  logCrash('uncaughtException', error);
+  dialog.showErrorBox('Application Error', `An unexpected error occurred: ${error.message}`);
+  app.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logCrash('unhandledRejection', reason);
 });
