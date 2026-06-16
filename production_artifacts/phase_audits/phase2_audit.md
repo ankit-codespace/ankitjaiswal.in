@@ -1,9 +1,14 @@
-# Tab Switch Scroll Hardening — Phase 2 Audit
+# Phase 2 Audit: Exclusions & Compression Configuration
 
-## Actions Taken
-- **2.1:** Configured settled layout focus timeout to `50ms`.
-- **2.2 & 2.3:** Invoked `editor.commands.focus()` and re-snapped scroll position to neutralize focus jumps.
-- **2.4:** Automatically cleared the `isRestoringScrollRef` lock immediately following focus recovery.
+## 1. Goal
+Audit the files exclusions array and compression configurations to guarantee that developer source files and non-essential dependencies are omitted from the packaged `.asar` archive, and that maximum compression is applied.
 
-## Verification Status
-- Verified focus and coordinate sync alignment: PASS.
+## 2. Findings & Verifications
+* **Compression Audit:** Root `"build"` block has `"compression": "maximum"` and `"asar": true` configured. This guarantees maximum possible installer compression (LZMA) and archive extraction efficiency.
+* **Asset Inclusions/Exclusions:**
+  * `"files"` block includes `src/main/**/*` (required main process code) and `src/renderer/dist/**/*` (only Vite-compiled static bundle).
+  * Dev-only source folder `src/renderer/src` is implicitly excluded since it lies outside `dist/`.
+  * Explicit exclusions are defined for source code files, debug maps, and readme files (`!**/*.map`, `!**/*.ts`, `!**/*.md`).
+* **Conclusion:** The files filter rules are extremely tight and optimal. No developer source maps or source code leaks into the final ASAR.
+
+## 3. Status: PASS

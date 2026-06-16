@@ -21,6 +21,7 @@
     "productName": "I Love Notepad",
     "asar": true,
     "compression": "maximum",
+    "electronLanguages": ["en-US", "en"],
     "win": {
       "icon": "icon.ico",
       "target": [
