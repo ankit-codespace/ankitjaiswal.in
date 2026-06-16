@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useEditor, EditorContent, BubbleMenu, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent, Extension } from "@tiptap/react";
+import { Editor, useEditor, EditorContent, BubbleMenu, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent, Extension } from "@tiptap/react";
 
 // Global Error Overlay for Debugging
 if (typeof window !== "undefined") {
@@ -58,6 +58,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { toast, Toaster } from "sonner";
 import Turndown from "turndown";
+import { TrailingNode } from "./extensions/trailing-node";
 
 import {
   Bold as BoldIcon, Italic as ItalicIcon, Underline as UnderlineIcon,
@@ -932,11 +933,296 @@ const setColorOnTrimmedSelection = (editor: any, color: string | null) => {
   editor.commands.focus();
 };
 
+interface NotepadEditorProps {
+  doc: NotepadDoc;
+  settings: NotepadSettings;
+  onCreated: (editor: Editor) => void;
+  onDestroyed: () => void;
+  onUpdate: (editor: Editor) => void;
+  onSelectionUpdate: () => void;
+  onImageContextMenu: (x: number, y: number, src: string) => void;
+}
+
+const NotepadEditor = ({
+  doc,
+  settings,
+  onCreated,
+  onDestroyed,
+  onUpdate,
+  onSelectionUpdate,
+  onImageContextMenu
+}: NotepadEditorProps) => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        codeBlock: false,
+      }),
+      Underline,
+      CustomCodeBlock,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      ResizableImage.configure({ inline: true }),
+      Placeholder.configure({
+        placeholder: "Start writing, paste images, use shortcuts..."
+      }),
+      CharacterCount,
+      TextStyle,
+      Color,
+      TipTapLink.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          rel: "noopener noreferrer",
+          target: "_blank",
+        },
+      }),
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      SearchAndReplace,
+      TrailingNode,
+    ],
+    editorProps: {
+      attributes: {
+        class: "notepad-editor focus:outline-none"
+      },
+      handleDOMEvents: {
+        mousedown: (view, event) => {
+          const target = event.target as HTMLElement;
+          const isNotScrollbar = event.clientX < window.innerWidth - 18;
+          
+          if (target.classList.contains("ProseMirror") && isNotScrollbar) {
+            const editorDom = view.dom;
+            const lastChild = editorDom.lastElementChild;
+            const lastChildRect = lastChild ? lastChild.getBoundingClientRect() : editorDom.getBoundingClientRect();
+            const lastBottomY = lastChildRect.bottom;
+            const clickY = event.clientY;
+            
+            if (clickY > lastBottomY) {
+              const deltaY = clickY - lastBottomY;
+              const currentSettings = settings;
+              const zoomedLineHeight = currentSettings.fontSize * currentSettings.lineHeight * (currentSettings.zoom || 1.0);
+              const newLinesCount = Math.max(1, Math.round(deltaY / zoomedLineHeight));
+              
+              const { state } = view;
+              const nodes: any[] = [];
+              for (let i = 0; i < newLinesCount; i++) {
+                nodes.push(state.schema.nodes.paragraph.createAndFill());
+              }
+              const tr = state.tr.insert(state.doc.content.size, nodes);
+              const newSelection = (state.selection.constructor as any).create(tr.doc, tr.doc.content.size);
+              tr.setSelection(newSelection);
+              view.dispatch(tr);
+              
+              // Force editor focus immediately and prevent default cursor jump
+              setTimeout(() => {
+                view.focus();
+              }, 0);
+              
+              event.preventDefault();
+              return true;
+            }
+          }
+          return false;
+        },
+        click: (view, event) => {
+          const target = event.target as HTMLElement;
+          const isNotScrollbar = event.clientX < window.innerWidth - 18;
+          
+          if (target.classList.contains("ProseMirror") && isNotScrollbar) {
+            const editorDom = view.dom;
+            const lastChild = editorDom.lastElementChild;
+            const lastChildRect = lastChild ? lastChild.getBoundingClientRect() : editorDom.getBoundingClientRect();
+            const lastBottomY = lastChildRect.bottom;
+            const clickY = event.clientY;
+            
+            if (clickY > lastBottomY) {
+              event.preventDefault();
+              return true;
+            }
+          }
+          return false;
+        },
+        contextmenu: (_view, event) => {
+          const target = event.target as HTMLElement;
+          if (target.nodeName === "IMG") {
+            event.preventDefault();
+            onImageContextMenu(event.clientX, event.clientY, target.getAttribute("src") || "");
+            return true;
+          }
+          return false;
+        }
+      },
+      handleDoubleClick(view, _pos, _event) {
+        setTimeout(() => {
+          const { state } = view;
+          const { selection } = state;
+          const { $from, $to, empty } = selection;
+          if (empty) return;
+          const from = $from.pos;
+          const to = $to.pos;
+          const text = state.doc.textBetween(from, to, ' ');
+          let trailingSpaces = 0;
+          while (trailingSpaces < text.length && text[text.length - 1 - trailingSpaces] === ' ') {
+            trailingSpaces++;
+          }
+          if (trailingSpaces > 0 && from < to - trailingSpaces) {
+            const tr = state.tr.setSelection(
+              (state.selection.constructor as any).create(state.doc, from, to - trailingSpaces)
+            );
+            view.dispatch(tr);
+          }
+        }, 0);
+        return false;
+      },
+      handlePaste(view, event) {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        
+        let hasImage = false;
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.indexOf("image") === 0) {
+            hasImage = true;
+            const file = item.getAsFile();
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const base64 = reader.result as string;
+                const node = view.state.schema.nodes.image.create({ src: base64 });
+                const transaction = view.state.tr.replaceSelectionWith(node);
+                view.dispatch(transaction);
+              };
+              reader.readAsDataURL(file);
+            }
+          }
+        }
+        return hasImage;
+      }
+    },
+    content: doc.content || "",
+    onUpdate({ editor }) {
+      onUpdate(editor);
+    },
+    onSelectionUpdate() {
+      onSelectionUpdate();
+    }
+  }, []);
+
+  // Register editor instance with parent
+  useEffect(() => {
+    if (editor) {
+      onCreated(editor);
+      return () => {
+        onDestroyed();
+      };
+    }
+    return undefined;
+  }, [editor]);
+
+  // Keep spellCheck updated dynamically
+  useEffect(() => {
+    if (editor) {
+      editor.view.dom.setAttribute("spellcheck", String(settings.spellCheck));
+    }
+  }, [editor, settings.spellCheck]);
+
+  // Sync content if it changes externally
+  useEffect(() => {
+    if (editor && doc.content !== editor.getHTML()) {
+      editor.commands.setContent(doc.content);
+    }
+  }, [editor, doc.content]);
+
+  // Ruled lines baseline alignment
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return undefined;
+
+    const alignBlocksToGrid = () => {
+      if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
+      const editorEl = editor.view.dom;
+
+      const blocks = editorEl.querySelectorAll(".notepad-code-block-wrapper, table, blockquote, hr, img, .image-node");
+
+      if (!settings.ruledLines) {
+        blocks.forEach((el: any) => {
+          if (el.style.paddingBottom) el.style.paddingBottom = "";
+          if (el.style.marginTop) el.style.marginTop = "";
+          if (el.style.marginBottom) el.style.marginBottom = "";
+        });
+        return;
+      }
+
+      const G = settings.fontSize * settings.lineHeight;
+
+      blocks.forEach((el: any) => {
+        if (el.style.paddingBottom) el.style.paddingBottom = "";
+        if (el.style.marginTop) el.style.marginTop = "";
+
+        const naturalHeight = el.offsetHeight;
+        if (naturalHeight === 0) return;
+
+        const minGap = G / 2;
+        const targetHeight = Math.ceil((naturalHeight + minGap) / G) * G;
+        const needed = targetHeight - naturalHeight;
+        const neededStr = needed > 0 ? `${needed}px` : "";
+
+        if (el.style.marginBottom !== neededStr) {
+          el.style.marginBottom = neededStr;
+        }
+      });
+
+      const images = editorEl.querySelectorAll("img");
+      images.forEach((img: any) => {
+        if (!img.onload) {
+          img.onload = () => {
+            alignBlocksToGrid();
+          };
+        }
+      });
+    };
+
+    alignBlocksToGrid();
+    editor.on("update", alignBlocksToGrid);
+    window.addEventListener("resize", alignBlocksToGrid);
+
+    return () => {
+      if (!editor.isDestroyed) {
+        editor.off("update", alignBlocksToGrid);
+      }
+      window.removeEventListener("resize", alignBlocksToGrid);
+    };
+  }, [editor, settings.ruledLines, settings.fontSize, settings.lineHeight]);
+
+  return <EditorContent editor={editor} />;
+};
+
 // ── App Component ─────────────────────────────────────────────────────────────
 export default function App() {
   const [docs, setDocs] = useState<NotepadDoc[]>(() => loadDocs());
   const [activeId, setActiveId] = useState<string>(() => loadActiveId(loadDocs()));
   const [settings, setSettings] = useState<NotepadSettings>(() => loadSettings());
+
+  const scrollPositionsRef = useRef<{ [id: string]: number }>({});
+  const isRestoringScrollRef = useRef<boolean>(false);
+
+  // Track and save scroll position per tab
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!isRestoringScrollRef.current && activeId) {
+        scrollPositionsRef.current[activeId] = window.scrollY;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [activeId]);
+
   const [focusMode, setFocusMode] = useState(false);
   const [showFind, setShowFind] = useState(false);
   const [findText, setFindText] = useState("");
@@ -1015,321 +1301,73 @@ export default function App() {
     }
   }, [activeId]);
 
-  // ── TipTap Editor Initialization ─────────────────────────────────────────────
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-      }),
-      Underline,
-      CustomCodeBlock,
-      Highlight.configure({ multicolor: true }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      ResizableImage.configure({ inline: true }),
-      Placeholder.configure({
-        placeholder: "Start writing, paste images, use shortcuts..."
-      }),
-      CharacterCount,
-      TextStyle,
-      Color,
-      TipTapLink.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          rel: "noopener noreferrer",
-          target: "_blank",
-        },
-      }),
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      SearchAndReplace,
-    ],
-    editorProps: {
-      attributes: {
-        class: "notepad-editor focus:outline-none"
-      },
-      handleDOMEvents: {
-        mousedown: (view, event) => {
-          const target = event.target as HTMLElement;
-          const isNotScrollbar = event.clientX < window.innerWidth - 18;
-          
-          if (target.classList.contains("ProseMirror") && isNotScrollbar) {
-            const editorDom = view.dom;
-            const lastChild = editorDom.lastElementChild;
-            const lastChildRect = lastChild ? lastChild.getBoundingClientRect() : editorDom.getBoundingClientRect();
-            const lastBottomY = lastChildRect.bottom;
-            const clickY = event.clientY;
-            
-            if (clickY > lastBottomY) {
-              const deltaY = clickY - lastBottomY;
-              const currentSettings = settingsRef.current;
-              const zoomedLineHeight = currentSettings.fontSize * currentSettings.lineHeight * (currentSettings.zoom || 1.0);
-              const newLinesCount = Math.max(1, Math.round(deltaY / zoomedLineHeight));
-              
-              const { state } = view;
-              const nodes: any[] = [];
-              for (let i = 0; i < newLinesCount; i++) {
-                nodes.push(state.schema.nodes.paragraph.createAndFill());
-              }
-              const tr = state.tr.insert(state.doc.content.size, nodes);
-              const newSelection = (state.selection.constructor as any).create(tr.doc, tr.doc.content.size);
-              tr.setSelection(newSelection);
-              view.dispatch(tr);
-              
-              // Force editor focus immediately and prevent default cursor jump
-              setTimeout(() => {
-                view.focus();
-              }, 0);
-              
-              event.preventDefault();
-              return true;
-            }
-          }
-          return false;
-        },
-        click: (view, event) => {
-          const target = event.target as HTMLElement;
-          const isNotScrollbar = event.clientX < window.innerWidth - 18;
-          
-          if (target.classList.contains("ProseMirror") && isNotScrollbar) {
-            const editorDom = view.dom;
-            const lastChild = editorDom.lastElementChild;
-            const lastChildRect = lastChild ? lastChild.getBoundingClientRect() : editorDom.getBoundingClientRect();
-            const lastBottomY = lastChildRect.bottom;
-            const clickY = event.clientY;
-            
-            if (clickY > lastBottomY) {
-              event.preventDefault();
-              return true;
-            }
-          }
-          return false;
-        },
-        contextmenu: (_view, event) => {
-          const target = event.target as HTMLElement;
-          if (target.nodeName === "IMG") {
-            event.preventDefault();
-            setTabContextMenu(null);
-            setImageContextMenu({
-              x: event.clientX,
-              y: event.clientY,
-              src: target.getAttribute("src") || ""
-            });
-            return true;
-          }
-          return false;
-        }
-      },
-      handleDoubleClick(view, _pos, _event) {
-        setTimeout(() => {
-          const { state } = view;
-          const { selection } = state;
-          const { $from, $to, empty } = selection;
-          if (empty) return;
-          const from = $from.pos;
-          const to = $to.pos;
-          const text = state.doc.textBetween(from, to, ' ');
-          let trailingSpaces = 0;
-          while (trailingSpaces < text.length && text[text.length - 1 - trailingSpaces] === ' ') {
-            trailingSpaces++;
-          }
-          if (trailingSpaces > 0 && from < to - trailingSpaces) {
-            const tr = state.tr.setSelection(
-              (state.selection.constructor as any).create(state.doc, from, to - trailingSpaces)
-            );
-            view.dispatch(tr);
-          }
-        }, 0);
-        return false;
-      },
-      handlePaste(view, event) {
-        const items = event.clipboardData?.items;
-        if (!items) return false;
-        
-        let hasImage = false;
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if (item.type.indexOf("image") === 0) {
-            hasImage = true;
-            const file = item.getAsFile();
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = () => {
-                const base64 = reader.result as string;
-                const node = view.state.schema.nodes.image.create({ src: base64 });
-                const transaction = view.state.tr.replaceSelectionWith(node);
-                view.dispatch(transaction);
-              };
-              reader.readAsDataURL(file);
-            }
-          }
-        }
-        return hasImage;
-      }
-    },
-    content: activeDoc?.content || "",
-    onUpdate({ editor }) {
-      const html = editor.getHTML();
-      const text = editor.getText();
-      setEditorVersion(v => v + 1); // trigger toolbar re-render
-      // Update local state reactively
-      setDocs((prev) => {
-        const next = prev.map((d) => {
-          if (d.id === activeId) {
-            let title = d.title;
-            if (d.isTitleAutoGenerated !== false) {
-              const parsedTitle = getAutoTitleFromText(text);
-              title = parsedTitle;
-            }
-            return {
-              ...d,
-              content: html,
-              title,
-              updatedAt: Date.now(),
-              isUnsaved: d.filePath ? true : undefined
-            };
-          }
-          return d;
-        });
-        saveDocs(next);
-        return next;
-      });
-    },
-    onSelectionUpdate({ editor }) {
-      setEditorVersion(v => v + 1); // trigger toolbar re-render for active marks
-      const { state, view } = editor;
-      const { selection } = state;
-      const { $from, $to, empty } = selection;
-      if (empty) return;
+  // ── Multi-Editor Registry ───────────────────────────────────────────────────
+  const editorsRef = useRef<{ [id: string]: Editor }>({});
+  const [editors, setEditors] = useState<{ [id: string]: Editor }>({});
+  const editor = editors[activeId] || null;
 
-      const from = $from.pos;
-      const to = $to.pos;
-      const text = state.doc.textBetween(from, to, ' ');
+  const handleEditorCreated = (id: string, instance: Editor) => {
+    editorsRef.current[id] = instance;
+    setEditors((prev) => ({ ...prev, [id]: instance }));
+  };
 
-      let trailingSpaces = 0;
-      while (trailingSpaces < text.length && text[text.length - 1 - trailingSpaces] === ' ') {
-        trailingSpaces++;
-      }
+  const handleEditorDestroyed = (id: string) => {
+    delete editorsRef.current[id];
+    setEditors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
 
-      if (trailingSpaces > 0 && from < to - trailingSpaces) {
-        const tr = state.tr.setSelection(
-          (state.selection.constructor as any).create(state.doc, from, to - trailingSpaces)
-        );
-        view.dispatch(tr);
-      }
-    },
-  }, [activeId]);
-
-  // Sync editor content when switching documents
+  // Sync editor content when switching documents & restore scroll position
   useEffect(() => {
-    if (editor && activeDoc) {
-      if (editor.getHTML() !== activeDoc.content) {
-        editor.commands.setContent(activeDoc.content);
-        // Close find/replace on doc switch
-        closeFind();
+    if (activeDoc) {
+      const savedScroll = scrollPositionsRef.current[activeId];
+      isRestoringScrollRef.current = true;
+
+      // Close find/replace on doc switch
+      closeFind();
+
+      // Synchronously force layout reflow so browser registers display changes
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      document.body.offsetHeight;
+
+      // Restore scroll position synchronously to align the paint frame
+      if (savedScroll !== undefined) {
+        window.scrollTo({ top: savedScroll, behavior: "auto" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "auto" });
       }
-      // Auto focus the editor on switch / new tab!
-      setTimeout(() => {
-        if (!editor.isDestroyed) {
-          editor.commands.focus("end");
+
+      // Auto focus the active editor & restore scroll position on switch
+      const timer = setTimeout(() => {
+        const activeEditor = editorsRef.current[activeId];
+        if (activeEditor && !activeEditor.isDestroyed) {
+          // Focus using native preventScroll to block browser caret scroll hijack
+          activeEditor.view.dom.focus({ preventScroll: true });
+          
+          // Re-enforce scroll recovery to override any native browser focus scroll-into-view triggers
+          if (savedScroll !== undefined) {
+            window.scrollTo({ top: savedScroll, behavior: "auto" });
+          } else {
+            window.scrollTo({ top: 0, behavior: "auto" });
+          }
         }
+        // Clear scroll lock once layout and focus are fully established
+        isRestoringScrollRef.current = false;
       }, 50);
+
+      return () => {
+        clearTimeout(timer);
+      };
     }
-  }, [activeId, editor]);
+    return undefined;
+  }, [activeId, editors]);
 
-  // Handle Spell Check dynamic attribute update
-  useEffect(() => {
-    if (editor) {
-      editor.view.dom.setAttribute("spellcheck", String(settings.spellCheck));
-    }
-  }, [editor, settings.spellCheck]);
 
-  // Snap rich blocks to baseline grid for ruled lines to prevent alignment drift
-  useEffect(() => {
-    if (!editor || editor.isDestroyed) return;
 
-    const alignBlocksToGrid = () => {
-      if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
-      const editorEl = document.querySelector(".notepad-editor");
-      if (!editorEl) return;
 
-      const blocks = editorEl.querySelectorAll("pre, table, blockquote, hr, img, .image-node");
-
-      if (!settings.ruledLines) {
-        // Clear snaps if ruled lines are turned off
-        blocks.forEach((el: any) => {
-          if (el.style.paddingBottom) el.style.paddingBottom = "";
-          if (el.style.marginTop) el.style.marginTop = "";
-          if (el.style.marginBottom) el.style.marginBottom = "";
-        });
-        return;
-      }
-
-      const G = settings.fontSize * settings.lineHeight; // exact grid height in pixels
-
-      blocks.forEach((el: any) => {
-        const currentPadding = parseFloat(el.style.paddingBottom) || 0;
-        const currentHeight = el.offsetHeight;
-        if (currentHeight === 0) return;
-
-        // Calculate natural height by subtracting current custom padding
-        const naturalHeight = currentHeight - currentPadding;
-        const remainder = naturalHeight % G;
-        
-        let needed = 0;
-        if (remainder > 0.5) {
-          needed = G - remainder;
-        }
-
-        const neededStr = needed > 0 ? `${needed}px` : "";
-        
-        // Only mutate DOM if value actually changed
-        if (el.style.paddingBottom !== neededStr) {
-          el.style.paddingBottom = neededStr;
-        }
-        if (el.style.marginTop) el.style.marginTop = "";
-        if (el.style.marginBottom) el.style.marginBottom = "";
-      });
-    };
-
-    // Run initial alignment
-    alignBlocksToGrid();
-
-    // Observe changes inside the editor
-    editor.on("update", alignBlocksToGrid);
-    editor.on("selectionUpdate", alignBlocksToGrid);
-
-    // Watch for window resize changes
-    window.addEventListener("resize", alignBlocksToGrid);
-
-    // Set up a MutationObserver to react to structural changes
-    let observer: MutationObserver | null = null;
-    if (editor.view && editor.view.dom) {
-      observer = new MutationObserver(alignBlocksToGrid);
-      observer.observe(editor.view.dom, {
-        childList: true,
-        subtree: true,
-        attributes: false, // Crucial: false to prevent triggering loops on style updates
-        characterData: true
-      });
-    }
-
-    return () => {
-      if (!editor.isDestroyed) {
-        editor.off("update", alignBlocksToGrid);
-        editor.off("selectionUpdate", alignBlocksToGrid);
-      }
-      window.removeEventListener("resize", alignBlocksToGrid);
-      if (observer) {
-        observer.disconnect();
-      }
-    };
-  }, [editor, activeId, settings.ruledLines, settings.fontSize, settings.lineHeight]);
 
   // Scroll active tab into view when activeId changes
   useEffect(() => {
@@ -1358,7 +1396,7 @@ export default function App() {
     if (!activeDoc || !activeDoc.filePath || !activeDoc.isUnsaved) return;
 
     const timer = setTimeout(async () => {
-      await saveFileNative(activeDoc);
+      await saveFileNative(activeDoc, false, true);
     }, 1000); // 1 second debounce
 
     return () => clearTimeout(timer);
@@ -1382,7 +1420,7 @@ export default function App() {
     return "txt";
   };
 
-  const saveFileNative = async (docToSave: NotepadDoc, saveAs = false) => {
+  const saveFileNative = async (docToSave: NotepadDoc, saveAs = false, isSilent = false) => {
     if (!editor) return;
 
     try {
@@ -1426,11 +1464,15 @@ export default function App() {
           return next;
         });
         setLastSaved(new Date());
-        toast.success(`Saved to ${res.name}`);
+        if (!isSilent) {
+          toast.success(`Saved to ${res.name}`);
+        }
       }
     } catch (err: any) {
       console.error(err);
-      toast.error(`Save failed: ${err.message}`);
+      if (!isSilent) {
+        toast.error(`Save failed: ${err.message}`);
+      }
     }
   };
 
@@ -2894,17 +2936,6 @@ export default function App() {
                 <ChevronDown size={10} />
               </button>
             </div>
-            {/* Keyboard Shortcuts Help */}
-            <button
-              title={getTooltip("Keyboard Shortcuts", "Ctrl+/")}
-              style={tb(showShortcuts)}
-              onClick={() => setShowShortcuts(prev => !prev)}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>
-              </svg>
-            </button>
           </div>
 
         </div>
@@ -3595,7 +3626,54 @@ export default function App() {
                 </div>
               </BubbleMenu>
             )}
-            <EditorContent editor={editor} />
+            {docs.map((docItem) => {
+              const isActive = docItem.id === activeId;
+              return (
+                <div
+                  key={docItem.id}
+                  style={{ display: isActive ? "block" : "none" }}
+                >
+                  <NotepadEditor
+                    doc={docItem}
+                    settings={settings}
+                    onCreated={(inst) => handleEditorCreated(docItem.id, inst)}
+                    onDestroyed={() => handleEditorDestroyed(docItem.id)}
+                    onUpdate={(inst) => {
+                      const html = inst.getHTML();
+                      const text = inst.getText();
+                      setEditorVersion((v) => v + 1);
+                      setDocs((prev) => {
+                        const next = prev.map((d) => {
+                          if (d.id === docItem.id) {
+                            let title = d.title;
+                            if (d.isTitleAutoGenerated !== false) {
+                              title = getAutoTitleFromText(text);
+                            }
+                            return {
+                              ...d,
+                              content: html,
+                              title,
+                              updatedAt: Date.now(),
+                              isUnsaved: d.filePath ? true : undefined
+                            };
+                          }
+                          return d;
+                        });
+                        saveDocs(next);
+                        return next;
+                      });
+                    }}
+                    onSelectionUpdate={() => {
+                      setEditorVersion((v) => v + 1);
+                    }}
+                    onImageContextMenu={(x, y, src) => {
+                      setTabContextMenu(null);
+                      setImageContextMenu({ x, y, src });
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

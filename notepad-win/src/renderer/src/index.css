@@ -206,10 +206,10 @@
 .notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 17px;
-  height: 17px;
-  border-radius: 5px;
-  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  width: 0.94em;
+  height: 0.94em;
+  border-radius: 0.28em;
+  border: 0.08em solid rgba(255, 255, 255, 0.22);
   background: transparent;
   cursor: pointer;
   position: relative;
@@ -229,11 +229,11 @@
 .notepad-editor ul[data-type="taskList"] > li > label input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
-  top: 2.5px;
-  left: 5px;
-  width: 5px;
-  height: 9px;
-  border: 2px solid #fff;
+  top: 0.12em;
+  left: 0.28em;
+  width: 0.28em;
+  height: 0.5em;
+  border: 0.11em solid #fff;
   border-top: none;
   border-left: none;
   transform: rotate(45deg);
@@ -370,6 +370,58 @@
   margin-top: 0 !important;
 }
 
+/* Block elements in ruled mode lock margins to exact grid multiples */
+.notepad-ruled .notepad-editor table,
+.notepad-ruled .notepad-editor blockquote,
+.notepad-ruled .notepad-editor .notepad-code-block-wrapper,
+.notepad-ruled .notepad-editor hr,
+.notepad-ruled .notepad-editor img,
+.notepad-ruled .notepad-editor .image-node {
+  margin-top: var(--ruled-size) !important;
+  margin-bottom: 0;
+}
+
+/* Snapped elements must have solid backgrounds in ruled mode to prevent double-lining */
+.notepad-ruled .notepad-editor blockquote {
+  background: var(--bg1) !important;
+  color: var(--t1) !important;
+}
+.surface-light.notepad-ruled .notepad-editor blockquote,
+.surface-light .notepad-ruled .notepad-editor blockquote {
+  background: #F3EFE3 !important;
+}
+
+.notepad-ruled .notepad-editor .notepad-code-block-pre {
+  background-color: #1A1A19 !important;
+}
+.surface-light.notepad-ruled .notepad-editor .notepad-code-block-pre,
+.surface-light .notepad-ruled .notepad-editor .notepad-code-block-pre {
+  background-color: #F6F4EB !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.notepad-ruled .notepad-editor {
+  --table-border: #252523;
+  --table-header-bg: #1C1C1B;
+  --table-zebra-bg: #121211;
+}
+.surface-light.notepad-ruled .notepad-editor,
+.surface-light .notepad-ruled .notepad-editor {
+  --table-border: #DDD9CE;
+  --table-header-bg: #EAE5D8;
+  --table-zebra-bg: #FAF6ED;
+}
+
+/* Trim top margin if the block is the first element in the document */
+.notepad-ruled .notepad-editor table:first-child,
+.notepad-ruled .notepad-editor blockquote:first-child,
+.notepad-ruled .notepad-editor .notepad-code-block-wrapper:first-child,
+.notepad-ruled .notepad-editor hr:first-child,
+.notepad-ruled .notepad-editor img:first-child,
+.notepad-ruled .notepad-editor .image-node:first-child {
+  margin-top: 0 !important;
+}
+
 
 .notepad-editor code {
   font-family: 'Inter', sans-serif;
@@ -450,20 +502,28 @@
 .notepad-editor td {
   min-width: 1em;
   border: 1px solid var(--table-border);
-  padding: 5px 10px;
-  vertical-align: top;
+  padding: 6px 12px;
+  vertical-align: middle;
   box-sizing: border-box;
   position: relative;
   text-align: left;
+  line-height: 1.45 !important;
+  background-color: var(--np-bg, var(--bg0));
+}
+
+.notepad-editor th p,
+.notepad-editor td p {
+  line-height: 1.45 !important;
+  margin: 0;
 }
 
 .notepad-editor th {
   font-weight: 600;
-  background-color: var(--table-header-bg);
+  background: linear-gradient(var(--table-header-bg), var(--table-header-bg)), var(--np-bg, var(--bg0)) !important;
 }
 
-.notepad-editor tr:nth-child(even) {
-  background-color: var(--table-zebra-bg);
+.notepad-editor tr:nth-child(even) td {
+  background: linear-gradient(var(--table-zebra-bg), var(--table-zebra-bg)), var(--np-bg, var(--bg0)) !important;
 }
 
 .notepad-editor th.selectedCell,
@@ -773,4 +833,28 @@
 /* Inactive tab hover styling */
 .notepad-tab-item:not(.active):hover {
   background: var(--inactive-tab-hover) !important;
+}
+
+/* ── ProseMirror GapCursor styling ── */
+.ProseMirror-gapcursor {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+}
+
+.ProseMirror-gapcursor:after {
+  content: "";
+  display: block;
+  position: absolute;
+  border-top: 2px solid var(--np-accent, #10B981);
+  width: 100%;
+  animation: ProseMirror-blink 1.1s steps(2, start) infinite;
+}
+
+@keyframes ProseMirror-blink {
+  to { visibility: hidden; }
+}
+
+.ProseMirror-focused .ProseMirror-gapcursor {
+  display: block;
 }

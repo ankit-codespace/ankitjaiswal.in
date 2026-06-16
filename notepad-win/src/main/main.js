@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -125,6 +125,15 @@ app.whenReady().then(() => {
   app.setName('ILoveNotepad');
   app.setAppUserModelId('com.ankitjaiswal.notepad');
   Menu.setApplicationMenu(null);
+
+  // Hardening: Block unused browser permissions (like geolocation, media, notifications)
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (['geolocation', 'media', 'notifications', 'openExternal'].includes(permission)) {
+      return callback(false); // Deny permission
+    }
+    callback(true); // Allow other basic permissions
+  });
+
   createWindow();
 
   app.on('activate', function () {
