@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Server, Trash2, Youtube, ArrowDownToLine, ChevronRight, X, 
-  ExternalLink, Clock, Code, Terminal, CheckCircle2, Copy, Check 
+  ExternalLink, Clock, Code, Terminal, CheckCircle2, Copy, Check,
+  FileText, Timer, Clipboard, Camera, Image as ImageIcon, Globe
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -145,29 +146,78 @@ add_action('template_redirect', function() {
   }
 ];
 
+interface UtilityTool {
+  name: string;
+  desc: string;
+  href: string;
+  icon: any;
+  color: string;
+}
+
+const utilityTools: UtilityTool[] = [
+  {
+    name: "Online Notepad",
+    desc: "A distraction-free writing surface with auto-save, multi-document tabs, and TXT/MD/PDF export.",
+    href: "/online-notepad",
+    icon: FileText,
+    color: "#10B981"
+  },
+  {
+    name: "Pomodoro Timer",
+    desc: "A clean Pomodoro timer with study intervals, sound alarms, and focus state tracking.",
+    href: "/tools/pomodoro",
+    icon: Timer,
+    color: "#EF4444"
+  },
+  {
+    name: "Clipboard History",
+    desc: "Browser-based clipboard manager. Pin, search, and copy text snippets securely.",
+    href: "/tools/clipboard-history",
+    icon: Clipboard,
+    color: "#EC4899"
+  },
+  {
+    name: "Paste to Image",
+    desc: "Turn clipboard screenshots into files. Add arrows, crop, blur sensitive info, and download.",
+    href: "/tools/paste-to-image",
+    icon: Camera,
+    color: "#3B82F6"
+  },
+  {
+    name: "WebP Converter",
+    desc: "Convert PNG and JPG images to high-compression WebP files locally in your browser.",
+    href: "/tools/webp-converter",
+    icon: ImageIcon,
+    color: "#8B5CF6"
+  },
+  {
+    name: "Domain Age Checker",
+    desc: "WHOIS lookup tool showing registration date, domain age, registrar, and nameservers.",
+    href: "/tools/domain-age-checker",
+    icon: Globe,
+    color: "#06B6D4"
+  },
+  {
+    name: "YouTube Thumbnail Downloader",
+    desc: "Paste video links to view and save high-resolution (HD 1280x720) thumbnail images.",
+    href: "/tools/yt-thumbnail-downloader",
+    icon: Youtube,
+    color: "#EF4444"
+  }
+];
+
 export function OpenSourceAssets() {
-  const [activeTool, setActiveTool] = useState<ToolInfo | null>(null);
+  const [activeToolId, setActiveToolId] = useState<string>("recapyt");
+  const [activeTab, setActiveTab] = useState<"demo" | "specs">("demo");
+  const [showUtilities, setShowUtilities] = useState<boolean>(false);
 
-  const [selectedToolId, setSelectedToolId] = useState<string>(tools[0].id);
-  const selectedTool = tools.find(t => t.id === selectedToolId) || tools[0];
-
-  // Lock body scroll when modal is open to ensure desktop and mobile overlay stability
-  useEffect(() => {
-    if (activeTool) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [activeTool]);
+  const activeTool = tools.find(t => t.id === activeToolId) || tools[0];
 
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: "#09090b" }}>
+    <section className="relative py-24 md:py-32 overflow-hidden border-t border-white/[0.04]" style={{ background: "#09090b" }}>
       {/* Subtle grid background */}
       <div 
-        className="absolute inset-0 pointer-events-none opacity-[0.03]" 
+        className="absolute inset-0 pointer-events-none opacity-[0.02]" 
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
           backgroundSize: "40px 40px"
@@ -192,475 +242,312 @@ export function OpenSourceAssets() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-12 gap-8 items-center">
-          {/* Left Column: Tool Selector Stack */}
-          <div className="md:col-span-5 flex flex-col gap-4">
+        {/* Dynamic Split-Pane Interactive Showcase */}
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Interactive Selector */}
+          <div className="lg:col-span-5 flex flex-col gap-4">
+            <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase block mb-1">
+              Select Component
+            </span>
             {tools.map((tool) => {
-              const isSelected = tool.id === selectedToolId;
+              const isActive = activeToolId === tool.id;
               return (
                 <div
                   key={tool.id}
-                  onClick={() => setSelectedToolId(tool.id)}
-                  className="group flex flex-col cursor-pointer transition-all duration-300 relative text-left"
-                  style={{
-                    background: isSelected ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.01)",
-                    border: "1px solid",
-                    borderColor: isSelected ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)",
-                    borderRadius: "12px",
-                    padding: "24px 28px",
-                    backdropFilter: "blur(10px)",
-                    boxShadow: isSelected ? `inset 2px 0 0 ${tool.color}, 0 10px 30px -15px rgba(0,0,0,0.5)` : "none",
+                  onClick={() => {
+                    setActiveToolId(tool.id);
                   }}
+                  className={`group relative p-5 rounded-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between ${
+                    isActive 
+                      ? "border-white/[0.12] bg-white/[0.05]" 
+                      : "border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/[0.08]"
+                  }`}
                 >
-                  <div className="flex gap-4 items-start">
+                  {/* Glowing left edge on active selector */}
+                  {isActive && (
+                    <div 
+                      className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r"
+                      style={{ background: tool.color }}
+                    />
+                  )}
+
+                  <div className="flex items-start gap-4">
                     <div 
                       className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                       style={{ 
-                        background: isSelected ? `${tool.color}15` : "rgba(255,255,255,0.03)", 
-                        border: `1px solid ${isSelected ? `${tool.color}35` : "rgba(255,255,255,0.06)"}` 
+                        background: isActive ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)", 
+                        border: "1px solid rgba(255,255,255,0.06)" 
                       }}
                     >
                       {tool.logoUrl ? (
-                        <img src={tool.logoUrl} alt={tool.title} className="w-5.5 h-5.5 object-contain" />
+                        <img src={tool.logoUrl} alt={tool.title} className="w-6 h-6 object-contain" />
                       ) : (
-                        <tool.icon style={{ color: isSelected ? tool.color : "#9ca3af", width: "20px", height: "20px" }} />
+                        <tool.icon style={{ color: tool.color, width: "20px", height: "20px" }} />
                       )}
                     </div>
-                    <div>
-                      <h3 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: "1.15rem", color: isSelected ? "#FFFFFF" : "#D1D5DB", transition: "color 0.2s" }}>
-                        {tool.title}
-                      </h3>
-                      <p className="text-sm mt-1.5" style={{ color: isSelected ? "rgba(237,234,228,0.7)" : "rgba(237,234,228,0.4)", transition: "color 0.2s", lineHeight: 1.45 }}>
+
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-white text-[15px] font-bold font-display group-hover:text-white transition-colors">
+                          {tool.title}
+                        </h4>
+                        <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">
+                          {tool.id === "recapyt" ? "SAAS App" : "WP Plugin"}
+                        </span>
+                      </div>
+                      <p className="text-gray-400 text-xs leading-normal mt-1.5 line-clamp-2">
                         {tool.tagline}
                       </p>
                     </div>
                   </div>
-
-                  {/* Expandable CTA action buttons on active tool selection */}
-                  <AnimatePresence initial={false}>
-                    {isSelected && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                        animate={{ height: "auto", opacity: 1, marginTop: 20 }}
-                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="flex items-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
-                          {tool.id === "recapyt" ? (
-                            <a 
-                              href={tool.downloadLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 flex items-center justify-center gap-2 rounded-md py-2 px-4 text-xs font-semibold transition-all"
-                              style={{ background: "#EDEAE4", color: "#09090b" }}
-                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
-                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
-                            >
-                              <ExternalLink size={14} />
-                              Visit Website
-                            </a>
-                          ) : (
-                            <a 
-                              href={tool.downloadLink}
-                              download
-                              className="flex-1 flex items-center justify-center gap-2 rounded-md py-2 px-4 text-xs font-semibold transition-all"
-                              style={{ background: "#EDEAE4", color: "#09090b" }}
-                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
-                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
-                            >
-                              <ArrowDownToLine size={14} />
-                              Download
-                            </a>
-                          )}
-                          <button
-                            onClick={() => setActiveTool(tool)}
-                            className="flex items-center justify-center gap-1 rounded-md py-2 px-4 text-xs font-semibold transition-all"
-                            style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255, 255, 255, 0.15)" }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"}
-                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
-                          >
-                            Learn More
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
               );
             })}
           </div>
 
-          {/* Right Column: Dynamic Visual Showcase with Fluid Ambient Glow */}
-          <div className="md:col-span-7 flex items-center justify-center relative min-h-[360px] md:min-h-[440px] w-full">
-            {/* Dynamic Ambient Glow Orb */}
+          {/* Right Column: Immersive Control Stage */}
+          <div className="lg:col-span-7">
             <div 
-              className="absolute w-[240px] h-[240px] md:w-[320px] md:h-[320px] rounded-full blur-[100px] opacity-20 pointer-events-none transition-all duration-700 ease-out"
+              className="rounded-2xl border border-white/[0.08] overflow-hidden shadow-2xl relative"
               style={{
-                background: selectedTool.color,
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-
-            {/* Frame wrapper for the canvas component */}
-            <div 
-              className="w-full max-w-[420px] aspect-[4/3] rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 shadow-2xl relative transition-all duration-300"
-              style={{
-                boxShadow: "0 30px 60px -15px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)",
+                background: "linear-gradient(135deg, rgba(18, 18, 22, 0.95) 0%, rgba(9, 9, 11, 0.99) 100%)",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.9)"
               }}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={selectedToolId}
-                  initial={{ opacity: 0, scale: 0.95, y: 8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -8 }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full h-full flex items-center justify-center"
-                >
-                  {selectedToolId === "recapyt" && <RecapYtCanvas tool={selectedTool} />}
-                  {selectedToolId === "cloudflare-purger" && <CloudflarePurgerCanvas tool={selectedTool} />}
-                  {selectedToolId === "410-manager" && <GoneManagerCanvas tool={selectedTool} />}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
-        </div>
-
-        {/* Link to Utility Suite */}
-        <div className="mt-16 text-center">
-          <Link 
-            href="/tools" 
-            className="inline-flex items-center gap-2 group text-sm font-semibold text-gray-400 hover:text-white transition-colors duration-200"
-          >
-            <span>Explore the Utility Suite (8+ Tools)</span>
-            <ChevronRight size={16} className="transform group-hover:translate-x-1 transition-transform duration-200" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Immersive Center-Stage Modal Overlay */}
-      <AnimatePresence>
-        {activeTool && (
-          <ModalPortal onClose={() => setActiveTool(null)}>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setActiveTool(null)}
-              data-lenis-prevent
-              className="fixed inset-0 z-50 bg-[#020203]/85 backdrop-blur-[12px] flex items-center justify-center p-4 md:p-6 overflow-y-auto"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                transition={{ type: "spring", damping: 30, stiffness: 350 }}
-                onClick={e => e.stopPropagation()}
-                data-lenis-prevent
-                className="w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl relative border border-white/[0.08] my-auto"
-                style={{ 
-                  background: "linear-gradient(135deg, rgba(18, 18, 22, 0.95) 0%, rgba(9, 9, 11, 0.99) 100%)",
-                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.9)",
+              {/* Dynamic Glow Spotlight */}
+              <div 
+                className="absolute pointer-events-none opacity-15 filter blur-[80px] rounded-full transition-all duration-500"
+                style={{
+                  background: `radial-gradient(circle, ${activeTool.color} 0%, transparent 70%)`,
+                  width: "350px",
+                  height: "350px",
+                  top: "-150px",
+                  right: "-50px",
+                  zIndex: 0
                 }}
-              >
-                {/* Glow backdrop effect */}
-                <div 
-                  className="absolute pointer-events-none opacity-25 filter blur-[100px] rounded-full"
-                  style={{
-                    background: `radial-gradient(circle, ${activeTool.color} 0%, transparent 70%)`,
-                    width: "400px",
-                    height: "400px",
-                    top: "-150px",
-                    right: "-100px",
-                    zIndex: 0
-                  }}
-                />
+              />
 
-                <div className="grid md:grid-cols-2 relative z-10">
-                  {/* Left Column: Visual Canvas & Simulation */}
-                  <div 
-                    className="p-8 md:p-10 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-white/[0.06]"
-                    style={{ background: "rgba(5, 5, 7, 0.45)" }}
-                  >
-                    <div className="w-full h-full flex flex-col justify-between">
-                      <div className="mb-6">
-                        <span 
-                          style={{ color: activeTool.color }} 
-                          className="text-[11px] font-bold tracking-widest uppercase mb-2 block"
-                        >
-                          Visual Simulation
-                        </span>
-                        <h4 className="text-white text-sm font-medium opacity-50">
-                          How the underlying engine processes requests
-                        </h4>
-                      </div>
-                      
-                      {/* Simulation Canvas Wrapper */}
-                      <div className="flex-1 flex items-center justify-center py-6">
+              {/* Mock Browser Title Bar */}
+              <div className="h-10 bg-white/[0.02] border-b border-white/[0.06] px-4 flex items-center justify-between relative z-10">
+                <div className="flex gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                </div>
+                <div className="px-3 py-1 rounded bg-black/30 border border-white/[0.04] text-[10px] font-mono text-gray-500 min-w-[200px] text-center">
+                  {activeTool.id === "recapyt" ? "https://recapyt.in/dashboard" : `wp-admin/plugins.php?plugin=${activeTool.id}`}
+                </div>
+                <div className="w-12" /> {/* spacer */}
+              </div>
+
+              {/* Stage Sub-header Segment Selector */}
+              <div className="flex border-b border-white/[0.06] bg-black/20 p-1 relative z-10">
+                <button
+                  onClick={() => setActiveTab("demo")}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    activeTab === "demo" ? "bg-white/[0.06] text-white border border-white/[0.05]" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <Terminal size={12} style={{ color: activeTool.color }} /> Interactive Demo
+                </button>
+                <button
+                  onClick={() => setActiveTab("specs")}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    activeTab === "specs" ? "bg-white/[0.06] text-white border border-white/[0.05]" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <Code size={12} style={{ color: activeTool.color }} /> Technical Specs & Code
+                </button>
+              </div>
+
+              {/* Stage Content */}
+              <div className="p-8 relative z-10 min-h-[380px] flex flex-col justify-between">
+                <AnimatePresence mode="wait">
+                  {activeTab === "demo" ? (
+                    <motion.div
+                      key="demo"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex flex-col md:flex-row gap-6 items-center justify-between flex-1"
+                    >
+                      {/* Left: Simulation Canvas */}
+                      <div className="w-full md:w-auto flex-1 flex items-center justify-center">
                         {activeTool.id === "recapyt" && <RecapYtCanvas tool={activeTool} />}
                         {activeTool.id === "cloudflare-purger" && <CloudflarePurgerCanvas tool={activeTool} />}
                         {activeTool.id === "410-manager" && <GoneManagerCanvas tool={activeTool} />}
                       </div>
 
-                      <div className="mt-4 p-3 rounded bg-white/[0.02] border border-white/[0.04]">
-                        <p className="text-[11px] leading-relaxed text-gray-500 text-center">
-                          Interactive sandbox representing localized architectural events in real-time.
-                        </p>
+                      {/* Right: Quick Capabilities & Info */}
+                      <div className="w-full md:w-[240px] flex flex-col gap-4 shrink-0">
+                        <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+                          Capabilities
+                        </span>
+                        <ul className="space-y-2">
+                          {activeTool.features.slice(0, 3).map((feat, fi) => (
+                            <li key={fi} className="flex items-start gap-2 text-xs text-gray-300">
+                              <span className="text-green-400 shrink-0 select-none">✓</span>
+                              <span className="line-clamp-2">{feat}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-2 p-3 rounded-lg bg-white/[0.01] border border-white/[0.04]">
+                          <span className="text-[9px] text-gray-500 font-mono block uppercase">
+                            Primary Metric
+                          </span>
+                          <span className="text-white font-bold text-sm block mt-1">
+                            {activeTool.metrics[0].value}
+                          </span>
+                          <span className="text-[10px] text-gray-400 block mt-0.5">
+                            {activeTool.metrics[0].label}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Spec Metrics, Content, Code Tabs & Actions */}
-                  <div className="p-8 md:p-10 flex flex-col justify-between md:max-h-[80vh] md:overflow-y-auto overflow-y-visible">
-                    <button 
-                      onClick={() => setActiveTool(null)}
-                      className="absolute top-6 right-6 p-2 rounded-full transition-all duration-300 z-50"
-                      style={{ background: "rgba(255,255,255,0.03)", color: "#EDEAE4", border: "1px solid rgba(255,255,255,0.05)" }}
-                      onMouseEnter={e => {
-                        (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)";
-                        (e.currentTarget as HTMLElement).style.transform = "rotate(90deg)";
-                      }}
-                      onMouseLeave={e => {
-                        (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-                        (e.currentTarget as HTMLElement).style.transform = "rotate(0deg)";
-                      }}
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="specs"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-6 flex-1"
                     >
-                      <X size={18} />
-                    </button>
-
-                    <div>
-                      {/* Logo and Header */}
-                      <div className="flex items-center gap-4 mb-4">
-                        <div 
-                          className="w-12 h-12 rounded-xl flex items-center justify-center"
-                          style={{ background: `rgba(255,255,255,0.03)`, border: `1px solid rgba(255,255,255,0.08)` }}
-                        >
-                          {activeTool.logoUrl ? (
-                            <img src={activeTool.logoUrl} alt={activeTool.title} className="w-8 h-8 object-contain" />
-                          ) : (
-                            <activeTool.icon style={{ color: activeTool.color, width: "26px", height: "26px" }} />
-                          )}
-                        </div>
+                      {/* Description & Specs Grid */}
+                      <div className="grid md:grid-cols-2 gap-4">
                         <div>
-                          <h3 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700 }} className="text-xl text-[#EDEAE4]">
-                            {activeTool.title}
-                          </h3>
-                          <span className="text-xs text-gray-500 font-mono">OSS Component</span>
+                          <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase block mb-1">
+                            Technical Deep Dive
+                          </span>
+                          <p className="text-gray-300 text-xs leading-relaxed">
+                            {activeTool.techDetails}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {activeTool.metrics.map((metric, mi) => (
+                            <div key={mi} className="p-3 rounded bg-white/[0.02] border border-white/[0.04]">
+                              <span className="text-white font-bold text-xs block font-mono">
+                                {metric.value}
+                              </span>
+                              <span className="text-[9px] text-gray-400 block font-semibold mt-0.5">
+                                {metric.label}
+                              </span>
+                              <span className="text-[8px] text-gray-500 block leading-tight mt-0.5">
+                                {metric.desc}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
-                      {/* Interactive Tabbed Detail Section */}
-                      <ModalTabs tool={activeTool} />
-                    </div>
+                      {/* Code Block */}
+                      <div>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-[9px] font-mono text-gray-500 flex items-center gap-1.5">
+                            <Terminal size={10} /> {activeTool.codeTitle}
+                          </span>
+                          <CopyButton text={activeTool.codeSnippet} />
+                        </div>
+                        <div className="rounded-lg overflow-hidden border border-white/[0.06] bg-[#050507]">
+                          <pre className="p-3.5 overflow-x-auto text-[10.5px] leading-relaxed font-mono text-gray-300 max-h-[160px]">
+                            <code>{activeTool.codeSnippet}</code>
+                          </pre>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                    {/* Action Button */}
-                    <div className="mt-8 pt-6 border-t border-white/[0.06]">
-                      <motion.a 
-                        href={activeTool.downloadLink}
-                        download={activeTool.id !== "recapyt"}
-                        target={activeTool.id === "recapyt" ? "_blank" : undefined}
-                        rel="noopener noreferrer"
-                        whileHover={{ scale: 1.01, y: -1 }}
-                        whileTap={{ scale: 0.99 }}
-                        className="w-full flex items-center justify-center gap-2.5 rounded-lg py-3.5 text-sm font-bold transition-all cursor-pointer shadow-lg"
-                        style={{ 
-                          background: "#EDEAE4", 
-                          color: "#09090b",
-                          boxShadow: `0 4px 20px ${activeTool.color}20`
-                        }}
-                      >
-                        {activeTool.id === "recapyt" ? <ExternalLink size={18} /> : <ArrowDownToLine size={18} />}
-                        <span>{activeTool.id === "recapyt" ? "Visit Website" : "Download Free Package"}</span>
-                      </motion.a>
-                    </div>
-                  </div>
+                {/* Main Action CTAs */}
+                <div className="mt-8 pt-5 border-t border-white/[0.06] flex items-center gap-4">
+                  <a
+                    href={activeTool.downloadLink}
+                    target={activeTool.id === "recapyt" ? "_blank" : undefined}
+                    download={activeTool.id !== "recapyt" ? true : undefined}
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-lg py-3 px-4 text-xs font-bold transition-all shadow-lg text-center cursor-pointer"
+                    style={{ 
+                      background: "#EDEAE4", 
+                      color: "#09090b",
+                      boxShadow: `0 4px 15px ${activeTool.color}15`
+                    }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+                  >
+                    {activeTool.id === "recapyt" ? <ExternalLink size={14} /> : <ArrowDownToLine size={14} />}
+                    {activeTool.id === "recapyt" ? "Visit Flagship Website" : "Download Production Bundle"}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Collapsible Utilities Grid */}
+        <div className="mt-16 text-center">
+          <button 
+            onClick={() => setShowUtilities(!showUtilities)}
+            className="inline-flex items-center gap-2 text-sm font-medium tracking-wide transition-colors duration-200 group cursor-pointer"
+            style={{ color: "rgba(237,234,228,0.5)" }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "rgba(237,234,228,0.9)"}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(237,234,228,0.5)"}
+          >
+            <span>{showUtilities ? "Hide browser utilities" : "View all 7 browser utilities"}</span>
+            <motion.div
+              animate={{ rotate: showUtilities ? 90 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+            </motion.div>
+          </button>
+
+          <AnimatePresence>
+            {showUtilities && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.35, ease: "easeInOut" }}
+                className="overflow-hidden mt-8 text-left"
+              >
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4">
+                  {utilityTools.map((ut, idx) => (
+                    <motion.div
+                      key={ut.name}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                    >
+                      <Link href={ut.href}>
+                        <div 
+                          className="group p-5 rounded-xl border border-white/[0.06] bg-white/[0.02] flex flex-col justify-between h-full hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 cursor-pointer min-h-[160px]"
+                        >
+                          <div>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-4 bg-white/[0.03] border border-white/[0.06] group-hover:border-white/[0.1] transition-all">
+                              <ut.icon size={18} style={{ color: ut.color }} />
+                            </div>
+                            <h4 className="text-white text-[14.5px] font-bold font-display group-hover:text-white transition-colors">
+                              {ut.name}
+                            </h4>
+                            <p className="text-gray-400 text-xs leading-normal mt-2">
+                              {ut.desc}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 group-hover:text-white transition-all mt-4">
+                            Open Tool <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
                 </div>
               </motion.div>
-            </motion.div>
-          </ModalPortal>
-        )}
-      </AnimatePresence>
-
-      <motion.div 
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        className="relative z-10 mx-auto max-w-6xl px-5 md:px-6 mt-16 text-center"
-      >
-        <Link href="/tools" className="inline-flex items-center gap-2 text-sm font-medium tracking-wide transition-colors duration-200 group" style={{ color: "rgba(237,234,228,0.5)" }} onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "rgba(237,234,228,0.9)"} onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(237,234,228,0.5)"}>
-           View all 8 browser utilities 
-           <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-        </Link>
-      </motion.div>
-    </section>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/* Modal Portal (Ensures overlay is at the body root level to bypass scroll bugs) */
-/* ────────────────────────────────────────────────────────────────────────── */
-import ReactDOM from "react-dom";
-
-function ModalPortal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  if (typeof window === "undefined") return <>{children}</>;
-  
-  // Clean close trigger on escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
-  return ReactDOM.createPortal(children, document.body);
-}
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/* Modal Tabs Component (Handles layout toggle between info and engineering) */
-/* ────────────────────────────────────────────────────────────────────────── */
-
-function ModalTabs({ tool }: { tool: ToolInfo }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "code">("overview");
-
-  return (
-    <div>
-      {/* Tabs list */}
-      <div className="flex gap-1.5 p-1 rounded-lg bg-white/[0.03] border border-white/[0.04] mb-6">
-        <button
-          onClick={() => setActiveTab("overview")}
-          className="flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all relative"
-          style={{ color: activeTab === "overview" ? "#EDEAE4" : "rgba(237,234,228,0.4)" }}
-        >
-          {activeTab === "overview" && (
-            <motion.div 
-              layoutId="modal-tab-indicator" 
-              className="absolute inset-0 bg-white/[0.06] border border-white/[0.05] rounded-md"
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            />
-          )}
-          <span className="relative z-10 flex items-center justify-center gap-1.5">
-            <Clock size={12} /> Overview
-          </span>
-        </button>
-        
-        <button
-          onClick={() => setActiveTab("code")}
-          className="flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all relative"
-          style={{ color: activeTab === "code" ? "#EDEAE4" : "rgba(237,234,228,0.4)" }}
-        >
-          {activeTab === "code" && (
-            <motion.div 
-              layoutId="modal-tab-indicator" 
-              className="absolute inset-0 bg-white/[0.06] border border-white/[0.05] rounded-md"
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            />
-          )}
-          <span className="relative z-10 flex items-center justify-center gap-1.5">
-            <Code size={12} /> Code & Specs
-          </span>
-        </button>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-
-      <AnimatePresence mode="wait">
-        {activeTab === "overview" ? (
-          <motion.div
-            key="overview"
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.15 }}
-          >
-            <p className="text-gray-400 text-sm leading-relaxed mb-6 font-medium">
-              {tool.tagline}
-            </p>
-
-            <div className="mb-6">
-              <h4 className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-3">
-                The Engineering Challenge
-              </h4>
-              <p className="text-gray-300 text-[13.5px] leading-relaxed">
-                {tool.techDetails}
-              </p>
-            </div>
-
-            <div>
-              <h4 className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-3">
-                Capabilities
-              </h4>
-              <ul className="space-y-3">
-                {tool.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-[13.5px]">
-                    <svg className="shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="8" cy="8" r="8" fill={`${tool.color}15`} />
-                      <path d="M5 8L7 10L11 6" stroke={tool.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span className="text-gray-300 leading-normal">
-                      {feature}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="code"
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.15 }}
-            className="space-y-6"
-          >
-            {/* Metrics stats block */}
-            <div>
-              <h4 className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-3">
-                Performance Metrics
-              </h4>
-              <div className="grid grid-cols-3 gap-3">
-                {tool.metrics.map((metric, idx) => (
-                  <div 
-                    key={idx} 
-                    className="p-3.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-center flex flex-col justify-between"
-                  >
-                    <span className="text-white font-bold text-[15px] font-mono leading-none mb-1.5 block">
-                      {metric.value}
-                    </span>
-                    <div>
-                      <span className="text-[10px] font-bold text-gray-400 block mb-0.5">
-                        {metric.label}
-                      </span>
-                      <span className="text-[9px] text-gray-500 block leading-tight">
-                        {metric.desc}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Code Block with Copy Action */}
-            <div>
-              <div className="flex justify-between items-center mb-2 px-2">
-                <span className="text-[10px] font-mono text-gray-500 flex items-center gap-1.5">
-                  <Terminal size={11} /> {tool.codeTitle}
-                </span>
-                <CopyButton text={tool.codeSnippet} />
-              </div>
-              <div className="rounded-lg overflow-hidden border border-white/[0.06] bg-[#050507]">
-                <pre className="p-4 overflow-x-auto text-[11.5px] leading-relaxed font-mono text-gray-300 max-h-[220px]">
-                  <code>{tool.codeSnippet}</code>
-                </pre>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    </section>
   );
 }
 
