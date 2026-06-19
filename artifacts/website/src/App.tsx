@@ -20,7 +20,7 @@ const ClipboardHistory = lazy(() => import("@/pages/tools/clipboard-history"));
 const PasteToImage = lazy(() => import("@/pages/tools/paste-to-image"));
 const DomainAge = lazy(() => import("@/pages/tools/domain-age"));
 const YtThumbnail = lazy(() => import("@/pages/tools/yt-thumbnail"));
-const YtSummary = lazy(() => import("@/pages/tools/yt-summary"));
+
 const Notepad = lazy(() => import("@/pages/tools/notepad"));
 const Pomodoro = lazy(() => import("@/pages/tools/pomodoro"));
 const QuotaTrackerPrivatePage = lazy(() => import("@/pages/internal/quota-tracker"));
@@ -72,12 +72,7 @@ function AppRouter() {
           <Route path="/tools/youtube-thumbnail-grabber" component={YtThumbnail} />
           <Route path="/tools/yt-thumbnail" component={YtThumbnail} />
           <Route path="/youtube-thumbnail-downloader" component={YtThumbnail} />
-          <Route path="/tools/youtube-summary" component={YtSummary} />
-          <Route path="/tools/yt-summary" component={YtSummary} />
-          <Route path="/tools/yt-video-summary" component={YtSummary} />
-          <Route path="/tools/youtube-transcript-summarizer" component={YtSummary} />
-          <Route path="/tools/video-to-summary" component={YtSummary} />
-          <Route path="/youtube-summary" component={YtSummary} />
+
           <Route path="/tools/notepad" component={Notepad} />
           <Route path="/tools/pomodoro" component={Pomodoro} />
           <Route path="/tools/pomodoro-timer" component={Pomodoro} />

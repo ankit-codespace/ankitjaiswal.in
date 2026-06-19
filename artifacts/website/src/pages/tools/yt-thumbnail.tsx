@@ -418,7 +418,7 @@ export default function YtThumbnail() {
 
   const related: RelatedTool[] = useMemo(() => [
     { href: "/online-notepad",            name: "Online Notepad",              desc: "Distraction-free writing surface with autosave, Markdown, and PDF export." },
-    { href: "/tools/youtube-summary",     name: "YouTube Summary",             desc: "Paste a YouTube transcript, get hand-tuned prompts for ChatGPT, Claude, Perplexity, or Gemini." },
+    { href: "https://recapyt.in/",     name: "YouTube Summary",             desc: "Paste a YouTube transcript, get hand-tuned prompts for ChatGPT, Claude, Perplexity, or Gemini." },
     { href: "/tools/webp-converter",      name: "WebP Converter",              desc: "Convert PNG, JPG, and GIF to WebP — entirely in your browser." },
     { href: "/tools/paste-to-image",      name: "Paste-to-Image",              desc: "Paste a screenshot or copied image and download it as a file in one click." },
   ], []);

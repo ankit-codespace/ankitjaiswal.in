@@ -30,8 +30,9 @@ const FLAGSHIP_TOOLS: readonly FlagshipTool[] = [
     tagline: "Instant YouTube summaries natively injected via custom high-speed AI architecture.",
     Icon: Youtube,
     logoUrl: "/recapyt-icon.png",
-    href: "/tools/youtube-summary",
+    href: "https://recapyt.in/",
     color: "#EF4444",
+    external: true,
     features: [
       "Native hyper-fast AI API integration",
       "Massive 1M token context window",

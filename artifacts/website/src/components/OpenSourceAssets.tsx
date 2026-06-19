@@ -158,15 +158,15 @@ export function OpenSourceAssets() {
                       <ExternalLink size={16} />
                       Visit Website
                     </a>
-                    <Link
-                      href="/tools/youtube-summary"
+                    <button
+                      onClick={() => setActiveTool(tool)}
                       className="flex items-center justify-center gap-1 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                      style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255, 255, 255, 0.1)", textDecoration: "none" }}
+                      style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255, 255, 255, 0.1)" }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
                     >
-                      Try Demo
-                    </Link>
+                      Learn More
+                    </button>
                   </>
                 ) : (
                   <>

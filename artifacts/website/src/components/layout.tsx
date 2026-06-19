@@ -160,7 +160,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     "/youtube-thumbnail-downloader",
     "/paste-to-image",
     "/clipboard-history",
-    "/youtube-summary",
     "/pomodoro",
   ]);
   if (cleanLocation.startsWith("/tools/") || TOP_LEVEL_TOOL_ALIASES.has(cleanLocation)) {

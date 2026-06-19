@@ -753,7 +753,7 @@ const NOTEPAD_TIPS: { icon: typeof Lightbulb; title: string; body: string }[] = 
 ];
 
 const RELATED_TOOLS = [
-  { name: "YouTube Summary", desc: "Turn video transcripts into tuned AI prompts", href: "/tools/youtube-summary" },
+  { name: "YouTube Summary", desc: "Turn video transcripts into tuned AI prompts", href: "https://recapyt.in/" },
   { name: "Clipboard History", desc: "Save text snippets locally", href: "/tools/clipboard-history" },
   { name: "Paste to Image", desc: "Paste, annotate and download screenshots", href: "/tools/paste-to-image" },
   { name: "All Tools", desc: "Browse every privacy-first tool", href: "/tools" },

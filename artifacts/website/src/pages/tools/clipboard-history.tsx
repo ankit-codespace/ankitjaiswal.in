@@ -593,7 +593,7 @@ export default function ClipboardHistory() {
     { name: "Online notepad", desc: "A focused, distraction-free editor with autosave, code blocks, and PDF export.", href: "/online-notepad" },
     { name: "Pomodoro Timer", desc: "Drift-proof focus timer with daily and lifetime stats — pairs with this clipboard.", href: "/tools/pomodoro" },
     { name: "Paste-to-Image", desc: "Paste a screenshot, annotate or blur it, and save as PNG. Browser-only.", href: "/tools/paste-to-image" },
-    { name: "YouTube Summary", desc: "Turn any video transcript into tuned prompts for ChatGPT, Claude, Perplexity, or Gemini.", href: "/tools/youtube-summary" },
+    { name: "YouTube Summary", desc: "Turn any video transcript into tuned prompts for ChatGPT, Claude, Perplexity, or Gemini.", href: "https://recapyt.in/" },
   ];
 
   const jsonLd = buildToolJsonLd({

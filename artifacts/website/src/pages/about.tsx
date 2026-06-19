@@ -25,7 +25,7 @@ const TOOLS_BUILT = [
   { name: "Paste-to-Image", href: "/tools/paste-to-image", desc: "Turn anything on your clipboard into a downloadable PNG." },
   { name: "WebP Converter", href: "/tools/webp-converter", desc: "Convert images to WebP — fully in your browser." },
   { name: "YouTube Thumbnail Downloader", href: "/tools/yt-thumbnail-downloader", desc: "Grab high-res thumbnails from any video." },
-  { name: "YouTube Summary", href: "/tools/youtube-summary", desc: "Turn any transcript into tuned prompts for ChatGPT, Claude, or Perplexity." },
+  { name: "YouTube Summary", href: "https://recapyt.in/", desc: "Turn any transcript into tuned prompts for ChatGPT, Claude, or Perplexity." },
   { name: "Domain Age Checker", href: "/tools/domain-age-checker", desc: "Find out how long any domain has been registered." },
 ];
 
@@ -244,43 +244,49 @@ export default function About() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          {TOOLS_BUILT.map((tool) => (
-            <Link
-              key={tool.href}
-              href={tool.href}
-              className="group block"
-              style={{
-                padding: "24px 26px",
-                borderRadius: 16,
-                background: "#FFFFFF",
-                border: "1px solid rgba(13,17,23,0.06)",
-                textDecoration: "none",
-                transition: "all 0.25s ease",
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.borderColor = "rgba(44,44,243,0.3)";
-                el.style.transform = "translateY(-2px)";
-                el.style.boxShadow = "0 12px 32px rgba(13,17,23,0.06)";
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.borderColor = "rgba(13,17,23,0.06)";
-                el.style.transform = "translateY(0)";
-                el.style.boxShadow = "none";
-              }}
-            >
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <h3 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 18, color: "#0D1117", letterSpacing: "-0.01em" }}>
-                  {tool.name}
-                </h3>
-                <ArrowUpRight className="w-4 h-4 mt-1 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" style={{ color: "#6B7280" }} />
-              </div>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14.5, color: "#4B5563", lineHeight: 1.55 }}>
-                {tool.desc}
-              </p>
-            </Link>
-          ))}
+          {TOOLS_BUILT.map((tool) => {
+            const isExternal = tool.href.startsWith("http");
+            const Component = isExternal ? "a" : Link;
+            const extraProps = isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {};
+            return (
+              <Component
+                key={tool.href}
+                href={tool.href}
+                className="group block"
+                {...extraProps}
+                style={{
+                  padding: "24px 26px",
+                  borderRadius: 16,
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(13,17,23,0.06)",
+                  textDecoration: "none",
+                  transition: "all 0.25s ease",
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.borderColor = "rgba(44,44,243,0.3)";
+                  el.style.transform = "translateY(-2px)";
+                  el.style.boxShadow = "0 12px 32px rgba(13,17,23,0.06)";
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.borderColor = "rgba(13,17,23,0.06)";
+                  el.style.transform = "translateY(0)";
+                  el.style.boxShadow = "none";
+                }}
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <h3 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: 18, color: "#0D1117", letterSpacing: "-0.01em" }}>
+                    {tool.name}
+                  </h3>
+                  <ArrowUpRight className="w-4 h-4 mt-1 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" style={{ color: "#6B7280" }} />
+                </div>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14.5, color: "#4B5563", lineHeight: 1.55 }}>
+                  {tool.desc}
+                </p>
+              </Component>
+            );
+          })}
         </div>
       </section>
 

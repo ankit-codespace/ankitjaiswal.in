@@ -406,7 +406,7 @@ export default function DomainAge() {
       desc: "Drift-proof focus timer for the long, methodical hours SEO research actually takes.",
     },
     {
-      href: "/tools/youtube-summary",
+      href: "https://recapyt.in/",
       name: "YouTube Summary",
       desc: "Turn any video transcript into tuned prompts for ChatGPT, Claude, Perplexity, or Gemini.",
     },

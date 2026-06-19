@@ -1016,7 +1016,7 @@ export default function Pomodoro() {
       desc: "Paste a screenshot, annotate or blur it, and download as PNG — entirely in-browser.",
     },
     {
-      href: "/tools/youtube-summary",
+      href: "https://recapyt.in/",
       name: "YouTube Summary",
       desc: "Turn any YouTube transcript into a focused summary in your favorite AI.",
     },
