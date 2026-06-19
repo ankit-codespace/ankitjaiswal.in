@@ -17,17 +17,17 @@ WHILE there are uncompleted sub-steps in build_plan.md:
 
   2. EXECUTE based on the task type:
      
-     --- TYPE A: File Editing (Writing/Modifying) ---
+     --- TYPE A: File Copy & Asset Integration ---
+     • Verify source file existence and path.
+     • Copy the asset securely to the target folder.
+     • Verify target file exists and has correct size.
+
+     --- TYPE B: File Editing (Writing/Modifying) ---
      • Read the target file region completely first to ensure full local context.
      • Apply the code change cleanly. Keep comments intact.
      • Re-read the modified region to verify correctness.
      • Check for syntax errors, TypeScript warnings, or React hooks rules breaks.
      • If any issues are found, resolve them immediately before continuing.
-
-     --- TYPE B: Terminal Command Execution ---
-     • Run the terminal command.
-     • Read the full terminal output.
-     • If a compilation error or build failure occurs, read the log/stack trace, address the root cause, and re-run.
 
      --- TYPE C: Verification & Audit ---
      • Run manual check commands, verify file content, or build verification packages.

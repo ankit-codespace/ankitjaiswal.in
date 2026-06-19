@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Server, Trash2, Youtube, ArrowDownToLine, ChevronRight, X } from "lucide-react";
+import { Server, Trash2, Youtube, ArrowDownToLine, ChevronRight, X, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 
 type ToolInfo = {
@@ -22,7 +22,7 @@ const tools: ToolInfo[] = [
     tagline: "Instant YouTube summaries natively injected via custom high-speed AI architecture.",
     icon: Youtube,
     logoUrl: "/recapyt-icon.png",
-    downloadLink: "#",
+    downloadLink: "https://recapyt.in/",
     color: "#EF4444", // Red
     features: [
       "Native hyper-fast AI API integration",
@@ -38,7 +38,7 @@ const tools: ToolInfo[] = [
     title: "Cloudflare Edge Purger",
     tagline: "Instant cache invalidation directly from WordPress admin.",
     icon: Server,
-    downloadLink: "https://github.com/your-github/cloudflare-cache", // Placeholder
+    downloadLink: "/cloudflare-cache.zip",
     color: "#F59E0B", // Amber
     features: [
       "Hooks into WordPress save_post for automated purging",
@@ -53,7 +53,7 @@ const tools: ToolInfo[] = [
     title: "410 Gone Manager",
     tagline: "Preserve SEO crawl budget by managing deleted content correctly.",
     icon: Trash2,
-    downloadLink: "https://github.com/your-github/410-gone-manager", // Placeholder
+    downloadLink: "/410-gone-manager.zip",
     color: "#3B82F6", // Blue
     features: [
       "Auto-catches deleted posts and assigns a 410 header",
@@ -144,27 +144,54 @@ export function OpenSourceAssets() {
               </div>
 
               <div className="flex items-center gap-3 mt-8">
-                <a 
-                  href={tool.downloadLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                  style={{ background: "#EDEAE4", color: "#050810" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
-                >
-                  <ArrowDownToLine size={16} />
-                  Download
-                </a>
-                <button
-                  onClick={() => setActiveTool(tool)}
-                  className="flex items-center justify-center gap-1 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                  style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255,255,255,0.1)" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
-                >
-                  Learn More
-                </button>
+                {tool.id === "recapyt" ? (
+                  <>
+                    <a 
+                      href={tool.downloadLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
+                      style={{ background: "#EDEAE4", color: "#050810" }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+                    >
+                      <ExternalLink size={16} />
+                      Visit Website
+                    </a>
+                    <Link
+                      href="/tools/youtube-summary"
+                      className="flex items-center justify-center gap-1 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
+                      style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255, 255, 255, 0.1)", textDecoration: "none" }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+                    >
+                      Try Demo
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <a 
+                      href={tool.downloadLink}
+                      download
+                      className="flex-1 flex items-center justify-center gap-2 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
+                      style={{ background: "#EDEAE4", color: "#050810" }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+                    >
+                      <ArrowDownToLine size={16} />
+                      Download
+                    </a>
+                    <button
+                      onClick={() => setActiveTool(tool)}
+                      className="flex items-center justify-center gap-1 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
+                      style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255, 255, 255, 0.1)" }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+                    >
+                      Learn More
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
           ))}
@@ -182,7 +209,7 @@ export function OpenSourceAssets() {
               exit={{ opacity: 0 }}
               onClick={() => setActiveTool(null)}
               className="fixed inset-0 z-50"
-              style={{ background: "rgba(5, 8, 16, 0.7)", backdropFilter: "blur(4px)" }}
+              style={{ background: "rgba(5, 8, 16, 0.4)", backdropFilter: "blur(8px)" }}
             />
             
             {/* Drawer Panel */}
@@ -190,24 +217,48 @@ export function OpenSourceAssets() {
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              transition={{ type: "spring", damping: 26, stiffness: 220 }}
               className="fixed top-0 right-0 bottom-0 w-full max-w-md z-50 shadow-2xl overflow-y-auto"
-              style={{ background: "#0A0E17", borderLeft: "1px solid rgba(255,255,255,0.08)" }}
+              style={{ 
+                background: "rgba(10, 14, 23, 0.7)", 
+                backdropFilter: "blur(20px)", 
+                borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                boxShadow: "-10px 0 30px rgba(0, 0, 0, 0.5)"
+              }}
             >
-              <div className="p-8">
+              {/* Glow backdrop effect */}
+              <div 
+                className="absolute pointer-events-none opacity-20 filter blur-[80px] rounded-full"
+                style={{
+                  background: `radial-gradient(circle, ${activeTool.color} 0%, transparent 70%)`,
+                  width: "350px",
+                  height: "350px",
+                  top: "-100px",
+                  right: "-100px",
+                  zIndex: 0
+                }}
+              />
+
+              <div className="p-8 relative z-10 flex flex-col min-h-full">
                 <button 
                   onClick={() => setActiveTool(null)}
-                  className="absolute top-6 right-6 p-2 rounded-full transition-colors"
+                  className="absolute top-6 right-6 p-2 rounded-full transition-all duration-300"
                   style={{ background: "rgba(255,255,255,0.05)", color: "#EDEAE4" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.1)"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.15)";
+                    (e.currentTarget as HTMLElement).style.transform = "rotate(90deg)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
+                    (e.currentTarget as HTMLElement).style.transform = "rotate(0deg)";
+                  }}
                 >
                   <X size={20} />
                 </button>
 
                 <div 
-                  className="w-16 h-16 rounded-xl flex items-center justify-center mb-6 mt-4"
-                  style={{ background: `rgba(255,255,255,0.05)`, border: `1px solid rgba(255,255,255,0.1)` }}
+                  className="w-16 h-16 rounded-xl flex items-center justify-center mb-6 mt-4 transition-transform duration-300"
+                  style={{ background: `rgba(255,255,255,0.03)`, border: `1px solid rgba(255,255,255,0.08)` }}
                 >
                   {activeTool.logoUrl ? (
                     <img src={activeTool.logoUrl} alt={activeTool.title} className="w-9 h-9 object-contain" />
@@ -216,7 +267,7 @@ export function OpenSourceAssets() {
                   )}
                 </div>
 
-                <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: "2rem", color: "#EDEAE4", lineHeight: 1.1 }} className="mb-4">
+                <h2 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: "2rem", color: "#EDEAE4", lineHeight: 1.1, letterSpacing: "-0.02em" }} className="mb-4">
                   {activeTool.title}
                 </h2>
                 
@@ -225,22 +276,25 @@ export function OpenSourceAssets() {
                 </p>
 
                 <div className="mb-10">
-                  <h4 className="text-sm uppercase tracking-widest font-bold mb-4" style={{ color: "rgba(255,255,255,0.3)" }}>
+                  <h4 className="text-xs uppercase tracking-widest font-semibold mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>
                     The Engineering
                   </h4>
-                  <p style={{ color: "rgba(237,234,228,0.8)", fontFamily: "'Inter', sans-serif", lineHeight: 1.7, fontSize: "15px" }}>
+                  <p style={{ color: "rgba(237,234,228,0.85)", fontFamily: "'Inter', sans-serif", lineHeight: 1.7, fontSize: "15px" }}>
                     {activeTool.techDetails}
                   </p>
                 </div>
 
-                <div className="mb-12">
-                  <h4 className="text-sm uppercase tracking-widest font-bold mb-4" style={{ color: "rgba(255,255,255,0.3)" }}>
+                <div className="mb-12 flex-grow">
+                  <h4 className="text-xs uppercase tracking-widest font-semibold mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>
                     Capabilities
                   </h4>
                   <ul className="space-y-4">
                     {activeTool.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-3">
-                        <ChevronRight className="shrink-0 mt-0.5" style={{ color: activeTool.color }} size={18} />
+                        <svg className="shrink-0 mt-1" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="8" cy="8" r="8" fill={`${activeTool.color}20`} />
+                          <path d="M5 8L7 10L11 6" stroke={activeTool.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                         <span style={{ color: "rgba(237,234,228,0.75)", fontSize: "15px", lineHeight: 1.5 }}>
                           {feature}
                         </span>
@@ -249,18 +303,23 @@ export function OpenSourceAssets() {
                   </ul>
                 </div>
 
-                <a 
+                <motion.a 
                   href={activeTool.downloadLink}
-                  target="_blank"
+                  download={activeTool.id !== "recapyt"}
+                  target={activeTool.id === "recapyt" ? "_blank" : undefined}
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 rounded-lg py-4 text-base font-bold transition-all"
-                  style={{ background: "#EDEAE4", color: "#050810" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg py-4 text-base font-bold transition-all cursor-pointer shadow-lg mt-auto"
+                  style={{ 
+                    background: "#EDEAE4", 
+                    color: "#050810",
+                    boxShadow: `0 4px 20px ${activeTool.color}15`
+                  }}
                 >
-                  <ArrowDownToLine size={20} />
-                  Download Free
-                </a>
+                  {activeTool.id === "recapyt" ? <ExternalLink size={20} /> : <ArrowDownToLine size={20} />}
+                  <span>{activeTool.id === "recapyt" ? "Visit Website" : "Download Free"}</span>
+                </motion.a>
               </div>
             </motion.div>
           </>

@@ -43,7 +43,7 @@ const FLAGSHIP_TOOLS: readonly FlagshipTool[] = [
     name: "Cloudflare Edge Purger",
     tagline: "Instant cache invalidation directly from WordPress admin.",
     Icon: Server,
-    href: "https://github.com/your-github/cloudflare-cache",
+    href: "/cloudflare-cache.zip",
     color: "#F59E0B",
     external: true,
     features: [
@@ -57,7 +57,7 @@ const FLAGSHIP_TOOLS: readonly FlagshipTool[] = [
     name: "410 Gone Manager",
     tagline: "Preserve SEO crawl budget by managing deleted content correctly.",
     Icon: Trash2,
-    href: "https://github.com/your-github/410-gone-manager",
+    href: "/410-gone-manager.zip",
     color: "#3B82F6",
     external: true,
     features: [
@@ -292,14 +292,21 @@ export default function ToolsIndex() {
                 </div>
 
                 <div className="mt-auto pt-4 flex items-center justify-between border-t border-white/5 group-hover:border-white/10 transition-colors">
-                  <span style={{ color: tokens.text.primary, fontSize: "14px", fontWeight: 500 }}>Learn more</span>
-                  <ArrowRight size={16} style={{ color: tool.color }} className="group-hover:translate-x-1 transition-transform" />
+                  <span style={{ color: tokens.text.primary, fontSize: "14px", fontWeight: 500 }}>
+                    {tool.href.endsWith(".zip") ? "Download Utility" : "Learn more"}
+                  </span>
+                  {tool.href.endsWith(".zip") ? (
+                    <ArrowDownToLine size={16} style={{ color: tool.color }} />
+                  ) : (
+                    <ArrowRight size={16} style={{ color: tool.color }} className="group-hover:translate-x-1 transition-transform" />
+                  )}
                 </div>
               </motion.div>
             );
 
+            const isZip = tool.href.endsWith(".zip");
             return tool.external ? (
-              <a key={tool.href} href={tool.href} target="_blank" rel="noopener noreferrer" className="block h-full outline-none">
+              <a key={tool.href} href={tool.href} download={isZip} target={isZip ? undefined : "_blank"} rel="noopener noreferrer" className="block h-full outline-none">
                 {inner}
               </a>
             ) : (

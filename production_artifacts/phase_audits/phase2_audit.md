@@ -1,14 +1,18 @@
-# Phase 2 Audit: Exclusions & Compression Configuration
+# Phase 2 Audit: Link Alignments & Routing
+Date: 2026-06-19T19:43:00+05:30
 
-## 1. Goal
-Audit the files exclusions array and compression configurations to guarantee that developer source files and non-essential dependencies are omitted from the packaged `.asar` archive, and that maximum compression is applied.
+## Verification
+The routing and card links have been patched in the following files:
 
-## 2. Findings & Verifications
-* **Compression Audit:** Root `"build"` block has `"compression": "maximum"` and `"asar": true` configured. This guarantees maximum possible installer compression (LZMA) and archive extraction efficiency.
-* **Asset Inclusions/Exclusions:**
-  * `"files"` block includes `src/main/**/*` (required main process code) and `src/renderer/dist/**/*` (only Vite-compiled static bundle).
-  * Dev-only source folder `src/renderer/src` is implicitly excluded since it lies outside `dist/`.
-  * Explicit exclusions are defined for source code files, debug maps, and readme files (`!**/*.map`, `!**/*.ts`, `!**/*.md`).
-* **Conclusion:** The files filter rules are extremely tight and optimal. No developer source maps or source code leaks into the final ASAR.
+1. **`artifacts/website/src/components/OpenSourceAssets.tsx`**
+   - Changed RecapYT `downloadLink` to `https://recapyt.in/`.
+   - Patched button handlers on RecapYT card to direct to `https://recapyt.in/` ("Visit Website") and `/tools/youtube-summary` ("Try Demo").
+   - Set download target link for Cloudflare Edge Purger to `/cloudflare-cache.zip` and 410 Gone Manager to `/410-gone-manager.zip`.
+   - Used `download` attributes for target zip links.
 
-## 3. Status: PASS
+2. **`artifacts/website/src/pages/tools/index.tsx`**
+   - Updated Cloudflare Edge Purger `href` to `/cloudflare-cache.zip`.
+   - Updated 410 Gone Manager `href` to `/410-gone-manager.zip`.
+   - Automatically added `download` property to flagship card container links for `.zip` files and switched their CTA from "Learn more" to "Download Utility".
+
+## Status: SUCCESS
