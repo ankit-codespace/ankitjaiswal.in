@@ -184,7 +184,7 @@
       justify-content: space-between;
       height: 40px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* Soft production tab border */
-      padding: 0 10px;
+      padding: 0 0 0 10px;
       width: 100%;
       box-sizing: border-box;
       background: var(--app-chrome);
@@ -204,36 +204,35 @@
       min-width: 0;
     }
 
-    /* macOS Window Controls (Traffic Lights) */
-    .window-controls {
+    /* Windows Window Controls */
+    .window-controls-win {
       display: flex;
       align-items: center;
-      gap: 7px;
-      margin-right: 12px;
-      margin-left: 2px;
-      margin-bottom: 14px; /* Centered vertically within 40px tabs-bar */
-      flex-shrink: 0;
+      height: 40px;
+      margin-left: auto;
+      align-self: stretch;
     }
-
-    .control-dot {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
+    
+    .control-btn-win {
+      width: 46px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(0, 0, 0, 0.55);
+      cursor: pointer;
+      transition: background-color 0.1s, color 0.1s;
     }
-
-    .control-dot.close {
-      background-color: #FF5F56;
-      border: 0.5px solid rgba(0, 0, 0, 0.12);
+    
+    .control-btn-win:hover {
+      background-color: rgba(0, 0, 0, 0.08);
+      color: #000000;
     }
-
-    .control-dot.minimize {
-      background-color: #FFBD2E;
-      border: 0.5px solid rgba(0, 0, 0, 0.12);
-    }
-
-    .control-dot.maximize {
-      background-color: #27C93F;
-      border: 0.5px solid rgba(0, 0, 0, 0.12);
+    
+    .control-btn-win.close-btn:hover {
+      background-color: #E81123;
+      color: #FFFFFF;
+      border-top-right-radius: 15px; /* Matches app-window rounded corners */
     }
 
     .back-btn {
@@ -367,7 +366,7 @@
       border-bottom: 1px solid var(--app-border);
       display: flex;
       align-items: center;
-      padding: 0 10px;
+      padding: 0 0 0 10px;
       gap: 2px;
       width: 100%;
       box-sizing: border-box;
@@ -422,7 +421,7 @@
 
     .action-btn {
       height: 30px;
-      padding: 0 10px;
+      padding: 0 0 0 10px;
       border-radius: 6px;
       border: 1px solid rgba(0, 0, 0, 0.08);
       font-size: 12.5px;
@@ -442,11 +441,11 @@
       background: rgba(0, 0, 0, 0.08);
     }
 
-    /* Canvas Area with lined paper effect */
+     /* Canvas Area with lined paper effect */
     .editor-canvas {
       flex: 1;
       background-color: var(--app-bg);
-      padding: 35px 80px;
+      padding: 36px 80px;
       overflow: hidden; /* Hide scrollbars entirely for mockup */
       position: relative;
       /* Lined paper lines */
@@ -459,56 +458,64 @@
 
     .document-title {
       font-family: 'Sora', sans-serif;
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 700;
       color: #0D1117;
+      height: 48px;
+      line-height: 40px;
       margin-bottom: 24px;
-      line-height: 1.2;
       border-bottom: 2px dashed #0D1117;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       display: inline-block;
+      box-sizing: border-box;
     }
 
     .editor-text {
-      font-size: 16px;
+      font-size: 17.5px;
       font-weight: 500;
       color: var(--app-text);
     }
 
     .editor-text h2 {
       font-family: 'Sora', sans-serif;
-      font-size: 19px;
+      font-size: 21px;
       font-weight: 700;
       color: #0D1117;
-      margin: 14px 0 6px 0;
-      line-height: 1.3;
+      height: 36px;
+      line-height: 36px;
+      margin: 36px 0 0 0;
+      box-sizing: border-box;
     }
 
     .editor-text hr {
       border: none;
       border-top: 2px dashed rgba(13, 17, 23, 0.2);
-      margin: 12px 0;
+      margin: 0;
+      height: 36px;
+      box-sizing: border-box;
+      padding-top: 17px;
     }
 
     .editor-text blockquote {
       position: relative;
       border-left: 4px solid var(--accent);
-      margin: 12px 0;
-      padding: 10px 16px 10px 24px;
+      margin: 36px 0 0 0;
+      padding: 0px 24px;
       background: rgba(16, 185, 129, 0.05);
       border-radius: 0 10px 10px 0;
       color: rgba(13, 17, 23, 0.7);
       font-size: 15.5px;
-      line-height: 1.5;
+      line-height: 36px;
       font-style: italic;
       font-family: 'Times New Roman', Georgia, serif;
+      box-sizing: border-box;
     }
 
     .editor-text blockquote::before {
       content: "“";
       position: absolute;
       left: 8px;
-      top: -10px;
+      top: -2px;
       font-size: 3em;
       font-family: 'Times New Roman', serif;
       color: var(--accent);
@@ -520,19 +527,17 @@
 
     .line-p {
       height: 36px;
-      display: flex;
-      align-items: center;
+      display: block;
+      line-height: 36px;
     }
 
     .mark-hl {
-      background-color: var(--app-highlight);
-      color: #000000;
-      padding: 0px 8px;
-      border-radius: 6px;
+      background-color: #FDE047;
+      color: #0D1117;
+      padding: 2px 6px;
+      border-radius: 4px;
       font-weight: 600;
-      display: inline-block;
-      line-height: 24px;
-      height: 24px;
+      display: inline;
     }
 
     .code-block {
@@ -583,12 +588,6 @@
       <div class="tabs-bar">
         <div class="tabs-left">
           
-          <!-- macOS Window Controls (Traffic Lights) -->
-          <div class="window-controls">
-            <div class="control-dot close"></div>
-            <div class="control-dot minimize"></div>
-            <div class="control-dot maximize"></div>
-          </div>
           
           <!-- Back button Link styled exactly like notepad-back-link -->
           <div class="back-btn" title="Back to Tools">
@@ -602,7 +601,7 @@
           <div class="tabs-container">
                       <!-- Inactive Tab 1 (Next-Active is True, so NO divider) -->
             <div class="tab">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Packing List</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Video Script</span>
               <button class="tab-close">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
@@ -622,7 +621,7 @@
                 <line x1="0" y1="1" x2="100" y2="1" stroke="#8F8F8E" stroke-width="2" />
               </svg>
 
-              <span style="font-size: 12px; font-weight: 600; font-family: 'Sora', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; position: relative; z-index: 1;">Kyoto Travel Plan</span>
+              <span style="font-size: 12px; font-weight: 600; font-family: 'Sora', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; position: relative; z-index: 1;">Content Creation Plan</span>
               
               <button class="tab-close" style="position: relative; z-index: 1;">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -638,7 +637,7 @@
 
             <!-- Inactive Tab 2 (showDivider is True) -->
             <div class="tab">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Budget Tracker</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Instagram Ideas</span>
               <button class="tab-close">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
@@ -647,7 +646,7 @@
 
             <!-- Inactive Tab 3 (Last tab, showDivider is False) -->
             <div class="tab">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Flight Tickets</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Scripts & Outline</span>
               <button class="tab-close">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
@@ -666,6 +665,18 @@
           <span>Saved 4m ago</span>
           <svg class="status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           <svg class="status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+        <!-- Windows Window Controls -->
+        <div class="window-controls-win">
+          <div class="control-btn-win" title="Minimize">
+            <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+          </div>
+          <div class="control-btn-win" title="Maximize">
+            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0,0v10h10V0H0z M9,9H1V1h8V9z" fill="currentColor"/></svg>
+          </div>
+          <div class="control-btn-win close-btn" title="Close">
+            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0,0.7L0.7,0L5,4.3L9.3,0L10,0.7L5.7,5L10,9.3L9.3,10L5,5.7L0.7,10L0,9.3L4.3,5L0,0.7Z" fill="currentColor"/></svg>
+          </div>
         </div>
       </div>
 
@@ -806,50 +817,70 @@
 
       <!-- Editor Canvas -->
       <div class="editor-canvas">
-        <div class="document-title">Kyoto Travel: 7-Day Plan 🌸</div>
+        <div class="document-title">Content Creation Plan 📝</div>
         
         <div class="editor-text">
           <div class="line-p">
-            A clean, private travel planner saved <span class="mark-hl">locally and offline</span> for easy access during flights.
+            Planning the weekly video schedule. Keeping drafts, scripts, and checklist <span class="mark-hl"><i><b>stored offline</b></i></span>.
           </div>
 
           <hr>
 
-          <h2>Core Pre-Trip Checklist</h2>
-          <ul style="list-style: none; padding-left: 0; margin: 10px 0 15px 0;">
-            <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text);">
-              <input type="checkbox" checked disabled style="accent-color: var(--accent); width: 15px; height: 15px; cursor: default;">
-              <span>Book Shinkansen bullet train tickets (Tokyo to Kyoto)</span>
+          <h2>Weekly Production Checklist</h2>
+          <ul style="list-style: none; padding-left: 0; margin: 0;">
+            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 16.5px; color: rgba(13, 17, 23, 0.5); box-sizing: border-box;">
+              <input type="checkbox" checked disabled style="accent-color: var(--accent); width: 17px; height: 17px; cursor: default;">
+              <span><s>Draft script and storyboard for weekly video tutorial</s></span>
             </li>
-            <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text);">
-              <input type="checkbox" checked disabled style="accent-color: var(--accent); width: 15px; height: 15px; cursor: default;">
-              <span>Reserve traditional wooden Machiya Ryokan townhouse stay</span>
+            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 16.5px; color: rgba(13, 17, 23, 0.5); box-sizing: border-box;">
+              <input type="checkbox" checked disabled style="accent-color: var(--accent); width: 17px; height: 17px; cursor: default;">
+              <span><s>Design custom thumbnail layout variants in Figma</s></span>
             </li>
-            <li style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: rgba(13, 17, 23, 0.5);">
-              <input type="checkbox" disabled style="accent-color: var(--accent); width: 15px; height: 15px; cursor: default;">
-              <span>Purchase unlimited local pocket Wi-Fi & IC Transit Card</span>
+            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 16.5px; color: var(--app-text); box-sizing: border-box;">
+              <input type="checkbox" disabled style="accent-color: var(--accent); width: 17px; height: 17px; cursor: default;">
+              <span>Schedule video post across all <span class="mark-hl"><i><b>distribution channels</b></i></span></span>
             </li>
           </ul>
 
-          <!-- Embedded Beautiful Kyoto Travel Image -->
-          <div style="margin: 18px 0; display: flex; justify-content: center; width: 100%;">
-            <img src="kyoto_travel_mock.png" alt="Kyoto Pagoda and Cherry Blossoms" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; border: 1.5px solid var(--app-border); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);">
+          <!-- Embedded Beautiful Content Plan Image with side-notes to balance whitespace -->
+          <div style="margin: 36px 0 0 0; display: flex; gap: 36px; width: 100%; height: 216px; box-sizing: border-box;">
+            <img src="content_plan_mock.png" alt="Content Planning Board" style="max-width: 400px; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--app-border); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04); flex-shrink: 0;">
+            <div style="flex: 1; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; font-family: 'Inter', sans-serif;">
+              <div style="height: 36px; line-height: 36px; font-weight: 700; font-size: 15px; color: var(--app-text); border-bottom: 1px dashed rgba(13, 17, 23, 0.1); box-sizing: border-box;">📌 Quick Notes & Board Info:</div>
+              <div style="height: 36px; line-height: 36px; font-size: 14px; color: var(--app-text); box-sizing: border-box;">• Layout wireframes finalized in Figma design spec</div>
+              <div style="height: 36px; line-height: 36px; font-size: 14px; color: var(--app-text); box-sizing: border-box;">• Need to schedule guest speaker for episode 3</div>
+              <div style="height: 36px; line-height: 36px; font-size: 14px; color: var(--app-text); box-sizing: border-box;">• Target release date: <span class="mark-hl"><i><b>Tuesday morning</b></i></span></div>
+              <div style="height: 36px; line-height: 36px; font-size: 14px; color: var(--app-text); box-sizing: border-box;">• Sponsors approved script outlines yesterday</div>
+              <div style="height: 36px; line-height: 36px; font-size: 14px; color: rgba(13, 17, 23, 0.4); box-sizing: border-box;">• <s>Upload custom thumbnail source files</s></div>
+            </div>
           </div>
 
-          <h2>Must-Visit Cultural Spots</h2>
+          <h2>Core Strategy & Pillars</h2>
           <blockquote>
-            "Kyoto is the historical soul of Japan. Walk slowly, look closely, and respect the ancient architecture and temples."
+            "Consistent content creation isn't about massive bursts of inspiration; it's about <u>building a sustainable workflow</u> and writing in a distraction-free space."
           </blockquote>
 
+          <h2>Content Distribution Channels</h2>
+          <ul style="list-style: none; padding-left: 0; margin: 0;">
+            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
+              <span style="color: var(--accent); font-weight: bold; margin-top: 1px;">•</span>
+              <span><strong>YouTube:</strong> High-quality long-form tutorial videos.</span>
+            </li>
+            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
+              <span style="color: var(--accent); font-weight: bold; margin-top: 1px;">•</span>
+              <span><strong>Substack Newsletter:</strong> Deep-dive articles and code snippets.</span>
+            </li>
+          </ul>
+
           <div class="line-p">
-            Quick flight details and confirmation numbers copied for offline reference:
+            Key keywords, links, and <span class="mark-hl"><i><b>SEO target phrases</b></i></span> saved for offline reference:
           </div>
 
           <!-- Monospace Info Block -->
           <div class="code-block" style="line-height: 1.45; padding: 14px 20px; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; color: rgba(13, 17, 23, 0.86);">
-            Flight:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ANA NH110 (Departs 10:30 AM)<br>
-            Confirmation:&nbsp;&nbsp;X97-F8B2-A81<br>
-            Ryokan Booking:&nbsp;Kyoto-Gion-Ryokan-2026
+            Target Audience:&nbsp;&nbsp;Junior Developers & Students<br>
+            Primary Keywords:&nbsp;&nbsp;Python OOP, Clean Code, Learn Python<br>
+            Publish Schedule:&nbsp;Every Thursday at 5:00 PM EST
           </div>
         </div>
       </div>

@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Microsoft Store Screenshot 6 — Online Notepad</title>
+  <title>Microsoft Store Screenshot 2 — Online Notepad</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Sora:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* App Colors matching Slate Dark Theme */
-      --app-bg: #161615;
-      --app-chrome: #0C0C0C;
-      --app-border: rgba(255, 255, 255, 0.08);
-      --app-text: #F0EDE8;
-      --app-muted: #A5A29B;
+      /* App Colors matching user's exact light theme */
+      --app-bg: #EDEAE4;
+      --app-chrome: #E1DED8;
+      --app-border: #D1CDC5;
+      --app-text: #0D1117;
+      --app-muted: #575E6A;
       --app-highlight: #FDE047;
       
       /* Premium SaaS Frame Colors */
       --page-bg: #060C0A;
-      --accent: #52C47A; /* Slate theme green accent */
-      --accent-glow: rgba(82, 196, 122, 0.18);
+      --accent: #10B981;
+      --accent-glow: rgba(16, 185, 129, 0.18);
       --t1: #F3F4F6;
       --t2: #9CA3AF;
       --glass-bg: rgba(13, 17, 24, 0.7);
@@ -61,16 +61,16 @@
       z-index: 1;
     }
 
-    /* Stacked atmospheric glow for warm midnight contrast */
+    /* High-fidelity consolidated ambient mesh glows */
     .ambient-glows {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       background: 
-        radial-gradient(circle at 250px 250px, rgba(217, 119, 6, 0.14) 0%, transparent 60%),
-        radial-gradient(circle at 1670px 830px, rgba(245, 158, 11, 0.1) 0%, transparent 60%),
-        radial-gradient(circle at 960px 350px, rgba(217, 119, 6, 0.28) 0%, transparent 70%);
+        radial-gradient(circle at 250px 250px, rgba(52, 211, 153, 0.2) 0%, transparent 60%),
+        radial-gradient(circle at 1670px 830px, rgba(110, 231, 183, 0.14) 0%, transparent 60%),
+        radial-gradient(circle at 960px 350px, rgba(52, 211, 153, 0.32) 0%, transparent 70%);
       filter: blur(100px); /* Hardware accelerated backdrop diffusion */
       pointer-events: none;
       z-index: 0;
@@ -106,10 +106,10 @@
     .badge {
       display: inline-block;
       padding: 6px 18px;
-      background: rgba(217, 119, 6, 0.08);
-      border: 1px solid rgba(217, 119, 6, 0.2);
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
       border-radius: 100px;
-      color: #F59E0B; /* Golden amber badge */
+      color: var(--accent);
       font-weight: 700;
       font-size: 13px;
       text-transform: uppercase;
@@ -130,7 +130,7 @@
     }
 
     h1 span {
-      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -162,14 +162,14 @@
       width: 1540px; /* Scaled up to occupy a dominant screen footprint */
       height: 770px; /* Proportionately tall to show more document contents */
       background-color: var(--app-chrome);
-      border: 1px solid var(--app-border);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 16px;
       transform: rotateX(8deg) rotateY(-8deg) rotateZ(1.5deg); /* Majestic 3D perspective angle */
       transform-style: preserve-3d;
       box-shadow: 
-        -25px 35px 80px -15px rgba(0, 0, 0, 0.85),
-        -5px 10px 20px -5px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        -25px 35px 80px -15px rgba(0, 0, 0, 0.8),
+        -5px 10px 20px -5px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
       display: flex;
       flex-direction: column;
       overflow: visible;
@@ -177,14 +177,14 @@
       z-index: 5;
     }
 
-    /* TAB BAR - Slate Dark Theme Styles */
+    /* TAB BAR - RESTORED PRODUCTION STYLES */
     .tabs-bar {
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
       height: 40px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      padding: 0 0 0 10px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* Soft production tab border */
+      padding: 0 10px;
       width: 100%;
       box-sizing: border-box;
       background: var(--app-chrome);
@@ -204,35 +204,36 @@
       min-width: 0;
     }
 
-    /* Windows Window Controls */
-    .window-controls-win {
+    /* macOS Window Controls (Traffic Lights) */
+    .window-controls {
       display: flex;
       align-items: center;
-      height: 40px;
-      margin-left: auto;
-      align-self: stretch;
+      gap: 7px;
+      margin-right: 12px;
+      margin-left: 2px;
+      margin-bottom: 14px; /* Centered vertically within 40px tabs-bar */
+      flex-shrink: 0;
     }
-    
-    .control-btn-win {
-      width: 46px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: rgba(0, 0, 0, 0.55);
-      cursor: pointer;
-      transition: background-color 0.1s, color 0.1s;
+
+    .control-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
     }
-    
-    .control-btn-win:hover {
-      background-color: rgba(0, 0, 0, 0.08);
-      color: #000000;
+
+    .control-dot.close {
+      background-color: #FF5F56;
+      border: 0.5px solid rgba(0, 0, 0, 0.12);
     }
-    
-    .control-btn-win.close-btn:hover {
-      background-color: #E81123;
-      color: #FFFFFF;
-      border-top-right-radius: 15px; /* Matches app-window rounded corners */
+
+    .control-dot.minimize {
+      background-color: #FFBD2E;
+      border: 0.5px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .control-dot.maximize {
+      background-color: #27C93F;
+      border: 0.5px solid rgba(0, 0, 0, 0.12);
     }
 
     .back-btn {
@@ -242,7 +243,7 @@
       width: 30px;
       height: 34px;
       border-radius: 6px 6px 0 0;
-      color: rgba(255, 255, 255, 0.3);
+      color: rgba(0, 0, 0, 0.48);
       align-self: flex-end;
       margin-bottom: -2px;
       flex-shrink: 0;
@@ -285,7 +286,7 @@
       max-width: 150px;
       margin-bottom: -2px;
       z-index: 1;
-      color: rgba(255, 255, 255, 0.35);
+      color: rgba(0, 0, 0, 0.48);
       font-size: 12px;
       font-weight: 500;
       font-family: 'Inter', sans-serif;
@@ -304,7 +305,7 @@
     .tab-close {
       border: none;
       background: transparent;
-      color: rgba(255, 255, 255, 0.25);
+      color: rgba(0, 0, 0, 0.42);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -316,7 +317,7 @@
     }
 
     .tab.active .tab-close {
-      color: rgba(255, 255, 255, 0.45);
+      color: rgba(0, 0, 0, 0.55);
     }
 
     .tab-divider {
@@ -325,7 +326,7 @@
       top: 9px;
       width: 1px;
       height: 14px;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.12);
       pointer-events: none;
     }
 
@@ -342,7 +343,7 @@
       margin-bottom: 5px;
       margin-left: 8px;
       flex-shrink: 0;
-      color: rgba(255, 255, 255, 0.3);
+      color: rgba(0, 0, 0, 0.48);
       cursor: pointer;
     }
 
@@ -359,14 +360,14 @@
       flex-shrink: 0;
     }
 
-    /* Toolbar matching user UI (Slate theme) */
+    /* Toolbar matching user UI (Height 38px in production) */
     .toolbar {
       height: 38px;
       background-color: var(--app-bg);
       border-bottom: 1px solid var(--app-border);
       display: flex;
       align-items: center;
-      padding: 0 0 0 10px;
+      padding: 0 10px;
       gap: 2px;
       width: 100%;
       box-sizing: border-box;
@@ -393,7 +394,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: rgba(255, 255, 255, 0.4);
+      color: rgba(0, 0, 0, 0.54);
       background: transparent;
       border: none;
       cursor: pointer;
@@ -402,12 +403,12 @@
     }
 
     .tool-btn.active {
-      background-color: rgba(255, 255, 255, 0.08);
-      color: #FFFFFF;
+      background-color: rgba(0, 0, 0, 0.08);
+      color: #111111;
     }
 
     .tool-btn:hover {
-      background-color: rgba(255, 255, 255, 0.04);
+      background-color: rgba(0, 0, 0, 0.04);
     }
 
     .toolbar-actions {
@@ -421,16 +422,16 @@
 
     .action-btn {
       height: 30px;
-      padding: 0 0 0 10px;
+      padding: 0 10px;
       border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.08);
       font-size: 12.5px;
       font-weight: 600;
       display: flex;
       align-items: center;
       gap: 5px;
-      background: rgba(255, 255, 255, 0.04);
-      color: rgba(255, 255, 255, 0.7);
+      background: rgba(0, 0, 0, 0.04);
+      color: rgba(0, 0, 0, 0.72);
       font-family: 'Inter', sans-serif;
       letter-spacing: -0.01em;
       cursor: pointer;
@@ -438,21 +439,120 @@
     }
 
     .action-btn:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.08);
     }
 
-    /* Canvas Area with lined paper effect (dark themed) */
+    /* Core Workspace Area Row */
+    .workspace-area {
+      display: flex;
+      flex: 1;
+      width: 100%;
+      overflow: hidden;
+      border-bottom-left-radius: 15px;
+      border-bottom-right-radius: 15px;
+      background-color: var(--app-bg);
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+      width: 240px;
+      background-color: #E8E5DF; /* Subtle offset cream background */
+      border-right: 1px solid var(--app-border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      user-select: none;
+      border-bottom-left-radius: 15px;
+    }
+
+    .sidebar-search {
+      padding: 14px 12px 10px 12px;
+      position: relative;
+    }
+
+    .sidebar-search input {
+      width: 100%;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid var(--app-border);
+      background-color: #F1EEE8;
+      padding-left: 28px;
+      padding-right: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      color: var(--app-text);
+      outline: none;
+    }
+
+    .sidebar-search svg {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(13, 17, 23, 0.45);
+      pointer-events: none;
+    }
+
+    .sidebar-list {
+      flex: 1;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(13, 17, 23, 0.4);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 8px 10px 4px 10px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: rgba(13, 17, 23, 0.7);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 120ms;
+    }
+
+    .sidebar-item:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    .sidebar-item.active {
+      background-color: #FFF;
+      color: var(--app-text);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .sidebar-item-icon {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+    }
+
+    /* Canvas Area with lined paper effect */
     .editor-canvas {
       flex: 1;
       background-color: var(--app-bg);
-      padding: 36px 80px;
+      padding: 36px 60px;
       overflow: hidden; /* Hide scrollbars entirely for mockup */
       position: relative;
-      /* Dark Ruled Lines */
-      background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      /* Lined paper lines */
+      background-image: linear-gradient(#e3dfd6 1px, transparent 1px);
       background-size: 100% 36px;
       line-height: 36px;
-      border-bottom-left-radius: 15px;
       border-bottom-right-radius: 15px;
     }
 
@@ -460,11 +560,11 @@
       font-family: 'Sora', sans-serif;
       font-size: 28px;
       font-weight: 700;
-      color: var(--app-text);
+      color: #0D1117;
       height: 48px;
       line-height: 40px;
       margin-bottom: 24px;
-      border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+      border-bottom: 2px dashed #0D1117;
       padding-bottom: 6px;
       display: inline-block;
       box-sizing: border-box;
@@ -480,7 +580,7 @@
       font-family: 'Sora', sans-serif;
       font-size: 21px;
       font-weight: 700;
-      color: var(--app-text);
+      color: #0D1117;
       height: 36px;
       line-height: 36px;
       margin: 36px 0 0 0;
@@ -489,62 +589,45 @@
 
     .editor-text hr {
       border: none;
-      border-top: 2px dashed rgba(255, 255, 255, 0.12);
+      border-top: 2px dashed rgba(13, 17, 23, 0.2);
       margin: 0;
       height: 36px;
       box-sizing: border-box;
       padding-top: 17px;
     }
 
-    /* Monospace Code Editor Block (Slate theme) */
-    .notepad-code-block-wrapper {
-      position: relative;
-      background-color: #0E0E0D;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
+    /* Table styles matching structured Tippy editor standard */
+    .editor-table {
+      width: 100%;
+      border-collapse: collapse;
       margin: 36px 0 0 0;
-      overflow: hidden;
-    }
-
-    .notepad-code-block-header {
-      background-color: #050505;
-      padding: 8px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 12.5px;
-      font-family: 'JetBrains Mono', monospace;
-      color: #A5A29B;
-    }
-
-    .notepad-code-block-body {
-      padding: 14px 18px;
-      margin: 0;
-      line-height: 1.6;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14.5px;
-      color: #F0EDE8;
-      overflow-x: auto;
-    }
-
-    .syntax-keyword { color: #F43F5E; }
-    .syntax-def { color: #38BDF8; }
-    .syntax-string { color: #10B981; }
-    .syntax-template { color: #FB923C; }
-    .syntax-comment { color: #575E6A; font-style: italic; }
-
-    .copy-btn {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: transparent;
-      border: none;
-      color: #A5A29B;
       font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .editor-table th, .editor-table td {
+      border: 1.5px solid var(--app-border);
+      padding: 0 12px;
+      text-align: left;
+      height: 36px;
+      line-height: 34px;
+      box-sizing: border-box;
+    }
+
+    .editor-table th {
+      background-color: rgba(0, 0, 0, 0.04);
+      font-weight: 700;
+      color: var(--app-text);
+    }
+
+    .editor-table td {
+      color: rgba(13, 17, 23, 0.85);
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .editor-table tr:nth-child(even) td {
+      background-color: rgba(255, 255, 255, 0.4);
     }
 
     .line-p {
@@ -555,7 +638,7 @@
 
     .mark-hl {
       background-color: #FDE047;
-      color: #161615;
+      color: #0D1117;
       padding: 2px 6px;
       border-radius: 4px;
       font-weight: 600;
@@ -580,9 +663,9 @@
 
   <!-- Header Section -->
   <div class="header-zone">
-    <div class="badge">Custom Themes</div>
-    <h1>Easy on the eyes. <span>Day or night.</span></h1>
-    <p class="subtitle">Choose from warm reading themes or dark near-black modes designed for deep focus.</p>
+    <div class="badge">Workspace Management</div>
+    <h1>Organize with speed. <span>Zero friction.</span></h1>
+    <p class="subtitle">Switch notes instantly, search your workspace, and organize items with folders.</p>
   </div>
 
   <!-- 3D Viewport Container -->
@@ -595,6 +678,12 @@
       <div class="tabs-bar">
         <div class="tabs-left">
           
+          <!-- macOS Window Controls (Traffic Lights) -->
+          <div class="window-controls">
+            <div class="control-dot close"></div>
+            <div class="control-dot minimize"></div>
+            <div class="control-dot maximize"></div>
+          </div>
           
           <!-- Back button Link -->
           <div class="back-btn" title="Back to Tools">
@@ -606,30 +695,22 @@
 
           <!-- Chrome-style tab container -->
           <div class="tabs-container">
-            <!-- Inactive Tab 1 -->
-            <div class="tab">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Kyoto Travel Plan</span>
-              <button class="tab-close">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-              <div class="tab-divider"></div>
-            </div>
-
-            <!-- Active Tab: Midnight Dev Log -->
+            
+            <!-- Active Tab: Weekly Meal Prep -->
             <div class="tab active">
               
               <!-- Left Flare Curve SVG -->
               <svg width="30" height="36" viewBox="-1 -1 30 36" fill="none" style="position: absolute; left: -17px; top: -1px; overflow: visible; pointer-events: none; z-index: 0;">
-                <path d="M 28 34 L 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 Z" fill="#161615" />
-                <path d="M 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 L 30 0" stroke="rgba(255,255,255,0.06)" stroke-width="2" fill="none" />
+                <path d="M 28 34 L 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 Z" fill="#EDEAE4" />
+                <path d="M 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 L 30 0" stroke="#8F8F8E" stroke-width="2" fill="none" />
               </svg>
 
               <!-- Top Edge Line -->
               <svg width="100%" height="2" viewBox="0 0 100 2" preserveAspectRatio="none" style="position: absolute; left: 11px; right: 11px; top: -1px; width: calc(100% - 22px); pointer-events: none; z-index: 1;">
-                <line x1="0" y1="1" x2="100" y2="1" stroke="rgba(255,255,255,0.06)" stroke-width="2" />
+                <line x1="0" y1="1" x2="100" y2="1" stroke="#8F8F8E" stroke-width="2" />
               </svg>
 
-              <span style="font-size: 12px; font-weight: 600; font-family: 'Sora', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; position: relative; z-index: 1;">Python OOP Notes</span>
+              <span style="font-size: 12px; font-weight: 600; font-family: 'Sora', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; position: relative; z-index: 1;">Bali Travel Plan</span>
               
               <button class="tab-close" style="position: relative; z-index: 1;">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -637,15 +718,24 @@
 
               <!-- Right Flare Curve SVG -->
               <svg width="30" height="36" viewBox="-1 -1 30 36" fill="none" style="position: absolute; right: -17px; top: -1px; overflow: visible; pointer-events: none; z-index: 0;">
-                <path d="M 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34 L 2 34 Z" fill="#161615" />
-                <path d="M 0 0 L 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34" stroke="rgba(255,255,255,0.06)" stroke-width="2" fill="none" />
+                <path d="M 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34 L 2 34 Z" fill="#EDEAE4" />
+                <path d="M 0 0 L 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34" stroke="#8F8F8E" stroke-width="2" fill="none" />
               </svg>
 
             </div>
 
+            <!-- Inactive Tab 1 -->
+            <div class="tab">
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Content Creation Plan</span>
+              <button class="tab-close">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+              <div class="tab-divider"></div>
+            </div>
+
             <!-- Inactive Tab 2 -->
             <div class="tab">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Budget Tracker</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Scripts & Outline</span>
               <button class="tab-close">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
@@ -662,25 +752,13 @@
 
         <!-- Right status zone -->
         <div class="status-right">
-          <span>Saved just now</span>
+          <span>Saved 2m ago</span>
           <svg class="status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           <svg class="status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         </div>
-        <!-- Windows Window Controls -->
-        <div class="window-controls-win">
-          <div class="control-btn-win" title="Minimize">
-            <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
-          </div>
-          <div class="control-btn-win" title="Maximize">
-            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0,0v10h10V0H0z M9,9H1V1h8V9z" fill="currentColor"/></svg>
-          </div>
-          <div class="control-btn-win close-btn" title="Close">
-            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0,0.7L0.7,0L5,4.3L9.3,0L10,0.7L5.7,5L10,9.3L9.3,10L5,5.7L0.7,10L0,9.3L4.3,5L0,0.7Z" fill="currentColor"/></svg>
-          </div>
-        </div>
       </div>
 
-      <!-- Notepad Toolbar (Slate dark styling) -->
+      <!-- Notepad Toolbar -->
       <div class="toolbar">
         <div class="btn-group">
           <div class="tool-btn">
@@ -702,8 +780,8 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21Z"></path><path d="M22 21H7"></path><path d="m5 11 9 9"></path></svg>
           </div>
           <div class="tool-btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <span style="font-size: 13px; font-weight: 700; line-height: 12px; font-family: 'Inter', serif; color: #FFFFFF;">A</span>
-            <div style="width: 14px; height: 3px; background: var(--accent); border-radius: 1px; margin-top: 1px;"></div>
+            <span style="font-size: 13px; font-weight: 700; line-height: 12px; font-family: 'Inter', serif; color: rgba(0, 0, 0, 0.54);">A</span>
+            <div style="width: 14px; height: 3px; background: #0D1117; border-radius: 1px; margin-top: 1px;"></div>
           </div>
         </div>
 
@@ -738,7 +816,7 @@
           <div class="tool-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
           </div>
-          <div class="tool-btn active">
+          <div class="tool-btn">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>
           </div>
         </div>
@@ -775,7 +853,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
           </div>
           <div class="tool-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </div>
 
           <button class="action-btn">
@@ -790,57 +868,132 @@
         </div>
       </div>
 
-      <!-- Editor Canvas -->
-      <div class="editor-canvas">
-        <div class="document-title">Python OOP Notes 🐍</div>
+      <!-- Main Workspace area with sidebar and editor -->
+      <div class="workspace-area">
         
-        <div class="editor-text">
-          <div class="line-p">
-            Quick reference guide for class structures and object relationships.
-          </div>
-
-          <h2>1. OOP Fundamentals</h2>
-          <div class="line-p">
-            Class = blueprint for creating instances. Object = the actual instance.
-          </div>
-
-          <ul style="list-style: none; padding-left: 0; margin: 0;">
-            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
-              <span style="color: var(--accent); font-weight: bold; margin-top: 1px;">•</span>
-              <span><strong>Inheritance:</strong> Child classes <span class="mark-hl"><i><b>reuse methods</b></i></span> and fields from a parent class.</span>
-            </li>
-            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
-              <span style="color: var(--accent); font-weight: bold; margin-top: 1px;">•</span>
-              <span><strong>Polymorphism:</strong> Overriding parent methods to <span class="mark-hl"><i><b>customize behavior</b></i></span> in child classes.</span>
-            </li>
-            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
-              <span style="color: var(--accent); font-weight: bold; margin-top: 1px;">•</span>
-              <span><strong>Encapsulation:</strong> Restricting direct access to some of an object's <span class="mark-hl"><i><b>internal components</b></i></span>.</span>
-            </li>
-            <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
-              <span style="color: var(--accent); font-weight: bold; margin-top: 1px;">•</span>
-              <span><strong>Abstraction:</strong> Hiding implementation details and showing only <span class="mark-hl"><i><b>essential features</b></i></span>.</span>
-            </li>
-          </ul>
-
-          <h2>2. Class Hierarchy</h2>
-          <div class="line-p">
-            Visual diagram showing parent vs. child classes:
-          </div>
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
           
-          <div style="margin: 36px 0 0 0; display: flex; gap: 36px; width: 100%; height: 216px; box-sizing: border-box;">
-            <img src="oop_inheritance_diagram.png" alt="OOP Inheritance Diagram" style="max-width: 400px; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1.5px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45); flex-shrink: 0;">
-            <div style="flex: 1; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; font-family: 'Inter', sans-serif;">
-              <div style="height: 36px; line-height: 36px; font-weight: 700; font-size: 15px; color: var(--app-text); border-bottom: 1px dashed rgba(255, 255, 255, 0.12); box-sizing: border-box;">📌 Diagram Details:</div>
-              <div style="height: 36px; line-height: 36px; font-size: 14px; color: var(--app-text); box-sizing: border-box;">• Base class handles general initialization</div>
-              <div style="height: 36px; line-height: 36px; font-size: 14px; color: var(--app-text); box-sizing: border-box;">• Child class overrides base action hooks</div>
-              <div style="height: 36px; line-height: 36px; font-size: 14px; color: var(--app-text); box-sizing: border-box;">• Multiple inheritance <span class="mark-hl"><i><b>not recommended</b></i></span></div>
-              <div style="height: 36px; line-height: 36px; font-size: 14px; color: var(--app-text); box-sizing: border-box;">• Use super() constructor calls in child classes</div>
-              <div style="height: 36px; line-height: 36px; font-size: 14px; color: rgba(255, 255, 255, 0.4); box-sizing: border-box;">• <s>Implement private abstract base method</s></div>
+          <!-- Search box -->
+          <div class="sidebar-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" placeholder="Search notes..." value="bali">
+          </div>
+
+          <!-- Notes list items -->
+          <div class="sidebar-list">
+            <div class="sidebar-section-title">PINNED</div>
+            
+            <div class="sidebar-item active">
+              <span class="sidebar-item-icon">🌴</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Bali Travel Plan</span>
+            </div>
+
+            <div class="sidebar-item">
+              <span class="sidebar-item-icon">📝</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Content Creation Plan</span>
+            </div>
+
+            <div class="sidebar-section-title" style="margin-top: 10px;">RECENT</div>
+
+            <div class="sidebar-item">
+              <span class="sidebar-item-icon">📂</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Scripts & Outline</span>
+            </div>
+
+            <div class="sidebar-item">
+              <span class="sidebar-item-icon">💡</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Instagram Ideas</span>
+            </div>
+
+            <div class="sidebar-item">
+              <span class="sidebar-item-icon">🎒</span>
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">Packing List</span>
             </div>
           </div>
 
         </div>
+
+        <!-- Editor Canvas -->
+        <div class="editor-canvas">
+          <div class="document-title">Bali Travel Plan 🌴</div>
+          
+          <div class="editor-text">
+            <div class="line-p">
+              Trip from Oct 10 to Oct 20. Keeping confirmation codes and checklists <span class="mark-hl"><i><b>stored offline</b></i></span> for quick access.
+            </div>
+
+            <hr>
+
+            <h2>Accommodation & Villa Stays</h2>
+            
+            <table class="editor-table">
+              <thead>
+                <tr>
+                  <th>Location</th>
+                  <th>Villa / Resort Name</th>
+                  <th>Stay Dates</th>
+                  <th>Confirmation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Seminyak</strong></td>
+                  <td>Alila Seminyak</td>
+                  <td>Oct 10 - Oct 14</td>
+                  <td><b>#SEM-98A1</b></td>
+                </tr>
+                <tr>
+                  <td><strong>Ubud</strong></td>
+                  <td>Maya Ubud Resort</td>
+                  <td>Oct 14 - Oct 18</td>
+                  <td><u>#UBD-4412</u></td>
+                </tr>
+                <tr>
+                  <td><strong>Nusa Dua</strong></td>
+                  <td>The Mulia Resort</td>
+                  <td>Oct 18 - Oct 20</td>
+                  <td><span class="mark-hl"><i><b>#NUA-5509</b></i></span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h2>Pre-Flight Preparation Checklist</h2>
+            <ul style="list-style: none; padding-left: 0; margin: 0;">
+              <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: rgba(13, 17, 23, 0.5); box-sizing: border-box;">
+                <input type="checkbox" checked disabled style="accent-color: var(--accent); width: 15px; height: 15px; cursor: default;">
+                <span><s>Apply for Indonesia e-VOA (Visa on Arrival)</s></span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: rgba(13, 17, 23, 0.5); box-sizing: border-box;">
+                <input type="checkbox" checked disabled style="accent-color: var(--accent); width: 15px; height: 15px; cursor: default;">
+                <span><s>Book private airport transfer to Seminyak villa</s></span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
+                <input type="checkbox" disabled style="accent-color: var(--accent); width: 15px; height: 15px; cursor: default;">
+                <span>Exchange local currency & notify credit card banks</span>
+              </li>
+            </ul>
+
+            <!-- Embedded Beautiful Bali Travel Image -->
+            <div style="margin: 36px 0 0 0; display: flex; justify-content: flex-start; width: 100%; height: 216px; box-sizing: border-box;">
+              <img src="bali_travel_mock.png" alt="Bali Beach and Temple Gate" style="max-width: 400px; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--app-border); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);">
+            </div>
+
+            <h2>Must-Visit Cultural Spots</h2>
+            <ul style="list-style: none; padding-left: 0; margin: 0;">
+              <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
+                <span style="color: var(--accent); font-weight: bold; margin-top: 1px;">•</span>
+                <span><strong>Uluwatu Temple:</strong> Dramatic clifftop views and traditional Kecak dance at sunset.</span>
+              </li>
+              <li style="display: flex; align-items: center; gap: 8px; height: 36px; margin: 0; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--app-text); box-sizing: border-box;">
+                <span style="color: var(--accent); font-weight: bold; margin-top: 1px;">•</span>
+                <span><strong>Tegallalang Rice Terraces:</strong> Iconic green landscapes and jungle swings near Ubud.</span>
+              </li>
+            </ul>
+
+          </div>
+        </div>
+
       </div>
 
     </div>

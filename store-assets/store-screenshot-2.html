@@ -184,7 +184,7 @@
       justify-content: space-between;
       height: 40px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* Soft production tab border */
-      padding: 0 10px;
+      padding: 0 0 0 10px;
       width: 100%;
       box-sizing: border-box;
       background: var(--app-chrome);
@@ -204,36 +204,35 @@
       min-width: 0;
     }
 
-    /* macOS Window Controls (Traffic Lights) */
-    .window-controls {
+    /* Windows Window Controls */
+    .window-controls-win {
       display: flex;
       align-items: center;
-      gap: 7px;
-      margin-right: 12px;
-      margin-left: 2px;
-      margin-bottom: 14px; /* Centered vertically within 40px tabs-bar */
-      flex-shrink: 0;
+      height: 40px;
+      margin-left: auto;
+      align-self: stretch;
     }
-
-    .control-dot {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
+    
+    .control-btn-win {
+      width: 46px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(0, 0, 0, 0.55);
+      cursor: pointer;
+      transition: background-color 0.1s, color 0.1s;
     }
-
-    .control-dot.close {
-      background-color: #FF5F56;
-      border: 0.5px solid rgba(0, 0, 0, 0.12);
+    
+    .control-btn-win:hover {
+      background-color: rgba(0, 0, 0, 0.08);
+      color: #000000;
     }
-
-    .control-dot.minimize {
-      background-color: #FFBD2E;
-      border: 0.5px solid rgba(0, 0, 0, 0.12);
-    }
-
-    .control-dot.maximize {
-      background-color: #27C93F;
-      border: 0.5px solid rgba(0, 0, 0, 0.12);
+    
+    .control-btn-win.close-btn:hover {
+      background-color: #E81123;
+      color: #FFFFFF;
+      border-top-right-radius: 15px; /* Matches app-window rounded corners */
     }
 
     .back-btn {
@@ -367,7 +366,7 @@
       border-bottom: 1px solid var(--app-border);
       display: flex;
       align-items: center;
-      padding: 0 10px;
+      padding: 0 0 0 10px;
       gap: 2px;
       width: 100%;
       box-sizing: border-box;
@@ -422,7 +421,7 @@
 
     .action-btn {
       height: 30px;
-      padding: 0 10px;
+      padding: 0 0 0 10px;
       border-radius: 6px;
       border: 1px solid rgba(0, 0, 0, 0.08);
       font-size: 12.5px;
@@ -678,12 +677,6 @@
       <div class="tabs-bar">
         <div class="tabs-left">
           
-          <!-- macOS Window Controls (Traffic Lights) -->
-          <div class="window-controls">
-            <div class="control-dot close"></div>
-            <div class="control-dot minimize"></div>
-            <div class="control-dot maximize"></div>
-          </div>
           
           <!-- Back button Link -->
           <div class="back-btn" title="Back to Tools">
@@ -755,6 +748,18 @@
           <span>Saved 2m ago</span>
           <svg class="status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           <svg class="status-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+        <!-- Windows Window Controls -->
+        <div class="window-controls-win">
+          <div class="control-btn-win" title="Minimize">
+            <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+          </div>
+          <div class="control-btn-win" title="Maximize">
+            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0,0v10h10V0H0z M9,9H1V1h8V9z" fill="currentColor"/></svg>
+          </div>
+          <div class="control-btn-win close-btn" title="Close">
+            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M0,0.7L0.7,0L5,4.3L9.3,0L10,0.7L5.7,5L10,9.3L9.3,10L5,5.7L0.7,10L0,9.3L4.3,5L0,0.7Z" fill="currentColor"/></svg>
+          </div>
         </div>
       </div>
 

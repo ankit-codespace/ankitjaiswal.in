@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Editor, useEditor, EditorContent, BubbleMenu, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent, Extension } from "@tiptap/react";
 
 // Global Error Overlay for Debugging
-if (typeof window !== "undefined") {
+if (import.meta.env.DEV && typeof window !== "undefined") {
   window.addEventListener("error", (event) => {
     const div = document.createElement("div");
     div.style.position = "fixed";
@@ -936,8 +936,8 @@ const setColorOnTrimmedSelection = (editor: any, color: string | null) => {
 interface NotepadEditorProps {
   doc: NotepadDoc;
   settings: NotepadSettings;
-  onCreated: (editor: Editor) => void;
-  onDestroyed: () => void;
+  onCreated: (docId: string, editor: Editor) => void;
+  onDestroyed: (docId: string) => void;
   onUpdate: (editor: Editor) => void;
   onSelectionUpdate: () => void;
   onImageContextMenu: (x: number, y: number, src: string) => void;
@@ -1116,13 +1116,13 @@ const NotepadEditor = ({
   // Register editor instance with parent
   useEffect(() => {
     if (editor) {
-      onCreated(editor);
+      onCreated(doc.id, editor);
       return () => {
-        onDestroyed();
+        onDestroyed(doc.id);
       };
     }
     return undefined;
-  }, [editor]);
+  }, [doc.id, editor, onCreated, onDestroyed]);
 
   // Keep spellCheck updated dynamically
   useEffect(() => {
@@ -1198,7 +1198,113 @@ const NotepadEditor = ({
     };
   }, [editor, settings.ruledLines, settings.fontSize, settings.lineHeight]);
 
-  return <EditorContent editor={editor} />;
+  const effectiveDark = settings.bgColor ? !isLightHex(settings.bgColor) : !settings.lightSurface;
+  const tb = (): React.CSSProperties => {
+    const fg = effectiveDark ? "var(--t2)" : "rgba(0, 0, 0, 0.54)";
+    return {
+      display: "flex", alignItems: "center", justifyContent: "center",
+      width: 30, height: 30, borderRadius: 6, border: "none", cursor: "pointer",
+      background: "transparent", color: fg, transition: "background 0.14s, color 0.14s", flexShrink: 0,
+    };
+  };
+
+  return (
+    <>
+      {editor && (
+        <BubbleMenu
+          editor={editor}
+          tippyOptions={{ duration: 100, zIndex: 1000 }}
+          shouldShow={({ editor }) => editor.isFocused && editor.isActive("table")}
+        >
+          <div 
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              padding: "4px",
+              background: effectiveDark ? "rgba(30, 30, 30, 0.98)" : "rgba(255, 255, 255, 0.98)",
+              border: effectiveDark ? "1px solid rgba(255,255,255,0.25)" : "1px solid rgba(0,0,0,0.18)",
+              borderRadius: 8,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+              backdropFilter: "blur(8px)"
+            }}
+          >
+            <button
+              title="Row Above"
+              onClick={() => editor.chain().focus().addRowBefore().run()}
+              style={{ ...tb(), width: 28, height: 28, padding: 0 }}
+            >
+              <ChevronDown size={14} style={{ transform: "rotate(180deg)" }} />
+            </button>
+            <button
+              title="Row Below"
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+              style={{ ...tb(), width: 28, height: 28, padding: 0 }}
+            >
+              <ChevronDown size={14} />
+            </button>
+            <button
+              title="Delete Row"
+              onClick={() => editor.chain().focus().deleteRow().run()}
+              style={{ ...tb(), width: 28, height: 28, padding: 0, color: "var(--err)" }}
+            >
+              <Minus size={14} />
+            </button>
+
+            <div style={{ width: 1, height: 16, background: effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)", margin: "0 4px" }} />
+
+            <button
+              title="Column Left"
+              onClick={() => editor.chain().focus().addColumnBefore().run()}
+              style={{ ...tb(), width: 28, height: 28, padding: 0 }}
+            >
+              <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} />
+            </button>
+            <button
+              title="Column Right"
+              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              style={{ ...tb(), width: 28, height: 28, padding: 0 }}
+            >
+              <ChevronRight size={14} />
+            </button>
+            <button
+              title="Delete Column"
+              onClick={() => editor.chain().focus().deleteColumn().run()}
+              style={{ ...tb(), width: 28, height: 28, padding: 0, color: "var(--err)" }}
+            >
+              <Minus size={14} style={{ transform: "rotate(90deg)" }} />
+            </button>
+
+            <div style={{ width: 1, height: 16, background: effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)", margin: "0 4px" }} />
+
+            <button
+              title="Delete Table"
+              onClick={() => editor.chain().focus().deleteTable().run()}
+              style={{
+                ...tb(),
+                width: "auto",
+                padding: "0 8px",
+                height: 28,
+                color: "#FFFFFF",
+                background: "var(--err)",
+                border: "none",
+                fontSize: 11,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                borderRadius: 5
+              }}
+            >
+              <Trash2 size={12} />
+              <span>Delete Table</span>
+            </button>
+          </div>
+        </BubbleMenu>
+      )}
+      <EditorContent editor={editor} />
+    </>
+  );
 };
 
 // ── App Component ─────────────────────────────────────────────────────────────
@@ -1306,19 +1412,19 @@ export default function App() {
   const [editors, setEditors] = useState<{ [id: string]: Editor }>({});
   const editor = editors[activeId] || null;
 
-  const handleEditorCreated = (id: string, instance: Editor) => {
+  const handleEditorCreated = useCallback((id: string, instance: Editor) => {
     editorsRef.current[id] = instance;
     setEditors((prev) => ({ ...prev, [id]: instance }));
-  };
+  }, []);
 
-  const handleEditorDestroyed = (id: string) => {
+  const handleEditorDestroyed = useCallback((id: string) => {
     delete editorsRef.current[id];
     setEditors((prev) => {
       const next = { ...prev };
       delete next[id];
       return next;
     });
-  };
+  }, []);
 
   // Sync editor content when switching documents & restore scroll position
   useEffect(() => {
@@ -1664,9 +1770,10 @@ export default function App() {
 
   // Debounced Table of Contents (Outline) generator
   useEffect(() => {
-    if (!editor || !showOutline) return undefined;
+    if (!editor || editor.isDestroyed || !showOutline) return undefined;
 
     const timer = setTimeout(() => {
+      if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
       const headingElements = editor.view.dom.querySelectorAll("h1, h2, h3");
       const list = Array.from(headingElements).map((el, i) => ({
         text: el.textContent || "Untitled Heading",
@@ -1681,9 +1788,10 @@ export default function App() {
 
   // Active heading tracker during scroll
   useEffect(() => {
-    if (!showOutline || !editor) return undefined;
+    if (!showOutline || !editor || editor.isDestroyed) return undefined;
 
     const handleScroll = () => {
+      if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
       const headingElements = editor.view.dom.querySelectorAll("h1, h2, h3");
       let currentActive: number | null = null;
       let minDiff = Infinity;
@@ -1714,7 +1822,9 @@ export default function App() {
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      editor.off("selectionUpdate", handleScroll);
+      if (!editor.isDestroyed) {
+        editor.off("selectionUpdate", handleScroll);
+      }
     };
   }, [editor, showOutline, headings]);
 
@@ -3534,146 +3644,49 @@ export default function App() {
                 </button>
               </div>
             )}
-            {editor && (
-              <BubbleMenu
-                editor={editor}
-                tippyOptions={{ duration: 100, zIndex: 1000 }}
-                shouldShow={({ editor }) => editor.isFocused && editor.isActive("table")}
-              >
-                <div 
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    padding: "4px",
-                    background: effectiveDark ? "rgba(30, 30, 30, 0.98)" : "rgba(255, 255, 255, 0.98)",
-                    border: effectiveDark ? "1px solid rgba(255,255,255,0.25)" : "1px solid rgba(0,0,0,0.18)",
-                    borderRadius: 8,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-                    backdropFilter: "blur(8px)"
-                  }}
-                >
-                  <button
-                    title="Row Above"
-                    onClick={() => editor.chain().focus().addRowBefore().run()}
-                    style={{ ...tb(), width: 28, height: 28, padding: 0 }}
-                  >
-                    <ChevronDown size={14} style={{ transform: "rotate(180deg)" }} />
-                  </button>
-                  <button
-                    title="Row Below"
-                    onClick={() => editor.chain().focus().addRowAfter().run()}
-                    style={{ ...tb(), width: 28, height: 28, padding: 0 }}
-                  >
-                    <ChevronDown size={14} />
-                  </button>
-                  <button
-                    title="Delete Row"
-                    onClick={() => editor.chain().focus().deleteRow().run()}
-                    style={{ ...tb(), width: 28, height: 28, padding: 0, color: "var(--err)" }}
-                  >
-                    <Minus size={14} />
-                  </button>
 
-                  <div style={{ width: 1, height: 16, background: effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)", margin: "0 4px" }} />
-
-                  <button
-                    title="Column Left"
-                    onClick={() => editor.chain().focus().addColumnBefore().run()}
-                    style={{ ...tb(), width: 28, height: 28, padding: 0 }}
-                  >
-                    <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} />
-                  </button>
-                  <button
-                    title="Column Right"
-                    onClick={() => editor.chain().focus().addColumnAfter().run()}
-                    style={{ ...tb(), width: 28, height: 28, padding: 0 }}
-                  >
-                    <ChevronRight size={14} />
-                  </button>
-                  <button
-                    title="Delete Column"
-                    onClick={() => editor.chain().focus().deleteColumn().run()}
-                    style={{ ...tb(), width: 28, height: 28, padding: 0, color: "var(--err)" }}
-                  >
-                    <Minus size={14} style={{ transform: "rotate(90deg)" }} />
-                  </button>
-
-                  <div style={{ width: 1, height: 16, background: effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)", margin: "0 4px" }} />
-
-                  <button
-                    title="Delete Table"
-                    onClick={() => editor.chain().focus().deleteTable().run()}
-                    style={{
-                      ...tb(),
-                      width: "auto",
-                      padding: "0 8px",
-                      height: 28,
-                      color: "#FFFFFF",
-                      background: "var(--err)",
-                      border: "none",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      borderRadius: 5
-                    }}
-                  >
-                    <Trash2 size={12} />
-                    <span>Delete Table</span>
-                  </button>
-                </div>
-              </BubbleMenu>
+            {activeDoc && (
+              <NotepadEditor
+                key={activeDoc.id}
+                doc={activeDoc}
+                settings={settings}
+                onCreated={handleEditorCreated}
+                onDestroyed={handleEditorDestroyed}
+                onUpdate={(inst) => {
+                  const html = inst.getHTML();
+                  const text = inst.getText();
+                  const docId = activeDoc.id;
+                  setEditorVersion((v) => v + 1);
+                  setDocs((prev) => {
+                    const next = prev.map((d) => {
+                      if (d.id === docId) {
+                        let title = d.title;
+                        if (d.isTitleAutoGenerated !== false) {
+                          title = getAutoTitleFromText(text);
+                        }
+                        return {
+                          ...d,
+                          content: html,
+                          title,
+                          updatedAt: Date.now(),
+                          isUnsaved: d.filePath ? true : undefined
+                        };
+                      }
+                      return d;
+                    });
+                    saveDocs(next);
+                    return next;
+                  });
+                }}
+                onSelectionUpdate={() => {
+                  setEditorVersion((v) => v + 1);
+                }}
+                onImageContextMenu={(x, y, src) => {
+                  setTabContextMenu(null);
+                  setImageContextMenu({ x, y, src });
+                }}
+              />
             )}
-            {docs.map((docItem) => {
-              const isActive = docItem.id === activeId;
-              return (
-                <div
-                  key={docItem.id}
-                  style={{ display: isActive ? "block" : "none" }}
-                >
-                  <NotepadEditor
-                    doc={docItem}
-                    settings={settings}
-                    onCreated={(inst) => handleEditorCreated(docItem.id, inst)}
-                    onDestroyed={() => handleEditorDestroyed(docItem.id)}
-                    onUpdate={(inst) => {
-                      const html = inst.getHTML();
-                      const text = inst.getText();
-                      setEditorVersion((v) => v + 1);
-                      setDocs((prev) => {
-                        const next = prev.map((d) => {
-                          if (d.id === docItem.id) {
-                            let title = d.title;
-                            if (d.isTitleAutoGenerated !== false) {
-                              title = getAutoTitleFromText(text);
-                            }
-                            return {
-                              ...d,
-                              content: html,
-                              title,
-                              updatedAt: Date.now(),
-                              isUnsaved: d.filePath ? true : undefined
-                            };
-                          }
-                          return d;
-                        });
-                        saveDocs(next);
-                        return next;
-                      });
-                    }}
-                    onSelectionUpdate={() => {
-                      setEditorVersion((v) => v + 1);
-                    }}
-                    onImageContextMenu={(x, y, src) => {
-                      setTabContextMenu(null);
-                      setImageContextMenu({ x, y, src });
-                    }}
-                  />
-                </div>
-              );
-            })}
           </div>
         </div>
       </div>
