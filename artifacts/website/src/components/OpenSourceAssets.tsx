@@ -148,6 +148,9 @@ add_action('template_redirect', function() {
 export function OpenSourceAssets() {
   const [activeTool, setActiveTool] = useState<ToolInfo | null>(null);
 
+  const [selectedToolId, setSelectedToolId] = useState<string>(tools[0].id);
+  const selectedTool = tools.find(t => t.id === selectedToolId) || tools[0];
+
   // Lock body scroll when modal is open to ensure desktop and mobile overlay stability
   useEffect(() => {
     if (activeTool) {
@@ -189,104 +192,152 @@ export function OpenSourceAssets() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-5">
-          {tools.map((tool, idx) => (
-            <motion.div
-              key={tool.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className="group flex flex-col justify-between"
+        <div className="grid md:grid-cols-12 gap-8 items-center">
+          {/* Left Column: Tool Selector Stack */}
+          <div className="md:col-span-5 flex flex-col gap-4">
+            {tools.map((tool) => {
+              const isSelected = tool.id === selectedToolId;
+              return (
+                <div
+                  key={tool.id}
+                  onClick={() => setSelectedToolId(tool.id)}
+                  className="group flex flex-col cursor-pointer transition-all duration-300 relative text-left"
+                  style={{
+                    background: isSelected ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.01)",
+                    border: "1px solid",
+                    borderColor: isSelected ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)",
+                    borderRadius: "12px",
+                    padding: "24px 28px",
+                    backdropFilter: "blur(10px)",
+                    boxShadow: isSelected ? `inset 2px 0 0 ${tool.color}, 0 10px 30px -15px rgba(0,0,0,0.5)` : "none",
+                  }}
+                >
+                  <div className="flex gap-4 items-start">
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ 
+                        background: isSelected ? `${tool.color}15` : "rgba(255,255,255,0.03)", 
+                        border: `1px solid ${isSelected ? `${tool.color}35` : "rgba(255,255,255,0.06)"}` 
+                      }}
+                    >
+                      {tool.logoUrl ? (
+                        <img src={tool.logoUrl} alt={tool.title} className="w-5.5 h-5.5 object-contain" />
+                      ) : (
+                        <tool.icon style={{ color: isSelected ? tool.color : "#9ca3af", width: "20px", height: "20px" }} />
+                      )}
+                    </div>
+                    <div>
+                      <h3 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: "1.15rem", color: isSelected ? "#FFFFFF" : "#D1D5DB", transition: "color 0.2s" }}>
+                        {tool.title}
+                      </h3>
+                      <p className="text-sm mt-1.5" style={{ color: isSelected ? "rgba(237,234,228,0.7)" : "rgba(237,234,228,0.4)", transition: "color 0.2s", lineHeight: 1.45 }}>
+                        {tool.tagline}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Expandable CTA action buttons on active tool selection */}
+                  <AnimatePresence initial={false}>
+                    {isSelected && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                        animate={{ height: "auto", opacity: 1, marginTop: 20 }}
+                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex items-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
+                          {tool.id === "recapyt" ? (
+                            <a 
+                              href={tool.downloadLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 flex items-center justify-center gap-2 rounded-md py-2 px-4 text-xs font-semibold transition-all"
+                              style={{ background: "#EDEAE4", color: "#09090b" }}
+                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
+                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+                            >
+                              <ExternalLink size={14} />
+                              Visit Website
+                            </a>
+                          ) : (
+                            <a 
+                              href={tool.downloadLink}
+                              download
+                              className="flex-1 flex items-center justify-center gap-2 rounded-md py-2 px-4 text-xs font-semibold transition-all"
+                              style={{ background: "#EDEAE4", color: "#09090b" }}
+                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
+                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+                            >
+                              <ArrowDownToLine size={14} />
+                              Download
+                            </a>
+                          )}
+                          <button
+                            onClick={() => setActiveTool(tool)}
+                            className="flex items-center justify-center gap-1 rounded-md py-2 px-4 text-xs font-semibold transition-all"
+                            style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255, 255, 255, 0.15)" }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
+                          >
+                            Learn More
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Right Column: Dynamic Visual Showcase with Fluid Ambient Glow */}
+          <div className="md:col-span-7 flex items-center justify-center relative min-h-[360px] md:min-h-[440px] w-full">
+            {/* Dynamic Ambient Glow Orb */}
+            <div 
+              className="absolute w-[240px] h-[240px] md:w-[320px] md:h-[320px] rounded-full blur-[100px] opacity-20 pointer-events-none transition-all duration-700 ease-out"
               style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "12px",
-                padding: "32px",
-                minHeight: "280px",
-                backdropFilter: "blur(10px)",
-                transition: "all 0.3s ease"
+                background: selectedTool.color,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
               }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.15)";
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.08)";
+            />
+
+            {/* Frame wrapper for the canvas component */}
+            <div 
+              className="w-full max-w-[420px] aspect-[4/3] rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-md flex items-center justify-center p-6 shadow-2xl relative transition-all duration-300"
+              style={{
+                boxShadow: "0 30px 60px -15px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05)",
               }}
             >
-              <div>
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center mb-6"
-                  style={{ background: `rgba(255,255,255,0.05)`, border: `1px solid rgba(255,255,255,0.1)` }}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={selectedToolId}
+                  initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full h-full flex items-center justify-center"
                 >
-                  {tool.logoUrl ? (
-                    <img src={tool.logoUrl} alt={tool.title} className="w-7 h-7 object-contain" />
-                  ) : (
-                    <tool.icon style={{ color: tool.color, width: "24px", height: "24px" }} />
-                  )}
-                </div>
-                <h3 style={{ fontFamily: "'Sora', sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "#EDEAE4", lineHeight: 1.2 }} className="mb-3">
-                  {tool.title}
-                </h3>
-                <p style={{ color: "rgba(237,234,228,0.5)", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, fontSize: "15px" }}>
-                  {tool.tagline}
-                </p>
-              </div>
+                  {selectedToolId === "recapyt" && <RecapYtCanvas tool={selectedTool} />}
+                  {selectedToolId === "cloudflare-purger" && <CloudflarePurgerCanvas tool={selectedTool} />}
+                  {selectedToolId === "410-manager" && <GoneManagerCanvas tool={selectedTool} />}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
 
-              <div className="flex items-center gap-3 mt-8">
-                {tool.id === "recapyt" ? (
-                  <>
-                    <a 
-                      href={tool.downloadLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                      style={{ background: "#EDEAE4", color: "#09090b" }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
-                    >
-                      <ExternalLink size={16} />
-                      Visit Website
-                    </a>
-                    <button
-                      onClick={() => setActiveTool(tool)}
-                      className="flex items-center justify-center gap-1 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                      style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255, 255, 255, 0.1)" }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
-                    >
-                      Learn More
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <a 
-                      href={tool.downloadLink}
-                      download
-                      className="flex-1 flex items-center justify-center gap-2 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                      style={{ background: "#EDEAE4", color: "#09090b" }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
-                    >
-                      <ArrowDownToLine size={16} />
-                      Download
-                    </a>
-                    <button
-                      onClick={() => setActiveTool(tool)}
-                      className="flex items-center justify-center gap-1 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                      style={{ background: "transparent", color: "#EDEAE4", border: "1px solid rgba(255, 255, 255, 0.1)" }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
-                    >
-                      Learn More
-                    </button>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          ))}
+        {/* Link to Utility Suite */}
+        <div className="mt-16 text-center">
+          <Link 
+            href="/tools" 
+            className="inline-flex items-center gap-2 group text-sm font-semibold text-gray-400 hover:text-white transition-colors duration-200"
+          >
+            <span>Explore the Utility Suite (8+ Tools)</span>
+            <ChevronRight size={16} className="transform group-hover:translate-x-1 transition-transform duration-200" />
+          </Link>
         </div>
       </div>
 
