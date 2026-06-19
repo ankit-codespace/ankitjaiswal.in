@@ -161,7 +161,7 @@ export function OpenSourceAssets() {
   }, [activeTool]);
 
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: "#050810" }}>
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: "#09090b" }}>
       {/* Subtle grid background */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-[0.03]" 
@@ -243,7 +243,7 @@ export function OpenSourceAssets() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 flex items-center justify-center gap-2 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                      style={{ background: "#EDEAE4", color: "#050810" }}
+                      style={{ background: "#EDEAE4", color: "#09090b" }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
                     >
@@ -266,7 +266,7 @@ export function OpenSourceAssets() {
                       href={tool.downloadLink}
                       download
                       className="flex-1 flex items-center justify-center gap-2 rounded-md py-2.5 px-4 text-sm font-medium transition-all"
-                      style={{ background: "#EDEAE4", color: "#050810" }}
+                      style={{ background: "#EDEAE4", color: "#09090b" }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
                     >
@@ -300,7 +300,7 @@ export function OpenSourceAssets() {
               exit={{ opacity: 0 }}
               onClick={() => setActiveTool(null)}
               data-lenis-prevent
-              className="fixed inset-0 z-50 bg-[#03050a]/72 backdrop-blur-[12px] flex items-center justify-center p-4 md:p-6 overflow-y-auto"
+              className="fixed inset-0 z-50 bg-[#020203]/85 backdrop-blur-[12px] flex items-center justify-center p-4 md:p-6 overflow-y-auto"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -311,8 +311,8 @@ export function OpenSourceAssets() {
                 data-lenis-prevent
                 className="w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl relative border border-white/[0.08] my-auto"
                 style={{ 
-                  background: "linear-gradient(135deg, rgba(13, 20, 35, 0.9) 0%, rgba(8, 12, 22, 0.95) 100%)",
-                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+                  background: "linear-gradient(135deg, rgba(18, 18, 22, 0.95) 0%, rgba(9, 9, 11, 0.99) 100%)",
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.9)",
                 }}
               >
                 {/* Glow backdrop effect */}
@@ -332,7 +332,7 @@ export function OpenSourceAssets() {
                   {/* Left Column: Visual Canvas & Simulation */}
                   <div 
                     className="p-8 md:p-10 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-white/[0.06]"
-                    style={{ background: "rgba(3, 6, 12, 0.45)" }}
+                    style={{ background: "rgba(5, 5, 7, 0.45)" }}
                   >
                     <div className="w-full h-full flex flex-col justify-between">
                       <div className="mb-6">
@@ -417,7 +417,7 @@ export function OpenSourceAssets() {
                         className="w-full flex items-center justify-center gap-2.5 rounded-lg py-3.5 text-sm font-bold transition-all cursor-pointer shadow-lg"
                         style={{ 
                           background: "#EDEAE4", 
-                          color: "#050810",
+                          color: "#09090b",
                           boxShadow: `0 4px 20px ${activeTool.color}20`
                         }}
                       >
@@ -600,7 +600,7 @@ function ModalTabs({ tool }: { tool: ToolInfo }) {
                 </span>
                 <CopyButton text={tool.codeSnippet} />
               </div>
-              <div className="rounded-lg overflow-hidden border border-white/[0.06] bg-[#020509]">
+              <div className="rounded-lg overflow-hidden border border-white/[0.06] bg-[#050507]">
                 <pre className="p-4 overflow-x-auto text-[11.5px] leading-relaxed font-mono text-gray-300 max-h-[220px]">
                   <code>{tool.codeSnippet}</code>
                 </pre>
@@ -665,7 +665,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
   ];
 
   return (
-    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-black/60 relative flex flex-col font-sans">
+    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
       {/* Top Youtube player mock bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
@@ -678,7 +678,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
 
       <div className="flex-1 p-4 flex flex-col gap-3 justify-between min-h-0">
         {/* Mock Video Panel */}
-        <div className="relative aspect-video w-full rounded-lg bg-gray-900 border border-white/[0.04] overflow-hidden flex items-center justify-center">
+        <div className="relative aspect-video w-full rounded-lg bg-[#0a0a0d] border border-white/[0.04] overflow-hidden flex items-center justify-center">
           {/* Inner pulsating player glow */}
           <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(239,68,68,0.08)_0%,transparent_70%)]" />
           
@@ -796,7 +796,7 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
   }, []);
 
   return (
-    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-black/60 relative flex flex-col font-sans">
+    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
           <span className="w-2 h-2 rounded-full bg-amber-500/60" />
@@ -808,7 +808,7 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
 
       <div className="flex-1 p-4 flex flex-col gap-4 justify-between min-h-0">
         {/* Node architecture animation */}
-        <div className="relative h-20 rounded-lg bg-gray-900/60 border border-white/[0.04] overflow-hidden flex items-center justify-around px-4">
+        <div className="relative h-20 rounded-lg bg-[#0a0a0d]/60 border border-white/[0.04] overflow-hidden flex items-center justify-around px-4">
           <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(245,158,11,_0.04)_0%,transparent_70%)]" />
 
           {/* WordPress node */}
@@ -892,7 +892,7 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
   }, []);
 
   return (
-    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-black/60 relative flex flex-col font-sans">
+    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
           <span className="w-2 h-2 rounded-full bg-blue-500/60" />
@@ -904,7 +904,7 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
 
       <div className="flex-1 p-4 flex flex-col justify-between gap-4 min-h-0">
         {/* Request details panel */}
-        <div className="p-3.5 rounded-lg bg-gray-900 border border-white/[0.04] flex flex-col gap-2">
+        <div className="p-3.5 rounded-lg bg-[#0a0a0d] border border-white/[0.04] flex flex-col gap-2">
           <div className="flex justify-between items-center text-[10px] border-b border-white/[0.04] pb-2 font-mono">
             <span className="text-gray-500">HTTP_REQUEST</span>
             <span className="text-blue-400 font-bold">Googlebot/2.1</span>
