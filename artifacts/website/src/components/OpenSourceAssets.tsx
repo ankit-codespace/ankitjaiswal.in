@@ -73,6 +73,7 @@ async function requestSummary(payload: RecapRequest) {
     title: "Cloudflare Edge Purger",
     tagline: "Instant cache invalidation directly from WordPress admin.",
     icon: Server,
+    logoUrl: "/cloudflare-icon.svg",
     downloadLink: "/cloudflare-cache.zip",
     color: "#F59E0B", // Amber
     features: [
@@ -298,7 +299,8 @@ export function OpenSourceAssets() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setActiveTool(null)}
-              className="fixed inset-0 z-50 bg-[#03050a]/72 backdrop-blur-[12px] flex items-center justify-center p-4 md:p-6"
+              data-lenis-prevent
+              className="fixed inset-0 z-50 bg-[#03050a]/72 backdrop-blur-[12px] flex items-center justify-center p-4 md:p-6 overflow-y-auto"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -306,7 +308,8 @@ export function OpenSourceAssets() {
                 exit={{ opacity: 0, scale: 0.95, y: 15 }}
                 transition={{ type: "spring", damping: 30, stiffness: 350 }}
                 onClick={e => e.stopPropagation()}
-                className="w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl relative border border-white/[0.08]"
+                data-lenis-prevent
+                className="w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl relative border border-white/[0.08] my-auto"
                 style={{ 
                   background: "linear-gradient(135deg, rgba(13, 20, 35, 0.9) 0%, rgba(8, 12, 22, 0.95) 100%)",
                   boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
@@ -360,7 +363,7 @@ export function OpenSourceAssets() {
                   </div>
 
                   {/* Right Column: Spec Metrics, Content, Code Tabs & Actions */}
-                  <div className="p-8 md:p-10 flex flex-col justify-between max-h-[85vh] overflow-y-auto">
+                  <div className="p-8 md:p-10 flex flex-col justify-between md:max-h-[80vh] md:overflow-y-auto overflow-y-visible">
                     <button 
                       onClick={() => setActiveTool(null)}
                       className="absolute top-6 right-6 p-2 rounded-full transition-all duration-300 z-50"
