@@ -88,6 +88,15 @@ declare global {
   }
 }
 
+// ── Word Counter Helper ────────────────────────────────────────────────────────
+function countWords(text: string): number {
+  if (!text) return 0;
+  const clean = text.trim();
+  if (clean === "") return 0;
+  const matches = clean.match(/\S+/g);
+  return matches ? matches.length : 0;
+}
+
 // ── Markdown and TXT Parsers ──────────────────────────────────────────────────
 function txtToHtml(text: string): string {
   return text
@@ -1427,7 +1436,22 @@ export default function App() {
   const editorsRef = useRef<{ [id: string]: Editor }>({});
   const [editors, setEditors] = useState<{ [id: string]: Editor }>({});
   const editor = editors[activeId] || null;
-  const wordCount = editor?.storage.characterCount?.words() ?? 0;
+  const wordCountStatus = useMemo(() => {
+    if (!editor) return "0 words";
+    const totalText = editor.state.doc.textContent || "";
+    const total = countWords(totalText);
+
+    const { from, to, empty } = editor.state.selection;
+    if (!empty && from !== to) {
+      const selectedText = editor.state.doc.textBetween(from, to, " ");
+      const selected = countWords(selectedText);
+      if (selected > 0) {
+        return `${selected} of ${total} words selected`;
+      }
+    }
+
+    return `${total} ${total === 1 ? "word" : "words"}`;
+  }, [editor, activeId, _editorVersion]);
 
   const handleEditorCreated = useCallback((id: string, instance: Editor) => {
     editorsRef.current[id] = instance;
@@ -2799,7 +2823,7 @@ export default function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0, height: "100%", WebkitAppRegion: "no-drag" } as any}>
             <div style={{ display: "flex", alignItems: "center", height: "100%", transform: "translateY(2.5px)" }}>
               <span className="saved-ago-status" style={{ fontSize: 11, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif", paddingBottom: 0, marginRight: 6 }}>
-                {wordCount} {wordCount === 1 ? "word" : "words"} · {savedAgoText}
+                {wordCountStatus} · {savedAgoText}
               </span>
 
               <div style={{ width: 1, height: 20, background: sepColor, margin: "0 6px", flexShrink: 0, alignSelf: "center", paddingBottom: 0 }} />

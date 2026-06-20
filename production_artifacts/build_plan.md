@@ -1,16 +1,19 @@
-# Find & Replace UX Hardening — Build Plan
+# Word Count Hardening Implementation Plan
 
-## Objective
-Harden Find & Replace panel usability across targets (Web, Desktop), fix keyboard bindings, and optimize theme-level visual styling.
+## Phase 1: Desktop Application (`notepad-win/src/renderer/src/App.tsx`)
+- Add `countWords(text)` utility.
+- Replace `const wordCount = ...` with a `useMemo` that checks selection range `from` and `to` from the active editor instance.
+- Construct the string `X of Y words selected` or `Y words` depending on selection state.
+- Update header to render the calculated string.
 
-## Action Steps
-1. **Phase 1: Keyboard Shortcuts Wiring**
-   - Bind `Ctrl+F` and `Ctrl+Shift+F` key combinations globally to toggle and focus the find/replace inputs.
-   - Restructure highlight keyboard shortcuts.
-2. **Phase 2: Premium Visual Styles (Desktop)**
-   - Polish input heights to `28px` and declare local states for styling on focus active.
-   - Refactor panels, icons, chevrons, close button and match count visibility.
-3. **Phase 3: Premium Visual Styles (Web)**
-   - Port identical visual standards, inputs styling, chevrons, close buttons, and accent borders into the web portfolio `notepad.tsx`.
-4. **Phase 4: Dev Verification & Packaging**
-   - Validate TypeScript, run local Vite/Pnpm compiling tests, build desktop renderer, and bundle Windows packages.
+## Phase 2: Web Application (`artifacts/website/src/pages/tools/notepad.tsx`)
+- Add `countWords(text)` utility.
+- Add `onSelectionUpdate` listener to standard TipTap configuration if missing, or use a component state `editorUpdateTrigger` / `editorVersion` updated inside `onUpdate` and `onSelectionUpdate` callbacks to trigger UI updates.
+- Calculate and format the word status string using `useMemo`.
+- Render the word status inside the right zone toolbar of the notepad, aligned with `savedAgo`.
+
+## Phase 3: Build & Validation
+- Compile Web application.
+- Compile Electron renderer.
+- Package Windows targets (NSIS & AppX).
+- Verify correctness and push changes to GitHub repository.

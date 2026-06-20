@@ -317,6 +317,14 @@ interface NotepadSettings {
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
+function countWords(text: string): number {
+  if (!text) return 0;
+  const clean = text.trim();
+  if (clean === "") return 0;
+  const matches = clean.match(/\S+/g);
+  return matches ? matches.length : 0;
+}
+
 const LS_DOCS = "notepad_docs_v2";
 const LS_ACTIVE = "notepad_active_v2";
 const LS_SETTINGS = "notepad_settings_v1";
@@ -826,6 +834,7 @@ export default function Notepad() {
   const [linkInputUrl, setLinkInputUrl] = useState("");
   const [isEditingLink, setIsEditingLink] = useState(false);
   const [editorContextMenu, setEditorContextMenu] = useState<{ x: number; y: number; visible: boolean; targetUrl?: string } | null>(null);
+  const [editorVersion, setEditorVersion] = useState(0);
   const [showFind, setShowFind] = useState(false);
   const [findText, setFindText] = useState("");
   const [isFindFocused, setIsFindFocused] = useState(false);
@@ -1187,6 +1196,7 @@ export default function Notepad() {
       },
     },
     onUpdate({ editor }) {
+      setEditorVersion((v) => v + 1);
       if (isChangingDocRef.current) return;
       setSaveStatus("unsaved");
       clearTimeout(saveTimerRef.current);
@@ -1204,6 +1214,9 @@ export default function Notepad() {
           driveSaveTimerRef.current = setTimeout(() => syncToDrive(html), 4000);
         }
       }, 1200);
+    },
+    onSelectionUpdate() {
+      setEditorVersion((v) => v + 1);
     },
     onTransaction({ editor }) {
       const storage = editor?.storage as any;
@@ -2891,6 +2904,23 @@ export default function Notepad() {
     });
   };
 
+  const wordCountStatus = useMemo(() => {
+    if (!editor) return "0 words";
+    const totalText = editor.state.doc.textContent || "";
+    const total = countWords(totalText);
+
+    const { from, to, empty } = editor.state.selection;
+    if (!empty && from !== to) {
+      const selectedText = editor.state.doc.textBetween(from, to, " ");
+      const selected = countWords(selectedText);
+      if (selected > 0) {
+        return `${selected} of ${total} words selected`;
+      }
+    }
+
+    return `${total} ${total === 1 ? "word" : "words"}`;
+  }, [editor, activeId, editorVersion]);
+
   const savedAgo = (() => {
     const s = Math.round((Date.now() - lastSaved.getTime()) / 1000);
     if (s < 5) return "Just saved";
@@ -3374,7 +3404,7 @@ export default function Notepad() {
           {/* Right Zone: Status, Cloud, Settings, Feedback */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>
             <span style={{ fontSize: 11, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif" }} className="notepad-shortcuts-btn">
-              {savedAgo}
+              {wordCountStatus} · {savedAgo}
             </span>
 
             {GCID && (
