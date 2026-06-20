@@ -825,6 +825,7 @@ export default function Notepad() {
   const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
   const [linkInputUrl, setLinkInputUrl] = useState("");
   const [isEditingLink, setIsEditingLink] = useState(false);
+  const [editorContextMenu, setEditorContextMenu] = useState<{ x: number; y: number; visible: boolean; targetUrl?: string } | null>(null);
   const [showFind, setShowFind] = useState(false);
   const [findText, setFindText] = useState("");
   const [isFindFocused, setIsFindFocused] = useState(false);
@@ -2023,6 +2024,20 @@ export default function Notepad() {
     document.addEventListener("fullscreenchange", h);
     return () => document.removeEventListener("fullscreenchange", h);
   }, []);
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      if (editorContextMenu?.visible) {
+        setEditorContextMenu(prev => prev ? { ...prev, visible: false } : null);
+      }
+    };
+    window.addEventListener("click", handleGlobalClick);
+    window.addEventListener("contextmenu", handleGlobalClick);
+    return () => {
+      window.removeEventListener("click", handleGlobalClick);
+      window.removeEventListener("contextmenu", handleGlobalClick);
+    };
+  }, [editorContextMenu]);
 
   // ── Image selection toolbar + double-click lightbox ────────────────────────
   useEffect(() => {
@@ -4923,6 +4938,20 @@ export default function Notepad() {
             if (e.target === editorWrapRef.current) editor?.commands.focus("end");
             setShowDocMenu(false); setShowExportMenu(false); setShowSettings(false); setShowShortcuts(false); cancelConfirm();
           }}
+          onContextMenu={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest(".ProseMirror")) {
+              e.preventDefault();
+              const anchor = target.closest("a");
+              const url = anchor ? anchor.getAttribute("href") : undefined;
+              setEditorContextMenu({
+                x: e.clientX,
+                y: e.clientY,
+                visible: true,
+                targetUrl: url || undefined
+              });
+            }
+          }}
         >
           <div style={editorInnerStyle} className={[settings.ruledLines ? "notepad-ruled" : "", settings.imageBorder ? "notepad-img-border" : ""].filter(Boolean).join(" ")}>
             <EditorContent editor={editor} />
@@ -5563,6 +5592,293 @@ export default function Notepad() {
             )}
           </div>
         </BubbleMenu>
+      )}
+
+      {/* ── Custom Context Menu ── */}
+      {editorContextMenu?.visible && (
+        <div
+          style={{
+            position: "fixed",
+            top: editorContextMenu.y,
+            left: editorContextMenu.x,
+            zIndex: 9999,
+            background: effectiveDark ? "rgba(30, 30, 30, 0.98)" : "rgba(255, 255, 255, 0.98)",
+            border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid rgba(0, 0, 0, 0.12)",
+            borderRadius: "8px",
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.25)",
+            padding: "4px",
+            minWidth: "170px",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2px"
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {editorContextMenu.targetUrl && (
+            <>
+              <a
+                href={editorContextMenu.targetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "6px 12px",
+                  fontSize: "12.5px",
+                  color: "var(--np-accent, #10B981)",
+                  textDecoration: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  transition: "background 0.12s",
+                  fontFamily: "Inter, sans-serif"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <ExternalLink size={12} />
+                <span>Open Link</span>
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(editorContextMenu.targetUrl || "");
+                  setEditorContextMenu(prev => prev ? { ...prev, visible: false } : null);
+                  toast.success("Link copied to clipboard");
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "6px 12px",
+                  fontSize: "12.5px",
+                  color: effectiveDark ? "#F0EDE8" : "#0D1117",
+                  background: "none",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  width: "100%",
+                  textAlign: "left",
+                  transition: "background 0.12s",
+                  fontFamily: "Inter, sans-serif"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <CopyIcon size={12} />
+                <span>Copy Link</span>
+              </button>
+              <div style={{ height: "1px", background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)", margin: "4px 0" }} />
+            </>
+          )}
+
+          <button
+            onClick={() => {
+              editor?.commands.undo();
+              setEditorContextMenu(prev => prev ? { ...prev, visible: false } : null);
+            }}
+            disabled={!editor?.can().undo()}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 12px",
+              fontSize: "12.5px",
+              color: !editor?.can().undo() ? (effectiveDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)") : (effectiveDark ? "#F0EDE8" : "#0D1117"),
+              background: "none",
+              border: "none",
+              borderRadius: "4px",
+              cursor: !editor?.can().undo() ? "not-allowed" : "pointer",
+              width: "100%",
+              transition: "background 0.12s",
+              fontFamily: "Inter, sans-serif"
+            }}
+            onMouseEnter={(e) => {
+              if (editor?.can().undo()) {
+                e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+              }
+            }}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Undo2 size={12} />
+              <span>Undo</span>
+            </span>
+            <span style={{ fontSize: "10px", opacity: 0.5 }}>Ctrl+Z</span>
+          </button>
+
+          <button
+            onClick={() => {
+              editor?.commands.redo();
+              setEditorContextMenu(prev => prev ? { ...prev, visible: false } : null);
+            }}
+            disabled={!editor?.can().redo()}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 12px",
+              fontSize: "12.5px",
+              color: !editor?.can().redo() ? (effectiveDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)") : (effectiveDark ? "#F0EDE8" : "#0D1117"),
+              background: "none",
+              border: "none",
+              borderRadius: "4px",
+              cursor: !editor?.can().redo() ? "not-allowed" : "pointer",
+              width: "100%",
+              transition: "background 0.12s",
+              fontFamily: "Inter, sans-serif"
+            }}
+            onMouseEnter={(e) => {
+              if (editor?.can().redo()) {
+                e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+              }
+            }}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Redo2 size={12} />
+              <span>Redo</span>
+            </span>
+            <span style={{ fontSize: "10px", opacity: 0.5 }}>Ctrl+Y</span>
+          </button>
+
+          <div style={{ height: "1px", background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+          <button
+            onClick={() => {
+              const { state } = editor!;
+              const { from, to } = state.selection;
+              const text = state.doc.textBetween(from, to, " ");
+              navigator.clipboard.writeText(text);
+              setEditorContextMenu(prev => prev ? { ...prev, visible: false } : null);
+              toast.success("Text copied");
+            }}
+            disabled={editor?.state.selection.empty}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 12px",
+              fontSize: "12.5px",
+              color: editor?.state.selection.empty ? (effectiveDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)") : (effectiveDark ? "#F0EDE8" : "#0D1117"),
+              background: "none",
+              border: "none",
+              borderRadius: "4px",
+              cursor: editor?.state.selection.empty ? "not-allowed" : "pointer",
+              width: "100%",
+              transition: "background 0.12s",
+              fontFamily: "Inter, sans-serif"
+            }}
+            onMouseEnter={(e) => {
+              if (!editor?.state.selection.empty) {
+                e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+              }
+            }}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <CopyIcon size={12} />
+              <span>Copy</span>
+            </span>
+            <span style={{ fontSize: "10px", opacity: 0.5 }}>Ctrl+C</span>
+          </button>
+
+          <button
+            onClick={() => {
+              navigator.clipboard.readText().then(text => {
+                editor?.commands.insertContent(text);
+              }).catch(() => {
+                toast.error("Clipboard access blocked by browser. Use Ctrl+V.");
+              });
+              setEditorContextMenu(prev => prev ? { ...prev, visible: false } : null);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 12px",
+              fontSize: "12.5px",
+              color: effectiveDark ? "#F0EDE8" : "#0D1117",
+              background: "none",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              width: "100%",
+              transition: "background 0.12s",
+              fontFamily: "Inter, sans-serif"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Plus size={12} />
+              <span>Paste</span>
+            </span>
+            <span style={{ fontSize: "10px", opacity: 0.5 }}>Ctrl+V</span>
+          </button>
+
+          <div style={{ height: "1px", background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+          <button
+            onClick={() => {
+              insertLink();
+              setEditorContextMenu(prev => prev ? { ...prev, visible: false } : null);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 12px",
+              fontSize: "12.5px",
+              color: effectiveDark ? "#F0EDE8" : "#0D1117",
+              background: "none",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              width: "100%",
+              transition: "background 0.12s",
+              fontFamily: "Inter, sans-serif"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <LinkIcon size={12} />
+              <span>Link</span>
+            </span>
+            <span style={{ fontSize: "10px", opacity: 0.5 }}>Ctrl+K</span>
+          </button>
+
+          <button
+            onClick={() => {
+              editor?.commands.toggleHighlight();
+              setEditorContextMenu(prev => prev ? { ...prev, visible: false } : null);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 12px",
+              fontSize: "12.5px",
+              color: effectiveDark ? "#F0EDE8" : "#0D1117",
+              background: "none",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              width: "100%",
+              transition: "background 0.12s",
+              fontFamily: "Inter, sans-serif"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Highlighter size={12} />
+              <span>Highlight</span>
+            </span>
+            <span style={{ fontSize: "10px", opacity: 0.5 }}>Ctrl+H</span>
+          </button>
+        </div>
       )}
 
       {/* ── Keyboard Shortcuts Modal ── */}

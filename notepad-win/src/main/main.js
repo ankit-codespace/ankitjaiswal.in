@@ -106,6 +106,99 @@ function createWindow() {
       fileToOpenOnStartup = null; // Clear after opening
     }
   });
+
+  // Native Context Menu Handler for premium right-click behaviors
+  mainWindow.webContents.on('context-menu', (event, params) => {
+    const menuTemplate = [];
+
+    // Spellcheck suggestions (put at the top of the menu if present)
+    if (params.dictionarySuggestions && params.dictionarySuggestions.length > 0) {
+      params.dictionarySuggestions.forEach((suggestion) => {
+        menuTemplate.push({
+          label: suggestion,
+          click: () => mainWindow.webContents.replaceMisspelling(suggestion)
+        });
+      });
+      menuTemplate.push({ type: 'separator' });
+    }
+
+    // Cut / Copy / Paste
+    if (params.editFlags.canCut) {
+      menuTemplate.push({ label: 'Cut', role: 'cut', accelerator: 'Ctrl+X' });
+    }
+    if (params.editFlags.canCopy) {
+      menuTemplate.push({ label: 'Copy', role: 'copy', accelerator: 'Ctrl+C' });
+    }
+    if (params.editFlags.canPaste) {
+      menuTemplate.push({ label: 'Paste', role: 'paste', accelerator: 'Ctrl+V' });
+    }
+    
+    // Link options
+    if (params.linkURL) {
+      if (menuTemplate.length > 0 && menuTemplate[menuTemplate.length - 1].type !== 'separator') {
+        menuTemplate.push({ type: 'separator' });
+      }
+      menuTemplate.push({
+        label: 'Open Link in Browser',
+        click: () => {
+          shell.openExternal(params.linkURL);
+        }
+      });
+      menuTemplate.push({
+        label: 'Copy Link Address',
+        click: () => {
+          const { clipboard } = require('electron');
+          clipboard.writeText(params.linkURL);
+        }
+      });
+    }
+
+    // Select All / Undo / Redo
+    let hasEditingActions = false;
+    const editingActions = [];
+    if (params.editFlags.canSelectAll) {
+      editingActions.push({ label: 'Select All', role: 'selectall', accelerator: 'Ctrl+A' });
+      hasEditingActions = true;
+    }
+    if (params.editFlags.canUndo) {
+      editingActions.push({ label: 'Undo', role: 'undo', accelerator: 'Ctrl+Z' });
+      hasEditingActions = true;
+    }
+    if (params.editFlags.canRedo) {
+      editingActions.push({ label: 'Redo', role: 'redo', accelerator: 'Ctrl+Y' });
+      hasEditingActions = true;
+    }
+
+    if (hasEditingActions) {
+      if (menuTemplate.length > 0 && menuTemplate[menuTemplate.length - 1].type !== 'separator') {
+        menuTemplate.push({ type: 'separator' });
+      }
+      menuTemplate.push(...editingActions);
+    }
+
+    // Only build and popup the menu if we have items
+    if (menuTemplate.length > 0) {
+      // Remove any trailing/leading separators or double separators to make it clean
+      const cleanTemplate = [];
+      menuTemplate.forEach((item, index) => {
+        if (item.type === 'separator') {
+          if (cleanTemplate.length === 0 || index === menuTemplate.length - 1 || cleanTemplate[cleanTemplate.length - 1].type === 'separator') {
+            return;
+          }
+        }
+        cleanTemplate.push(item);
+      });
+      
+      if (cleanTemplate.length > 0 && cleanTemplate[cleanTemplate.length - 1].type === 'separator') {
+        cleanTemplate.pop();
+      }
+
+      if (cleanTemplate.length > 0) {
+        const menu = Menu.buildFromTemplate(cleanTemplate);
+        menu.popup(mainWindow);
+      }
+    }
+  });
 }
 
 function openFileInWindow(filePath) {
