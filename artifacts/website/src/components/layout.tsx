@@ -61,9 +61,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(true);
   const [isInHero, setIsInHero] = useState(true);
   const [isInProofSection, setIsInProofSection] = useState(false);
+  const [currentTime, setCurrentTime] = useState<string>("");
   const { scrollY } = useScroll();
   const lastScrollY = useRef(0);
   const upwardAccum = useRef(0);
+
+  useEffect(() => {
+    const updateClock = () => {
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      };
+      setCurrentTime(new Date().toLocaleTimeString("en-US", options));
+    };
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const delta = latest - lastScrollY.current;
@@ -384,58 +401,236 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <footer style={{ background: "#0D1117", borderTop: "none" }}>
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div>
+      <footer style={{ background: "radial-gradient(circle at 50% 120%, rgba(44, 44, 243, 0.16) 0%, #0D1117 80%)", borderTop: "1px solid rgba(255, 255, 255, 0.05)" }}>
+        {/* Brand Conversion CTA Banner */}
+        <div className="container mx-auto px-6 lg:px-10 pt-16 pb-12">
+          <div 
+            className="rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6 border"
+            style={{ 
+              background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)", 
+              borderColor: "rgba(255, 255, 255, 0.06)",
+              boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)"
+            }}
+          >
+            <div className="max-w-2xl text-center md:text-left">
+              <h3 
+                className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-3"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                Let's build something impossible to ignore.
+              </h3>
+              <p 
+                className="text-sm md:text-base opacity-70"
+                style={{ color: "#A1AAB4", fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}
+              >
+                Have an ambition, challenge, or project in mind? Let's turn it into a high-performance digital reality.
+              </p>
+            </div>
+            <a 
+              href="#contact" 
+              onClick={(e) => { e.preventDefault(); navigateToHomeAnchor(location, "#contact"); }}
+              className="shrink-0"
+            >
+              <button
+                className="btn-liquid font-medium text-sm px-7 py-3.5 tracking-wide"
+                style={{ borderRadius: "8px" }}
+              >
+                Work With Me
+              </button>
+            </a>
+          </div>
+        </div>
+
+        <div className="w-full h-px" style={{ background: "rgba(255, 255, 255, 0.04)" }} />
+
+        {/* Footer Navigation Directory */}
+        <div className="container mx-auto px-6 lg:px-10 py-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-8">
+            {/* About Column */}
+            <div className="col-span-2 md:col-span-1">
               <img
                 src="/images/ankitjaiswal-logo-light.png"
                 alt="Ankit Jaiswal"
-                className="h-10 w-auto object-contain mb-4 opacity-80"
+                className="h-9 w-auto object-contain mb-4 opacity-90"
                 loading="lazy"
                 decoding="async"
               />
-              <p className="text-sm max-w-xs" style={{ color: "#6B7280", lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>
+              <p 
+                className="text-[13px] mb-5" 
+                style={{ color: "#8B949E", lineHeight: 1.6, fontFamily: "'Inter', sans-serif" }}
+              >
                 Helping businesses become impossible to ignore in the age of AI search.
               </p>
-            </div>
-            <div>
-              <h4
-                style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", letterSpacing: "0.16em", color: "#4B5563", fontWeight: 600, textTransform: "uppercase", marginBottom: "16px" }}
-              >Connect</h4>
-              <div className="flex flex-col gap-2">
-                <a
-                  href="mailto:contact@ankitjaiswal.in"
-                  className="flex items-center gap-2 text-sm transition-all duration-200 break-all"
-                  style={{ color: "#6B7280", fontFamily: "'Inter', sans-serif" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F9FAFB"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#6B7280"; }}
-                >
-                  <Mail className="h-4 w-4 shrink-0" /> contact@ankitjaiswal.in
-                </a>
-                <a
-                  href="https://wa.me/917808809043"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm transition-all duration-200"
-                  style={{ color: "#6B7280", fontFamily: "'Inter', sans-serif" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F9FAFB"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#6B7280"; }}
-                >
-                  <Phone className="h-4 w-4" /> WhatsApp
-                </a>
+              
+              {/* Dynamic Live Timezone Clock */}
+              <div 
+                className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full border text-[12px] font-medium"
+                style={{ 
+                  background: "rgba(255, 255, 255, 0.02)", 
+                  borderColor: "rgba(255, 255, 255, 0.06)",
+                  color: "#C9D1D9"
+                }}
+                title="Punjab, IN Local Time (IST)"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="font-mono tabular-nums">{currentTime || "Loading..."}</span>
               </div>
             </div>
+
+            {/* Explore Column */}
             <div>
               <h4
-                style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", letterSpacing: "0.16em", color: "#4B5563", fontWeight: 600, textTransform: "uppercase", marginBottom: "16px" }}
-              >Legal</h4>
-              <div className="text-sm space-y-2" style={{ color: "#6B7280", lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>
-                <p>© {new Date().getFullYear()} Ankit Jaiswal.</p>
-                <p>All tools run locally in your browser.</p>
-              </div>
+                style={{ 
+                  fontFamily: "'Inter', sans-serif", 
+                  fontSize: "11px", 
+                  letterSpacing: "0.14em", 
+                  color: "#484F58", 
+                  fontWeight: 600, 
+                  textTransform: "uppercase", 
+                  marginBottom: "16px" 
+                }}
+              >
+                Explore
+              </h4>
+              <ul className="space-y-3">
+                {[
+                  { name: "About", href: "/about", route: true },
+                  { name: "GEO Tools", href: "#tools" },
+                  { name: "Results", href: "#results" }
+                ].map((link) => (
+                  <li key={link.name}>
+                    {link.route ? (
+                      <Link
+                        href={link.href}
+                        className="text-[13px] transition-all duration-[140ms]"
+                        style={{ color: "#8B949E", textDecoration: "none" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#8B949E"; }}
+                      >
+                        {link.name}
+                      </Link>
+                    ) : (
+                      <a
+                        href={link.href}
+                        onClick={(e) => { e.preventDefault(); navigateToHomeAnchor(location, link.href); }}
+                        className="text-[13px] transition-all duration-[140ms]"
+                        style={{ color: "#8B949E", textDecoration: "none" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#8B949E"; }}
+                      >
+                        {link.name}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Professional Tools Column */}
+            <div>
+              <h4
+                style={{ 
+                  fontFamily: "'Inter', sans-serif", 
+                  fontSize: "11px", 
+                  letterSpacing: "0.14em", 
+                  color: "#484F58", 
+                  fontWeight: 600, 
+                  textTransform: "uppercase", 
+                  marginBottom: "16px" 
+                }}
+              >
+                Tools Directory
+              </h4>
+              <ul className="space-y-3">
+                {[
+                  { name: "Online Notepad", href: "/online-notepad" },
+                  { name: "WebP Converter", href: "/tools/webp-converter" },
+                  { name: "Paste to Image", href: "/tools/paste-to-image" },
+                  { name: "Clipboard History", href: "/tools/clipboard-history" },
+                  { name: "Thumbnail Downloader", href: "/tools/yt-thumbnail-downloader" }
+                ].map((link) => (
+                  <li key={link.name}>
+                    <Link
+                      href={link.href}
+                      className="text-[13px] transition-all duration-[140ms]"
+                      style={{ color: "#8B949E", textDecoration: "none" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#8B949E"; }}
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Connect Column */}
+            <div>
+              <h4
+                style={{ 
+                  fontFamily: "'Inter', sans-serif", 
+                  fontSize: "11px", 
+                  letterSpacing: "0.14em", 
+                  color: "#484F58", 
+                  fontWeight: 600, 
+                  textTransform: "uppercase", 
+                  marginBottom: "16px" 
+                }}
+              >
+                Connect
+              </h4>
+              <ul className="space-y-3">
+                <li>
+                  <a
+                    href="mailto:contact@ankitjaiswal.in"
+                    className="text-[13px] transition-all duration-[140ms]"
+                    style={{ color: "#8B949E", textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#8B949E"; }}
+                  >
+                    Email
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://wa.me/917808809043"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[13px] transition-all duration-[140ms]"
+                    style={{ color: "#8B949E", textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#8B949E"; }}
+                  >
+                    WhatsApp
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://www.linkedin.com/in/itsankitjaiswal/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[13px] transition-all duration-[140ms]"
+                    style={{ color: "#8B949E", textDecoration: "none" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#8B949E"; }}
+                  >
+                    LinkedIn
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
+        </div>
+
+        <div className="w-full h-px" style={{ background: "rgba(255, 255, 255, 0.04)" }} />
+
+        {/* Legal Bottom Bar */}
+        <div className="container mx-auto px-6 lg:px-10 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px]" style={{ color: "#8B949E", fontFamily: "'Inter', sans-serif" }}>
+          <span>© {new Date().getFullYear()} Ankit Jaiswal. All rights reserved.</span>
+          <span className="opacity-70">Designed for ultimate client conversion.</span>
         </div>
       </footer>
     </div>

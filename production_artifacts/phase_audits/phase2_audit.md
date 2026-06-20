@@ -1,8 +1,7 @@
-# Phase 2 Audit: Toolbar & Editing Overlay CSS
+# Phase 2 Audit: Live Clock Widget Implementation
 Status: COMPLETE
 
 ## Changes
-- Declared state `[textStyle, setTextStyle]` inside `PasteToImage` component.
-- Implemented Toolbar Text Style pill group next to the font size stepper.
-- Hardened the `style` properties on the absolute overlay contentEditable input box to match caret color, background colors, padding, text-shadow, and margins.
-- Updated `commitTextAnnotation()` to assign the active `textStyle` onto the new annotation instance.
+- Declared React state `[currentTime, setCurrentTime]` to hold local Punjab, India time values.
+- Integrated a `useEffect` layout timer on a 1-second interval using options configured for `timeZone: "Asia/Kolkata"` with standard 12-hour AM/PM formatting.
+- Integrated the live clock inside a pill layout featuring a pulsing green availability indicator.
