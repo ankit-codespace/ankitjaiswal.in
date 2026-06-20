@@ -2704,6 +2704,9 @@ export default function Notepad() {
     });
   };
 
+  const wordCount = editor?.storage.characterCount?.words() ?? 0;
+  const charCount = editor?.storage.characterCount?.characters() ?? 0;
+
   const savedAgo = (() => {
     const s = Math.round((Date.now() - lastSaved.getTime()) / 1000);
     if (s < 5) return "Just saved";
@@ -3186,7 +3189,7 @@ export default function Notepad() {
           {/* Right Zone: Status, Cloud, Settings, Feedback */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>
             <span style={{ fontSize: 11, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif" }} className="notepad-shortcuts-btn">
-              {savedAgo}
+              {wordCount} {wordCount === 1 ? "word" : "words"} ({charCount} {charCount === 1 ? "char" : "chars"}) · {savedAgo}
             </span>
 
             {GCID && (
