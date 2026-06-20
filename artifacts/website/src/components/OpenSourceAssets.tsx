@@ -487,7 +487,7 @@ export function OpenSourceAssets() {
                     }}
                   >
                     {activeTool.id === "recapyt" ? <ExternalLink size={14} /> : <ArrowDownToLine size={14} />}
-                    {activeTool.id === "recapyt" ? "Visit Flagship Website" : "Download Production Bundle"}
+                    {activeTool.id === "recapyt" ? "Visit Website" : "Download Plugin"}
                   </a>
                 </div>
               </div>
@@ -626,7 +626,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
   ];
 
   return (
-    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
+    <div className="w-full max-w-[340px] aspect-[4/3.3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
       {/* Simulation title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
@@ -772,10 +772,10 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
   const [logs, setLogs] = useState<string[]>([]);
 
   const nodes = [
-    { name: "Ashburn (IAD)", x: "20%", y: "25%" },
-    { name: "Frankfurt (FRA)", x: "75%", y: "20%" },
-    { name: "Tokyo (NRT)", x: "85%", y: "60%" },
-    { name: "Singapore (SIN)", x: "30%", y: "70%" }
+    { name: "Ashburn (IAD)", x: "20%", y: "20%" },
+    { name: "Frankfurt (FRA)", x: "75%", y: "15%" },
+    { name: "Tokyo (NRT)", x: "85%", y: "50%" },
+    { name: "Singapore (SIN)", x: "30%", y: "58%" }
   ];
 
   const handlePurge = () => {
@@ -806,7 +806,7 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
   };
 
   return (
-    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
+    <div className="w-full max-w-[340px] aspect-[4/3.3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
       {/* Title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
@@ -819,7 +819,7 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
 
       <div className="flex-grow p-4 flex flex-col justify-between min-h-0 gap-3">
         {/* Upper network map */}
-        <div className="h-[105px] rounded-lg bg-[#0a0a0d]/60 border border-white/[0.04] relative overflow-hidden flex items-center justify-center">
+        <div className="h-[95px] rounded-lg bg-[#0a0a0d]/60 border border-white/[0.04] relative overflow-hidden flex items-center justify-center">
           <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(245,158,11,0.03)_0%,transparent_70%)] pointer-events-none" />
           
           {/* Simple world grid background */}
@@ -831,7 +831,7 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
           />
 
           {/* Central WP Server Origin */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+          <div className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
             <div className={`w-8 h-8 rounded-full border flex items-center justify-center bg-black/60 shadow transition-colors ${
               purgeStatus === "purging" ? "border-amber-500/30 bg-amber-500/5 text-amber-500" : "border-white/10 text-gray-400"
             }`}>
@@ -877,8 +877,8 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
         {/* Action Panel and Logs */}
         <div className="flex-1 flex gap-3 min-h-0">
           {/* Action box */}
-          <div className="w-[110px] shrink-0 border border-white/[0.05] rounded-lg p-2.5 flex flex-col justify-between bg-white/[0.01]">
-            <div className="space-y-1">
+          <div className="w-[110px] shrink-0 border border-white/[0.05] rounded-lg p-2 flex flex-col justify-between bg-white/[0.01] h-[78px]">
+            <div className="space-y-0.5">
               <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-wider block">Configuration</span>
               <div className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -887,13 +887,13 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
             </div>
 
             {purgeStatus === "purging" ? (
-              <div className="py-2.5 flex justify-center">
-                <span className="w-4 h-4 rounded-full border border-amber-500 border-t-transparent animate-spin" />
+              <div className="py-1 flex justify-center">
+                <span className="w-3.5 h-3.5 rounded-full border border-amber-500 border-t-transparent animate-spin" />
               </div>
             ) : (
               <button
                 onClick={handlePurge}
-                className="w-full py-1.5 rounded border text-[9.5px] font-bold transition-all cursor-pointer text-center bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] text-white"
+                className="w-full py-1 rounded border text-[9.5px] font-bold transition-all cursor-pointer text-center bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] text-white"
               >
                 Purge Cache
               </button>
@@ -988,7 +988,7 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
   };
 
   return (
-    <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
+    <div className="w-full max-w-[340px] aspect-[4/3.3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
       {/* Title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
