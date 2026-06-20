@@ -45,7 +45,6 @@ function AmbientOrbs({ light = false }: { light?: boolean }) {
             width: orb.size,
             height: orb.size,
             background: `radial-gradient(circle, ${orb.color} 0%, transparent 70%)`,
-            filter: "blur(40px)",
             willChange: "transform",
             animationName: `orb-float-${i % 3}`,
             animationDuration: `${orb.duration}s`,
@@ -61,9 +60,10 @@ function AmbientOrbs({ light = false }: { light?: boolean }) {
 function NoiseOverlay() {
   return (
     <div
-      className="absolute inset-0 pointer-events-none opacity-[0.015] mix-blend-overlay"
+      className="absolute inset-0 pointer-events-none opacity-[0.015]"
       style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        backgroundImage: `url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAYqotDAAAAM1BMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABj1EpIAAAADnRSTlMAESIzRFVmd4iZqrvM3d3/I+/mAAAAQklEQVR42uXSMQoAIAwD0OD/j3YrdChlh0BvCEnIXSAyB1p/5n5sn/s1s18z+zWzXzP7NbNfM/s1s18z+zWzXzP7NVffA5cAvCE1NVAAAAAElFTkSuQmCC")`,
+        backgroundSize: "50px 50px",
       }}
     />
   );
@@ -162,7 +162,9 @@ const ScrollStackingDeck = ({
         const isActive = index === activeIndex;
         const offset = index - activeIndex;
         const zIndex = totalCards - Math.abs(offset);
-        const opacity = offset === 0 ? 1 : Math.max(0.75 - Math.abs(offset) * 0.1, 0.45);
+        const isWithinWindow = Math.abs(offset) <= 2;
+        const opacity = !isWithinWindow ? 0 : (offset === 0 ? 1 : Math.max(0.75 - Math.abs(offset) * 0.1, 0.45));
+        const pointerEvents = !isWithinWindow ? "none" as const : "auto" as const;
 
         return (
           <motion.button
@@ -171,6 +173,7 @@ const ScrollStackingDeck = ({
             style={{
               zIndex,
               willChange: "transform, opacity",
+              pointerEvents,
             }}
             initial={false}
             animate={{
@@ -197,14 +200,16 @@ const ScrollStackingDeck = ({
                 backfaceVisibility: "hidden",
               }}
             >
-              <div className="aspect-[16/10] relative overflow-hidden">
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="w-full h-full object-cover object-top"
-                  loading={index === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                />
+              <div className="aspect-[16/10] relative overflow-hidden bg-white/[0.02]">
+                {isWithinWindow && (
+                  <img
+                    src={image.src}
+                    alt={image.alt}
+                    className="w-full h-full object-cover object-top"
+                    loading={index === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                  />
+                )}
               </div>
             </div>
           </motion.button>
@@ -420,6 +425,7 @@ export function ProofGallery() {
             opacity: combinedOpacity,
             background: "#F0F4FF",
             minHeight: "100vh",
+            willChange: "clip-path, opacity",
           }}
         >
           <DotGridPattern light />
