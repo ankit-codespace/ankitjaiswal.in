@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Server, Trash2, Youtube, ArrowDownToLine, ChevronRight, X, 
   ExternalLink, Clock, Code, Terminal, CheckCircle2, Copy, Check,
-  FileText, Timer, Clipboard, Camera, Image as ImageIcon, Globe
+  FileText, Timer, Clipboard, Camera, Image as ImageIcon, Globe,
+  Play, RefreshCw
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -576,19 +577,31 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
 /* RecapYT Visual Simulation Canvas */
 /* ────────────────────────────────────────────────────────────────────────── */
 
 function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
-  const [step, setStep] = useState(0);
+  const [url, setUrl] = useState("https://youtube.com/watch?v=scaling-databases");
+  const [status, setStatus] = useState<"idle" | "analyzing" | "done">("idle");
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setStep(prev => (prev + 1) % 4);
-    }, 3200);
-    return () => clearInterval(timer);
-  }, []);
+    let interval: NodeJS.Timeout;
+    if (status === "analyzing") {
+      setProgress(0);
+      interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setStatus("done");
+            return 100;
+          }
+          return prev + 5;
+        });
+      }, 60);
+    }
+    return () => clearInterval(interval);
+  }, [status]);
 
   const transcripts = [
     { time: "00:12", text: "Today we will analyze how scaling database architectures improves responsiveness..." },
@@ -597,99 +610,143 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
   ];
 
   const summaries = [
-    "Scaled core database infrastructure by 40% with zero downtime constraints.",
-    "Moved API routing logic directly to Cloudflare Edge Workers for sub-10ms delivery.",
-    "Bypassed third-party tabs via native injection, optimizing browser performance."
+    "Scaled database queries performance by 40% with edge caching.",
+    "Moved API routing logic directly to Cloudflare workers for sub-10ms delivery.",
+    "Bypassed third-party tabs via native injection, optimizing player UX."
   ];
 
   return (
     <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
-      {/* Top Youtube player mock bar */}
+      {/* Simulation title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
           <span className="w-2 h-2 rounded-full bg-red-500/60" />
           <span className="w-2 h-2 rounded-full bg-yellow-500/60" />
           <span className="w-2 h-2 rounded-full bg-green-500/60" />
         </div>
-        <span className="text-[9px] font-mono text-gray-500">youtube-player-frame</span>
+        <span className="text-[9px] font-mono text-gray-500">recapyt_sandbox_v2</span>
       </div>
 
-      <div className="flex-1 p-4 flex flex-col gap-3 justify-between min-h-0">
-        {/* Mock Video Panel */}
-        <div className="relative aspect-video w-full rounded-lg bg-[#0a0a0d] border border-white/[0.04] overflow-hidden flex items-center justify-center">
-          {/* Inner pulsating player glow */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(239,68,68,0.08)_0%,transparent_70%)]" />
-          
-          <div className="text-center relative z-10 flex flex-col items-center">
-            <Youtube size={26} className="text-red-500 animate-pulse mb-1" />
-            <span className="text-[9px] text-gray-400 font-mono">active_video_stream</span>
+      <div className="flex-grow p-4 flex flex-col justify-between min-h-0 gap-3">
+        {status === "idle" && (
+          <div className="flex-grow flex flex-col justify-center items-center gap-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+              <Youtube size={22} className="animate-pulse" />
+            </div>
+            <div className="w-full max-w-[280px]">
+              <div className="text-[11px] text-gray-400 font-mono mb-1.5 text-left">Target Video URL</div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={url}
+                  readOnly
+                  className="flex-1 px-3 py-1.5 rounded bg-white/[0.03] border border-white/[0.08] text-[10.5px] font-mono text-gray-300 focus:outline-none"
+                />
+                <button
+                  onClick={() => setStatus("analyzing")}
+                  className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Play size={10} fill="currentColor" /> Run
+                </button>
+              </div>
+            </div>
+            <p className="text-[9.5px] text-gray-500">
+              Simulates real-time transcription parsing & summarization.
+            </p>
           </div>
+        )}
 
-          {/* Player controls overlay */}
-          <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded bg-red-500" />
-            <div className="h-1 flex-1 bg-white/20 rounded overflow-hidden">
-              <motion.div 
-                className="h-full bg-red-500"
-                initial={{ width: "0%" }}
-                animate={{ width: `${(step + 1) * 25}%` }}
-                transition={{ duration: 1 }}
-              />
+        {status === "analyzing" && (
+          <div className="flex-grow flex flex-col justify-center items-center gap-4">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              {/* Outer pulsing ring */}
+              <div className="absolute inset-0 rounded-full border border-red-500/20 animate-ping" />
+              {/* Inner spin circle */}
+              <svg className="w-14 h-14 transform -rotate-90">
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  stroke="rgba(239, 68, 68, 0.1)"
+                  strokeWidth="3"
+                  fill="transparent"
+                />
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  stroke="#EF4444"
+                  strokeWidth="3"
+                  fill="transparent"
+                  strokeDasharray="150"
+                  strokeDashoffset={150 - (150 * progress) / 100}
+                  className="transition-all duration-100"
+                />
+              </svg>
+              <span className="absolute text-[10px] font-mono font-bold text-red-400">{progress}%</span>
+            </div>
+            <div className="text-center space-y-1">
+              <span className="text-[11px] text-gray-300 font-mono font-bold block">Analyzing Audio Stream</span>
+              <span className="text-[9.5px] text-gray-500 font-mono block">
+                {progress < 40 && "Extracting raw transcripts..."}
+                {progress >= 40 && progress < 85 && "Connecting to LLM cluster zones..."}
+                {progress >= 85 && "Generating compound insights..."}
+              </span>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Live Transcript & Summary Console */}
-        <div className="flex-1 flex flex-col justify-between border-t border-white/[0.06] pt-3 min-h-0">
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-[9.5px] font-bold text-gray-400 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" /> RecapYT AI Engine
-            </span>
-            <span className="text-[8.5px] font-mono text-gray-500">Live summary</span>
-          </div>
-
-          <div className="flex-1 flex flex-col justify-center gap-2 min-h-0 overflow-hidden">
-            {step === 0 && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center text-gray-500 py-2 text-[11px] italic"
+        {status === "done" && (
+          <div className="flex-grow flex flex-col justify-between min-h-0 gap-3">
+            {/* Simulation Header */}
+            <div className="flex justify-between items-center border-b border-white/[0.05] pb-2">
+              <span className="text-[9.5px] font-bold text-red-400 flex items-center gap-1">
+                <CheckCircle2 size={11} /> AI Synthesis Successful
+              </span>
+              <button
+                onClick={() => setStatus("idle")}
+                className="text-[9.5px] text-gray-500 hover:text-white flex items-center gap-1 font-mono cursor-pointer"
               >
-                Waiting for video transcript streams...
-              </motion.div>
-            )}
+                <RefreshCw size={9} /> Reset
+              </button>
+            </div>
 
-            {step >= 1 && (
-              <div className="space-y-2">
-                {transcripts.slice(0, step).map((t, idx) => (
-                  <motion.div 
+            {/* Timestamps & Bullet Points */}
+            <div className="flex-grow overflow-y-auto space-y-3 pr-1">
+              <div className="space-y-1.5">
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block">Transcript Stream</span>
+                {transcripts.map((t, idx) => (
+                  <motion.div
                     key={idx}
                     initial={{ opacity: 0, x: -5 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex gap-2 text-[10.5px]"
+                    transition={{ delay: idx * 0.15 }}
+                    className="flex gap-2 text-[10px]"
                   >
                     <span className="font-mono text-red-400/80 font-bold shrink-0">{t.time}</span>
-                    <p className="text-gray-300 leading-tight flex-1 line-clamp-1 italic">
-                      "{t.text}"
-                    </p>
+                    <p className="text-gray-400 italic line-clamp-1">"{t.text}"</p>
                   </motion.div>
                 ))}
-
-                {/* AI summarized bullet points */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-2.5 p-2 rounded bg-red-500/[0.03] border border-red-500/[0.08]"
-                >
-                  <p className="text-[10px] text-red-200 leading-tight font-medium flex items-start gap-1.5">
-                    <span className="text-red-400 shrink-0">✦</span> 
-                    <span className="line-clamp-2">{summaries[step - 1]}</span>
-                  </p>
-                </motion.div>
               </div>
-            )}
+
+              <div className="pt-2 border-t border-white/[0.04] space-y-2">
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block">Compounded Summary</span>
+                {summaries.map((s, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.45 + idx * 0.15 }}
+                    className="flex items-start gap-1.5 text-[10.5px] text-gray-300 leading-tight"
+                  >
+                    <span className="text-red-500 shrink-0 select-none">✦</span>
+                    <span>{s}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -700,114 +757,163 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
 /* ────────────────────────────────────────────────────────────────────────── */
 
 function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
-  const [stage, setStage] = useState(0);
+  const [purgeStatus, setPurgeStatus] = useState<"idle" | "purging" | "success">("idle");
+  const [activeNodes, setActiveNodes] = useState<boolean[]>([true, true, true, true]); // true = cached (orange), false = purged (white)
   const [logs, setLogs] = useState<string[]>([]);
 
-  useEffect(() => {
-    const cycle = async () => {
-      // Step 0: Idle / Ready
-      setStage(0);
-      setLogs(["[SYSTEM] Invalidation daemon online & active"]);
-      
-      // Step 1: Hook Triggered
-      await new Promise(r => setTimeout(r, 2200));
-      setStage(1);
-      setLogs(prev => [...prev, "[HOOK] wp_post_updated event caught (ID: 1042)"]);
+  const nodes = [
+    { name: "Ashburn (IAD)", x: "20%", y: "25%" },
+    { name: "Frankfurt (FRA)", x: "75%", y: "20%" },
+    { name: "Tokyo (NRT)", x: "85%", y: "60%" },
+    { name: "Singapore (SIN)", x: "30%", y: "70%" }
+  ];
 
-      // Step 2: Request sent
-      await new Promise(r => setTimeout(r, 1200));
-      setStage(2);
-      setLogs(prev => [...prev, "[API-CALL] POST api.cloudflare.com/zones/purge_cache"]);
+  const handlePurge = () => {
+    setPurgeStatus("purging");
+    setActiveNodes([true, true, true, true]);
+    setLogs(["[HOOK] wp_post_updated received (ID: 1042)"]);
 
-      // Step 3: Success
-      await new Promise(r => setTimeout(r, 1000));
-      setStage(3);
-      setLogs(prev => [...prev, "[SUCCESS] HTTP/2.0 200 OK | Edge cache purged (11.2ms)"]);
-    };
+    setTimeout(() => {
+      setLogs((prev) => [...prev, "[API-CALL] POST zone/purge_cache"]);
+    }, 400);
 
-    void cycle();
-    const interval = setInterval(() => {
-      void cycle();
-    }, 7800);
+    // Staggered node purges
+    nodes.forEach((_, idx) => {
+      setTimeout(() => {
+        setActiveNodes((prev) => {
+          const next = [...prev];
+          next[idx] = false;
+          return next;
+        });
+        setLogs((prev) => [...prev, `[EDGE] Cache invalidated on node ${idx + 1}`]);
+      }, 800 + idx * 250);
+    });
 
-    return () => clearInterval(interval);
-  }, []);
+    setTimeout(() => {
+      setPurgeStatus("success");
+      setLogs((prev) => [...prev, "[SUCCESS] HTTP 200 | Cache purged globally (124ms)"]);
+    }, 2000);
+  };
 
   return (
     <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
+      {/* Title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
           <span className="w-2 h-2 rounded-full bg-amber-500/60" />
           <span className="w-2 h-2 rounded-full bg-amber-500/40" />
           <span className="w-2 h-2 rounded-full bg-amber-500/20" />
         </div>
-        <span className="text-[9px] font-mono text-gray-500">edge-purger-console</span>
+        <span className="text-[9px] font-mono text-gray-500">cloudflare_edge_purger_v2</span>
       </div>
 
-      <div className="flex-1 p-4 flex flex-col gap-4 justify-between min-h-0">
-        {/* Node architecture animation */}
-        <div className="relative h-20 rounded-lg bg-[#0a0a0d]/60 border border-white/[0.04] overflow-hidden flex items-center justify-around px-4">
-          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(245,158,11,_0.04)_0%,transparent_70%)]" />
+      <div className="flex-grow p-4 flex flex-col justify-between min-h-0 gap-3">
+        {/* Upper network map */}
+        <div className="h-[105px] rounded-lg bg-[#0a0a0d]/60 border border-white/[0.04] relative overflow-hidden flex items-center justify-center">
+          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(245,158,11,0.03)_0%,transparent_70%)] pointer-events-none" />
+          
+          {/* Simple world grid background */}
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
+               style={{
+                 backgroundImage: "radial-gradient(#F59E0B 1px, transparent 1px)",
+                 backgroundSize: "20px 20px"
+               }} 
+          />
 
-          {/* WordPress node */}
-          <div className="flex flex-col items-center z-10">
-            <div 
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                stage === 1 ? "bg-amber-500/20 border-amber-500/60" : "bg-white/[0.03] border-white/[0.08]"
-              } border`}
-            >
-              <Server size={16} className={stage === 1 ? "text-amber-500" : "text-gray-400"} />
+          {/* Central WP Server Origin */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full border flex items-center justify-center bg-black/60 shadow transition-colors ${
+              purgeStatus === "purging" ? "border-amber-500/60 bg-amber-500/10 text-amber-500" : "border-white/10 text-gray-400"
+            }`}>
+              <Server size={13} />
             </div>
-            <span className="text-[8.5px] mt-1 text-gray-500 font-mono">wp_server</span>
+            <span className="text-[7.5px] font-mono text-gray-500 mt-1 uppercase tracking-wider">WP Origin</span>
           </div>
 
-          {/* Pulse line */}
-          <div className="flex-1 h-[1px] bg-white/[0.08] relative mx-2">
-            {stage === 2 && (
-              <motion.div 
-                className="absolute w-2 h-2 rounded-full bg-amber-500 top-1/2 -translate-y-1/2"
-                initial={{ left: "0%", opacity: 1 }}
-                animate={{ left: "100%", opacity: 0.8 }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-              />
+          {/* Edge Node Points */}
+          {nodes.map((node, idx) => {
+            const isCached = activeNodes[idx];
+            return (
+              <div
+                key={idx}
+                className="absolute transition-all duration-300"
+                style={{ left: node.x, top: node.y }}
+              >
+                {/* Visual pulse line */}
+                {purgeStatus === "purging" && isCached && (
+                  <motion.div
+                    className="absolute w-1.5 h-1.5 rounded-full bg-amber-500 origin-center"
+                    initial={{ scale: 0.1, opacity: 1, left: "50%", top: "50%" }}
+                    animate={{ scale: 2, opacity: 0 }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  />
+                )}
+                
+                <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-[8px] font-mono transition-all duration-500 ${
+                  isCached
+                    ? "border-amber-500/40 bg-amber-500/10 text-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.2)]"
+                    : "border-green-500/50 bg-green-500/10 text-green-400 shadow-[0_0_8px_rgba(16,185,129,0.15)]"
+                }`}>
+                  {idx + 1}
+                </div>
+                <div className="absolute top-7 left-1/2 -translate-x-1/2 text-[7px] text-gray-500 font-mono whitespace-nowrap bg-black/40 px-1 py-0.5 rounded">
+                  {node.name}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Action Panel and Logs */}
+        <div className="flex-1 flex gap-3 min-h-0">
+          {/* Action box */}
+          <div className="w-[110px] shrink-0 border border-white/[0.05] rounded-lg p-2.5 flex flex-col justify-between bg-white/[0.01]">
+            <div className="space-y-1">
+              <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-wider block">Configuration</span>
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[8.5px] text-gray-300 font-medium">Automatic</span>
+              </div>
+            </div>
+
+            {purgeStatus === "purging" ? (
+              <div className="py-2.5 flex justify-center">
+                <span className="w-4 h-4 rounded-full border border-amber-500 border-t-transparent animate-spin" />
+              </div>
+            ) : (
+              <button
+                onClick={handlePurge}
+                className="w-full py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-black text-[9.5px] font-bold transition-all cursor-pointer text-center"
+              >
+                Purge Cache
+              </button>
             )}
           </div>
 
-          {/* Cloudflare Edge node */}
-          <div className="flex flex-col items-center z-10">
-            <div 
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                stage === 3 ? "bg-green-500/20 border-green-400" : "bg-white/[0.03] border-white/[0.08]"
-              } border`}
-            >
-              <CheckCircle2 size={16} className={stage === 3 ? "text-green-400" : "text-gray-400"} />
+          {/* Logs */}
+          <div className="flex-1 bg-black/90 border border-white/[0.06] rounded-lg p-2 flex flex-col justify-end min-h-0 font-mono text-[8.5px] leading-relaxed text-gray-400 overflow-y-auto">
+            <div className="flex flex-col gap-1">
+              {logs.length === 0 ? (
+                <div className="text-gray-600 italic text-[7.5px]">Click 'Purge Cache' to trigger edge invalidation.</div>
+              ) : (
+                logs.map((log, lidx) => {
+                  let colorClass = "text-gray-500";
+                  if (log.startsWith("[HOOK]")) colorClass = "text-amber-300";
+                  if (log.startsWith("[API-CALL]")) colorClass = "text-sky-300";
+                  if (log.startsWith("[SUCCESS]")) colorClass = "text-green-400";
+                  return (
+                    <motion.div
+                      key={lidx}
+                      initial={{ opacity: 0, x: -3 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={colorClass}
+                    >
+                      &gt; {log}
+                    </motion.div>
+                  );
+                })
+              )}
             </div>
-            <span className="text-[8.5px] mt-1 text-gray-500 font-mono">cloudflare_edge</span>
-          </div>
-        </div>
-
-        {/* Console output logs */}
-        <div className="flex-1 bg-black/85 rounded-lg border border-white/[0.06] p-3 flex flex-col font-mono text-[9px] leading-relaxed justify-end overflow-hidden">
-          <div className="flex-grow flex flex-col gap-1.5 justify-end">
-            {logs.map((log, index) => {
-              let colorClass = "text-gray-400";
-              if (log.startsWith("[HOOK]")) colorClass = "text-amber-300";
-              if (log.startsWith("[API-CALL]")) colorClass = "text-sky-300";
-              if (log.startsWith("[SUCCESS]")) colorClass = "text-green-400";
-              if (log.startsWith("[SYSTEM]")) colorClass = "text-gray-500";
-              
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 3 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex gap-1.5 ${colorClass}`}
-                >
-                  <span className="text-gray-600 shrink-0">&gt;</span>
-                  <span>{log}</span>
-                </motion.div>
-              );
-            })}
           </div>
         </div>
       </div>
@@ -820,94 +926,162 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
 /* ────────────────────────────────────────────────────────────────────────── */
 
 function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
-  const [crawlStep, setCrawlStep] = useState(0);
+  const [setupMode, setSetupMode] = useState<"404" | "410">("404");
+  const [simulationStatus, setSimulationStatus] = useState<"idle" | "running" | "done">("idle");
+  const [crawlBudget, setCrawlBudget] = useState(100);
+  const [logs, setLogs] = useState<string[]>([]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCrawlStep(prev => (prev + 1) % 3);
-    }, 3800);
-    return () => clearInterval(timer);
-  }, []);
+  const startSimulation = () => {
+    setSimulationStatus("running");
+    setCrawlBudget(100);
+    setLogs(["[START] Googlebot crawl started"]);
+
+    if (setupMode === "404") {
+      // 404 Mode: multiple requests
+      setTimeout(() => {
+        setLogs((prev) => [...prev, "Googlebot GET /deleted-post/ -> 404 Not Found"]);
+        setCrawlBudget(80);
+      }, 400);
+
+      setTimeout(() => {
+        setLogs((prev) => [...prev, "Googlebot GET /deleted-post/ -> 404 (Retry 1)"]);
+        setCrawlBudget(60);
+      }, 1000);
+
+      setTimeout(() => {
+        setLogs((prev) => [...prev, "Googlebot GET /deleted-post/ -> 404 (Retry 2)"]);
+        setCrawlBudget(40);
+      }, 1600);
+
+      setTimeout(() => {
+        setLogs((prev) => [
+          ...prev,
+          "Googlebot -> Budget wasted. Retries scheduled.",
+        ]);
+        setSimulationStatus("done");
+      }, 2200);
+    } else {
+      // 410 Mode: single request
+      setTimeout(() => {
+        setLogs((prev) => [...prev, "Googlebot GET /deleted-post/ -> 410 Gone"]);
+        setCrawlBudget(98);
+      }, 400);
+
+      setTimeout(() => {
+        setLogs((prev) => [
+          ...prev,
+          "Googlebot -> De-indexed. Request dropped.",
+        ]);
+        setSimulationStatus("done");
+      }, 1100);
+    }
+  };
 
   return (
     <div className="w-full max-w-[340px] aspect-[4/3] rounded-xl border border-white/[0.08] overflow-hidden bg-[#030303]/60 relative flex flex-col font-sans">
+      {/* Title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
           <span className="w-2 h-2 rounded-full bg-blue-500/60" />
           <span className="w-2 h-2 rounded-full bg-blue-500/40" />
           <span className="w-2 h-2 rounded-full bg-blue-500/20" />
         </div>
-        <span className="text-[9px] font-mono text-gray-500">crawler-simulation-env</span>
+        <span className="text-[9px] font-mono text-gray-500">crawler_simulation_sandbox</span>
       </div>
 
-      <div className="flex-1 p-4 flex flex-col justify-between gap-4 min-h-0">
-        {/* Request details panel */}
-        <div className="p-3.5 rounded-lg bg-[#0a0a0d] border border-white/[0.04] flex flex-col gap-2">
-          <div className="flex justify-between items-center text-[10px] border-b border-white/[0.04] pb-2 font-mono">
-            <span className="text-gray-500">HTTP_REQUEST</span>
-            <span className="text-blue-400 font-bold">Googlebot/2.1</span>
-          </div>
-          
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[9px] py-0.5 px-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded font-mono font-bold uppercase">
-              GET
+      <div className="flex-grow p-4 flex flex-col justify-between min-h-0 gap-3">
+        {/* Selector tab */}
+        <div className="flex bg-white/[0.02] border border-white/[0.06] rounded p-0.5 select-none">
+          <button
+            onClick={() => {
+              if (simulationStatus !== "running") setSetupMode("404");
+            }}
+            className={`flex-1 py-1 text-[9px] font-bold rounded text-center transition-all cursor-pointer ${
+              setupMode === "404"
+                ? "bg-red-500/20 text-red-400 border border-red-500/35"
+                : "text-gray-500 hover:text-gray-300"
+            }`}
+            disabled={simulationStatus === "running"}
+          >
+            Standard 404
+          </button>
+          <button
+            onClick={() => {
+              if (simulationStatus !== "running") setSetupMode("410");
+            }}
+            className={`flex-1 py-1 text-[9px] font-bold rounded text-center transition-all cursor-pointer ${
+              setupMode === "410"
+                ? "bg-green-500/20 text-green-400 border border-green-500/35"
+                : "text-gray-500 hover:text-gray-300"
+            }`}
+            disabled={simulationStatus === "running"}
+          >
+            Optimized 410
+          </button>
+        </div>
+
+        {/* Crawl budget display panel */}
+        <div className="h-14 border border-white/[0.04] rounded bg-white/[0.005] p-2 flex items-center justify-between px-3">
+          <div className="space-y-0.5">
+            <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-widest block">Resource Budget</span>
+            <span className="text-[11px] font-bold text-gray-200">
+              {setupMode === "404" ? "Uncontrolled Crawling" : "Crawl-Safe Pipeline"}
             </span>
-            <span className="text-[11.5px] font-mono text-gray-200 truncate flex-1">
-              /deleted-campaign-post/
+          </div>
+
+          <div className="text-right">
+            <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-widest block">Index Status</span>
+            <span className={`text-[14px] font-mono font-extrabold ${
+              crawlBudget > 80 ? "text-green-400" : crawlBudget > 60 ? "text-yellow-400" : "text-red-400"
+            }`}>
+              {crawlBudget}%
             </span>
           </div>
         </div>
 
-        {/* Status comparison screen */}
-        <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
-          {/* Left panel: Legacy 404 behavior */}
-          <div className="p-3 rounded-lg bg-white/[0.01] border border-white/[0.04] flex flex-col justify-between items-center text-center">
-            <div>
-              <span className="text-[8.5px] font-bold text-gray-500 block mb-1">Standard Setup</span>
-              <span className="text-[12px] font-mono font-extrabold text-red-400 block mb-1">404 Not Found</span>
-            </div>
-            
-            <div className="py-2 flex flex-col items-center">
-              <span className="text-[10px] text-red-300 font-semibold mb-1">Crawl Waste</span>
-              <span className="text-[8.5px] text-gray-500 leading-tight">Google keeps re-crawling URL periodically</span>
-            </div>
-            
-            <span className="text-[8.5px] font-bold text-red-500/40 uppercase tracking-wider">SEO Drain</span>
+        {/* Run Simulator */}
+        <div className="flex-1 flex gap-3 min-h-0">
+          <div className="w-[100px] shrink-0 flex flex-col justify-center">
+            {simulationStatus === "running" ? (
+              <div className="w-full py-2.5 rounded bg-white/[0.04] text-[9.5px] text-gray-500 font-bold border border-white/[0.06] text-center font-sans">
+                Simulating...
+              </div>
+            ) : (
+              <button
+                onClick={startSimulation}
+                className="w-full py-2.5 rounded bg-blue-500 hover:bg-blue-600 text-white text-[9.5px] font-bold transition-all cursor-pointer text-center"
+              >
+                Crawl Page
+              </button>
+            )}
           </div>
 
-          {/* Right panel: Optimized 410 behavior */}
-          <div className="p-3 rounded-lg bg-blue-500/[0.02] border border-blue-500/20 flex flex-col justify-between items-center text-center relative overflow-hidden">
-            {crawlStep === 2 && (
-              <motion.div 
-                className="absolute inset-0 bg-blue-500/[0.03] pointer-events-none"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              />
-            )}
-            
-            <div>
-              <span className="text-[8.5px] font-bold text-blue-400 block mb-1">410 Gone Setup</span>
-              <span className="text-[12px] font-mono font-extrabold text-green-400 block mb-1">410 Gone</span>
-            </div>
-            
-            <div className="py-2 flex flex-col items-center">
-              {crawlStep >= 1 ? (
-                <motion.div 
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="flex flex-col items-center"
-                >
-                  <span className="text-[10px] text-green-400 font-bold mb-1 flex items-center gap-1">
-                    ✓ De-indexed
-                  </span>
-                  <span className="text-[8.5px] text-gray-400 leading-tight">Google drops URL from index immediately</span>
-                </motion.div>
+          {/* Console logs */}
+          <div className="flex-grow bg-black/90 border border-white/[0.06] rounded-lg p-2 flex flex-col justify-end font-mono text-[8px] leading-relaxed text-gray-400 overflow-y-auto">
+            <div className="flex flex-col gap-1">
+              {logs.length === 0 ? (
+                <div className="text-gray-600 italic text-[7.5px]">Select a mode and click 'Crawl Page' to simulate Googlebot.</div>
               ) : (
-                <span className="text-[9.5px] text-gray-500 italic">Analyzing headers...</span>
+                logs.map((log, lidx) => {
+                  let colorClass = "text-gray-500";
+                  if (log.startsWith("Googlebot GET")) {
+                    colorClass = setupMode === "404" ? "text-red-400" : "text-green-400";
+                  }
+                  if (log.startsWith("[START]")) colorClass = "text-blue-300";
+                  if (log.startsWith("Googlebot ->")) colorClass = "text-white/70";
+                  return (
+                    <motion.div
+                      key={lidx}
+                      initial={{ opacity: 0, x: -3 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={colorClass}
+                    >
+                      &gt; {log}
+                    </motion.div>
+                  );
+                })
               )}
             </div>
-            
-            <span className="text-[8.5px] font-bold text-green-400 uppercase tracking-widest">SEO Secure</span>
           </div>
         </div>
       </div>
