@@ -331,9 +331,9 @@ export function OpenSourceAssets() {
               {/* Mock Browser Title Bar */}
               <div className="h-10 bg-white/[0.02] border-b border-white/[0.06] px-4 flex items-center justify-between relative z-10">
                 <div className="flex gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/10" />
                 </div>
                 <div className="px-3 py-1 rounded bg-black/30 border border-white/[0.04] text-[10px] font-mono text-gray-500 min-w-[200px] text-center">
                   {activeTool.id === "recapyt" ? "https://recapyt.in/dashboard" : `wp-admin/plugins.php?plugin=${activeTool.id}`}
@@ -388,7 +388,7 @@ export function OpenSourceAssets() {
                         <ul className="space-y-2">
                           {activeTool.features.slice(0, 3).map((feat, fi) => (
                             <li key={fi} className="flex items-start gap-2 text-xs text-gray-300">
-                              <span className="text-green-400 shrink-0 select-none">✓</span>
+                              <span className="text-gray-500 shrink-0 select-none">✓</span>
                               <span className="line-clamp-2">{feat}</span>
                             </li>
                           ))}
@@ -467,14 +467,24 @@ export function OpenSourceAssets() {
                     target={activeTool.id === "recapyt" ? "_blank" : undefined}
                     download={activeTool.id !== "recapyt" ? true : undefined}
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 rounded-lg py-3 px-4 text-xs font-bold transition-all shadow-lg text-center cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-lg py-3 px-4 text-xs font-bold transition-all border text-center cursor-pointer"
                     style={{ 
-                      background: "#EDEAE4", 
-                      color: "#09090b",
-                      boxShadow: `0 4px 15px ${activeTool.color}15`
+                      background: "rgba(255, 255, 255, 0.04)", 
+                      borderColor: "rgba(255, 255, 255, 0.08)",
+                      color: "#E5E7EB",
                     }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.9"}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.background = "#FFFFFF";
+                      el.style.color = "#09090B";
+                      el.style.borderColor = "transparent";
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.background = "rgba(255, 255, 255, 0.04)";
+                      el.style.color = "#E5E7EB";
+                      el.style.borderColor = "rgba(255, 255, 255, 0.08)";
+                    }}
                   >
                     {activeTool.id === "recapyt" ? <ExternalLink size={14} /> : <ArrowDownToLine size={14} />}
                     {activeTool.id === "recapyt" ? "Visit Flagship Website" : "Download Production Bundle"}
@@ -620,9 +630,9 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
       {/* Simulation title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-red-500/60" />
-          <span className="w-2 h-2 rounded-full bg-yellow-500/60" />
-          <span className="w-2 h-2 rounded-full bg-green-500/60" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
         </div>
         <span className="text-[9px] font-mono text-gray-500">recapyt_sandbox_v2</span>
       </div>
@@ -630,7 +640,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
       <div className="flex-grow p-4 flex flex-col justify-between min-h-0 gap-3">
         {status === "idle" && (
           <div className="flex-grow flex flex-col justify-center items-center gap-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+            <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-gray-300">
               <Youtube size={22} className="animate-pulse" />
             </div>
             <div className="w-full max-w-[280px]">
@@ -644,7 +654,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
                 />
                 <button
                   onClick={() => setStatus("analyzing")}
-                  className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                  className="px-3 py-1.5 rounded border text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-colors bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] text-white"
                 >
                   <Play size={10} fill="currentColor" /> Run
                 </button>
@@ -660,14 +670,14 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
           <div className="flex-grow flex flex-col justify-center items-center gap-4">
             <div className="relative w-16 h-16 flex items-center justify-center">
               {/* Outer pulsing ring */}
-              <div className="absolute inset-0 rounded-full border border-red-500/20 animate-ping" />
+              <div className="absolute inset-0 rounded-full border border-white/10 animate-ping" />
               {/* Inner spin circle */}
               <svg className="w-14 h-14 transform -rotate-90">
                 <circle
                   cx="28"
                   cy="28"
                   r="24"
-                  stroke="rgba(239, 68, 68, 0.1)"
+                  stroke="rgba(255, 255, 255, 0.04)"
                   strokeWidth="3"
                   fill="transparent"
                 />
@@ -675,7 +685,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
                   cx="28"
                   cy="28"
                   r="24"
-                  stroke="#EF4444"
+                  stroke="#F87171"
                   strokeWidth="3"
                   fill="transparent"
                   strokeDasharray="150"
@@ -683,7 +693,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
                   className="transition-all duration-100"
                 />
               </svg>
-              <span className="absolute text-[10px] font-mono font-bold text-red-400">{progress}%</span>
+              <span className="absolute text-[10px] font-mono font-bold text-red-400/90">{progress}%</span>
             </div>
             <div className="text-center space-y-1">
               <span className="text-[11px] text-gray-300 font-mono font-bold block">Analyzing Audio Stream</span>
@@ -700,7 +710,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
           <div className="flex-grow flex flex-col justify-between min-h-0 gap-3">
             {/* Simulation Header */}
             <div className="flex justify-between items-center border-b border-white/[0.05] pb-2">
-              <span className="text-[9.5px] font-bold text-red-400 flex items-center gap-1">
+              <span className="text-[9.5px] font-bold text-red-400/90 flex items-center gap-1">
                 <CheckCircle2 size={11} /> AI Synthesis Successful
               </span>
               <button
@@ -739,7 +749,7 @@ function RecapYtCanvas({ tool }: { tool: ToolInfo }) {
                     transition={{ delay: 0.45 + idx * 0.15 }}
                     className="flex items-start gap-1.5 text-[10.5px] text-gray-300 leading-tight"
                   >
-                    <span className="text-red-500 shrink-0 select-none">✦</span>
+                    <span className="text-red-400/80 shrink-0 select-none">✦</span>
                     <span>{s}</span>
                   </motion.div>
                 ))}
@@ -800,9 +810,9 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
       {/* Title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-amber-500/60" />
-          <span className="w-2 h-2 rounded-full bg-amber-500/40" />
-          <span className="w-2 h-2 rounded-full bg-amber-500/20" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
         </div>
         <span className="text-[9px] font-mono text-gray-500">cloudflare_edge_purger_v2</span>
       </div>
@@ -823,7 +833,7 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
           {/* Central WP Server Origin */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
             <div className={`w-8 h-8 rounded-full border flex items-center justify-center bg-black/60 shadow transition-colors ${
-              purgeStatus === "purging" ? "border-amber-500/60 bg-amber-500/10 text-amber-500" : "border-white/10 text-gray-400"
+              purgeStatus === "purging" ? "border-amber-500/30 bg-amber-500/5 text-amber-500" : "border-white/10 text-gray-400"
             }`}>
               <Server size={13} />
             </div>
@@ -851,8 +861,8 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
                 
                 <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-[8px] font-mono transition-all duration-500 ${
                   isCached
-                    ? "border-amber-500/40 bg-amber-500/10 text-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.2)]"
-                    : "border-green-500/50 bg-green-500/10 text-green-400 shadow-[0_0_8px_rgba(16,185,129,0.15)]"
+                    ? "border-amber-500/30 bg-amber-500/5 text-amber-400/90 shadow-[0_0_8px_rgba(245,158,11,0.05)]"
+                    : "border-emerald-500/30 bg-emerald-500/5 text-emerald-400/90 shadow-[0_0_8px_rgba(16,185,129,0.05)]"
                 }`}>
                   {idx + 1}
                 </div>
@@ -883,7 +893,7 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
             ) : (
               <button
                 onClick={handlePurge}
-                className="w-full py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-black text-[9.5px] font-bold transition-all cursor-pointer text-center"
+                className="w-full py-1.5 rounded border text-[9.5px] font-bold transition-all cursor-pointer text-center bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] text-white"
               >
                 Purge Cache
               </button>
@@ -898,9 +908,9 @@ function CloudflarePurgerCanvas({ tool }: { tool: ToolInfo }) {
               ) : (
                 logs.map((log, lidx) => {
                   let colorClass = "text-gray-500";
-                  if (log.startsWith("[HOOK]")) colorClass = "text-amber-300";
-                  if (log.startsWith("[API-CALL]")) colorClass = "text-sky-300";
-                  if (log.startsWith("[SUCCESS]")) colorClass = "text-green-400";
+                  if (log.startsWith("[HOOK]")) colorClass = "text-amber-400/80";
+                  if (log.startsWith("[API-CALL]")) colorClass = "text-sky-400/80";
+                  if (log.startsWith("[SUCCESS]")) colorClass = "text-emerald-400/90";
                   return (
                     <motion.div
                       key={lidx}
@@ -982,9 +992,9 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
       {/* Title bar */}
       <div className="h-7 bg-white/[0.02] border-b border-white/[0.06] px-3 flex items-center justify-between">
         <div className="flex gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-blue-500/60" />
-          <span className="w-2 h-2 rounded-full bg-blue-500/40" />
-          <span className="w-2 h-2 rounded-full bg-blue-500/20" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
+          <span className="w-2 h-2 rounded-full bg-white/10" />
         </div>
         <span className="text-[9px] font-mono text-gray-500">crawler_simulation_sandbox</span>
       </div>
@@ -996,10 +1006,10 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
             onClick={() => {
               if (simulationStatus !== "running") setSetupMode("404");
             }}
-            className={`flex-1 py-1 text-[9px] font-bold rounded text-center transition-all cursor-pointer ${
+            className={`flex-1 py-1.5 text-[9px] font-bold rounded text-center transition-all cursor-pointer ${
               setupMode === "404"
-                ? "bg-red-500/20 text-red-400 border border-red-500/35"
-                : "text-gray-500 hover:text-gray-300"
+                ? "bg-white/[0.06] text-white border border-white/[0.06]"
+                : "text-gray-500 hover:text-gray-300 border border-transparent"
             }`}
             disabled={simulationStatus === "running"}
           >
@@ -1009,10 +1019,10 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
             onClick={() => {
               if (simulationStatus !== "running") setSetupMode("410");
             }}
-            className={`flex-1 py-1 text-[9px] font-bold rounded text-center transition-all cursor-pointer ${
+            className={`flex-1 py-1.5 text-[9px] font-bold rounded text-center transition-all cursor-pointer ${
               setupMode === "410"
-                ? "bg-green-500/20 text-green-400 border border-green-500/35"
-                : "text-gray-500 hover:text-gray-300"
+                ? "bg-white/[0.06] text-white border border-white/[0.06]"
+                : "text-gray-500 hover:text-gray-300 border border-transparent"
             }`}
             disabled={simulationStatus === "running"}
           >
@@ -1029,13 +1039,16 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
             </span>
           </div>
 
-          <div className="text-right">
-            <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-widest block">Index Status</span>
-            <span className={`text-[14px] font-mono font-extrabold ${
-              crawlBudget > 80 ? "text-green-400" : crawlBudget > 60 ? "text-yellow-400" : "text-red-400"
-            }`}>
-              {crawlBudget}%
-            </span>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-widest block mb-0.5">Index Status</span>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                crawlBudget > 80 ? "bg-green-500" : crawlBudget > 60 ? "bg-yellow-500" : "bg-red-500"
+              }`} />
+              <span className="text-[13px] font-mono font-bold text-white">
+                {crawlBudget}%
+              </span>
+            </div>
           </div>
         </div>
 
@@ -1049,7 +1062,7 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
             ) : (
               <button
                 onClick={startSimulation}
-                className="w-full py-2.5 rounded bg-blue-500 hover:bg-blue-600 text-white text-[9.5px] font-bold transition-all cursor-pointer text-center"
+                className="w-full py-2.5 rounded border text-[9.5px] font-bold transition-all cursor-pointer text-center bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] text-white"
               >
                 Crawl Page
               </button>
@@ -1065,10 +1078,10 @@ function GoneManagerCanvas({ tool }: { tool: ToolInfo }) {
                 logs.map((log, lidx) => {
                   let colorClass = "text-gray-500";
                   if (log.startsWith("Googlebot GET")) {
-                    colorClass = setupMode === "404" ? "text-red-400" : "text-green-400";
+                    colorClass = setupMode === "404" ? "text-red-400/90" : "text-emerald-400/90";
                   }
-                  if (log.startsWith("[START]")) colorClass = "text-blue-300";
-                  if (log.startsWith("Googlebot ->")) colorClass = "text-white/70";
+                  if (log.startsWith("[START]")) colorClass = "text-blue-400/80";
+                  if (log.startsWith("Googlebot ->")) colorClass = "text-gray-300";
                   return (
                     <motion.div
                       key={lidx}
