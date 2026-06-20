@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, session } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, session, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -233,6 +233,16 @@ ipcMain.handle('maximize-app', () => {
     } else {
       mainWindow.maximize();
     }
+  }
+});
+
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    await shell.openExternal(url);
+    return true;
+  } catch (err) {
+    console.error("Failed to open external link:", err);
+    return false;
   }
 });
 

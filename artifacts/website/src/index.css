@@ -565,6 +565,7 @@ html.lenis, html.lenis body {
 }
 
 .notepad-editor a { color: var(--np-accent, #10B981); text-decoration: underline; text-underline-offset: 3px; }
+.notepad-editor .ProseMirror a { pointer-events: none; }
 
 .notepad-editor ul { list-style-type: disc !important; padding-left: 1.6em; margin: 0.5em 0; }
 .notepad-editor ol { list-style-type: decimal !important; padding-left: 1.6em; margin: 0.5em 0; }

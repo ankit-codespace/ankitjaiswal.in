@@ -17,6 +17,7 @@ import {
 import { ToolFooter } from "@/components/tool/ToolFooter";
 import { tokens } from "@/components/tool/tokens";
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent, Extension } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import { motion, AnimatePresence } from "framer-motion";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -273,7 +274,7 @@ import {
   ArrowUpRight, FileDown, Eye, Save,
   Keyboard, BookOpen, Shield, ListChecks, Table2, Lightbulb, MousePointer2,
   Wand2, Globe,
-  Copy as CopyIcon, MessageSquarePlus, Pin, PanelLeft,
+  Copy as CopyIcon, MessageSquarePlus, Pin, PanelLeft, ExternalLink, Edit
 } from "lucide-react";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -821,6 +822,9 @@ export default function Notepad() {
   const [activeId, setActiveId] = useState<string>(() => loadActiveId(loadDocs()));
   const [settings, setSettings] = useState<NotepadSettings>(() => loadSettings());
   const [focusMode, setFocusMode] = useState(false);
+  const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
+  const [linkInputUrl, setLinkInputUrl] = useState("");
+  const [isEditingLink, setIsEditingLink] = useState(false);
   const [showFind, setShowFind] = useState(false);
   const [findText, setFindText] = useState("");
   const [isFindFocused, setIsFindFocused] = useState(false);
@@ -1911,6 +1915,15 @@ export default function Notepad() {
         }
       }
 
+      // Ctrl + K (Link Popover)
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === "k") {
+        if (inEditor) {
+          e.preventDefault();
+          insertLink();
+          return;
+        }
+      }
+
       // Blockquote: Ctrl + Shift + B (Electron) vs. Ctrl + Shift + Q (Web)
       const isBlockquote = isElectron
         ? (ctrl && e.shiftKey && e.key.toLowerCase() === "b")
@@ -2246,11 +2259,32 @@ export default function Notepad() {
   };
 
   const insertLink = () => {
-    const existing = editor?.getAttributes("link").href ?? "";
-    const url = window.prompt("URL:", existing);
-    if (url === null) return;
-    if (url === "") { editor?.chain().focus().unsetLink().run(); return; }
-    editor?.chain().focus().setLink({ href: url }).run();
+    if (!editor) return;
+    const existing = editor.getAttributes("link").href ?? "";
+    setLinkInputUrl(existing);
+    setIsEditingLink(!existing); // if no existing link, start in editing mode; if there is one, start in preview mode
+    setIsLinkPopoverOpen(true);
+  };
+
+  const closeLinkPopover = () => {
+    setIsLinkPopoverOpen(false);
+    setIsEditingLink(false);
+    setLinkInputUrl("");
+  };
+
+  const saveLink = (url: string) => {
+    if (!editor) return;
+    const trimmed = url.trim();
+    if (!trimmed) {
+      editor.chain().focus().unsetLink().run();
+    } else {
+      let formattedUrl = trimmed;
+      if (!/^https?:\/\//i.test(formattedUrl) && !/^mailto:/i.test(formattedUrl) && !/^tel:/i.test(formattedUrl)) {
+        formattedUrl = `https://${formattedUrl}`;
+      }
+      editor.chain().focus().setLink({ href: formattedUrl }).run();
+    }
+    closeLinkPopover();
   };
 
   // ── Export ─────────────────────────────────────────────────────────────────
@@ -5347,6 +5381,189 @@ export default function Notepad() {
           </>
         )}
       </AnimatePresence>
+
+      {/* ── Link Bubble Menu & Popover ── */}
+      {editor && (
+        <BubbleMenu
+          editor={editor}
+          options={{
+            placement: "bottom",
+            onHide: () => {
+              setIsLinkPopoverOpen(false);
+              setIsEditingLink(false);
+            }
+          }}
+          shouldShow={({ editor }: { editor: any }) => {
+            return !!(editor.isFocused && (editor.isActive("link") || isLinkPopoverOpen));
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 10px",
+              background: effectiveDark ? "rgba(30, 30, 30, 0.98)" : "rgba(255, 255, 255, 0.98)",
+              border: effectiveDark ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(0,0,0,0.15)",
+              borderRadius: "8px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+              backdropFilter: "blur(8px)"
+            }}
+          >
+            {isEditingLink ? (
+              <>
+                <input
+                  type="text"
+                  placeholder="Paste or type URL..."
+                  value={linkInputUrl}
+                  onChange={(e) => setLinkInputUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      saveLink(linkInputUrl);
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      closeLinkPopover();
+                    }
+                  }}
+                  autoFocus
+                  style={{
+                    height: "28px",
+                    background: effectiveDark ? "#1C1C1B" : "#F2EEDF",
+                    border: effectiveDark ? "1px solid #2E2E2C" : "1px solid rgba(0,0,0,0.15)",
+                    borderRadius: "4px",
+                    padding: "0 8px",
+                    color: effectiveDark ? "#F0EDE8" : "#0D1117",
+                    fontSize: "12px",
+                    outline: "none",
+                    width: "180px",
+                    transition: "border-color 0.15s ease"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "var(--np-accent, #10B981)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = effectiveDark ? "#2E2E2C" : "rgba(0,0,0,0.15)";
+                  }}
+                />
+                <button
+                  onClick={() => saveLink(linkInputUrl)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "28px",
+                    height: "28px",
+                    background: "var(--np-accent, #10B981)",
+                    border: "none",
+                    borderRadius: "4px",
+                    color: "#FFFFFF",
+                    cursor: "pointer"
+                  }}
+                  title="Save Link"
+                >
+                  <Check size={14} />
+                </button>
+                <button
+                  onClick={closeLinkPopover}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "28px",
+                    height: "28px",
+                    background: effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+                    border: "none",
+                    borderRadius: "4px",
+                    color: effectiveDark ? "#A5A29B" : "rgba(0,0,0,0.54)",
+                    cursor: "pointer"
+                  }}
+                  title="Cancel"
+                >
+                  <X size={14} />
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href={editor.getAttributes("link").href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    color: "var(--np-accent, #10B981)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    textDecoration: "underline",
+                    maxWidth: "200px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    padding: "0"
+                  }}
+                  title="Open link in new tab"
+                >
+                  <LinkIcon size={12} style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {editor.getAttributes("link").href}
+                  </span>
+                  <ExternalLink size={10} style={{ flexShrink: 0 }} />
+                </a>
+
+                <div style={{ width: "1px", height: "14px", background: effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)", margin: "0 4px" }} />
+
+                <button
+                  onClick={() => {
+                    setLinkInputUrl(editor.getAttributes("link").href ?? "");
+                    setIsEditingLink(true);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "24px",
+                    height: "24px",
+                    background: "none",
+                    border: "none",
+                    borderRadius: "4px",
+                    color: effectiveDark ? "#A5A29B" : "rgba(0,0,0,0.54)",
+                    cursor: "pointer"
+                  }}
+                  title="Edit Link"
+                >
+                  <Edit size={12} />
+                </button>
+
+                <button
+                  onClick={() => {
+                    editor.chain().focus().unsetLink().run();
+                    closeLinkPopover();
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "24px",
+                    height: "24px",
+                    background: "none",
+                    border: "none",
+                    borderRadius: "4px",
+                    color: "var(--err)",
+                    cursor: "pointer"
+                  }}
+                  title="Remove Link"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </>
+            )}
+          </div>
+        </BubbleMenu>
+      )}
 
       {/* ── Keyboard Shortcuts Modal ── */}
       <AnimatePresence>

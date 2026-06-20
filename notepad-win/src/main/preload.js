@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeApp: () => ipcRenderer.invoke('close-app'),
   minimizeApp: () => ipcRenderer.invoke('minimize-app'),
   maximizeApp: () => ipcRenderer.invoke('maximize-app'),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
   onOpenFile: (callback) => {
     const subscription = (event, data) => callback(data);
     ipcRenderer.on('open-file-channel', subscription);
