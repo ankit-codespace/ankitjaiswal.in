@@ -1281,45 +1281,56 @@ export default function Notepad() {
 
     const alignBlocksToGrid = () => {
       if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
-      const editorEl = document.querySelector(".notepad-editor");
-      if (!editorEl) return;
 
-      const blocks = editorEl.querySelectorAll("pre, table, blockquote, hr, img, .image-node");
+      const runAlign = () => {
+        if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
+        const editorEl = document.querySelector(".notepad-editor");
+        if (!editorEl) return;
 
-      if (!settings.ruledLines) {
-        // Clear snaps if ruled lines are turned off
+        const blocks = editorEl.querySelectorAll("pre, table, blockquote, hr, img, .image-node");
+
+        if (!settings.ruledLines) {
+          // Clear snaps if ruled lines are turned off
+          blocks.forEach((el: any) => {
+            if (el.style.paddingBottom) el.style.paddingBottom = "";
+            if (el.style.marginTop) el.style.marginTop = "";
+            if (el.style.marginBottom) el.style.marginBottom = "";
+          });
+          return;
+        }
+
+        const G = settings.fontSize * settings.lineHeight; // exact grid height in pixels
+
         blocks.forEach((el: any) => {
-          if (el.style.paddingBottom) el.style.paddingBottom = "";
+          const currentPadding = parseFloat(el.style.paddingBottom) || 0;
+          const currentHeight = el.offsetHeight;
+          if (currentHeight === 0) return;
+
+          // Calculate natural height by subtracting current custom padding
+          const naturalHeight = currentHeight - currentPadding;
+          const remainder = naturalHeight % G;
+          
+          let needed = 0;
+          if (remainder > 0.5) {
+            needed = G - remainder;
+          }
+
+          const neededStr = needed > 0 ? `${needed}px` : "";
+          
+          // Only mutate DOM if value actually changed
+          if (el.style.paddingBottom !== neededStr) {
+            el.style.paddingBottom = neededStr;
+          }
           if (el.style.marginTop) el.style.marginTop = "";
           if (el.style.marginBottom) el.style.marginBottom = "";
         });
-        return;
-      }
+      };
 
-      const G = settings.fontSize * settings.lineHeight; // exact grid height in pixels
-
-      blocks.forEach((el: any) => {
-        const currentPadding = parseFloat(el.style.paddingBottom) || 0;
-        const currentHeight = el.offsetHeight;
-        if (currentHeight === 0) return;
-
-        // Calculate natural height by subtracting current custom padding
-        const naturalHeight = currentHeight - currentPadding;
-        const remainder = naturalHeight % G;
-        
-        let needed = 0;
-        if (remainder > 0.5) {
-          needed = G - remainder;
-        }
-
-        const neededStr = needed > 0 ? `${needed}px` : "";
-        
-        // Only mutate DOM if value actually changed
-        if (el.style.paddingBottom !== neededStr) {
-          el.style.paddingBottom = neededStr;
-        }
-        if (el.style.marginTop) el.style.marginTop = "";
-        if (el.style.marginBottom) el.style.marginBottom = "";
+      // Defer measurements to allow DOM layouts to compute and React custom node views to paint
+      requestAnimationFrame(() => {
+        runAlign();
+        setTimeout(runAlign, 60);
+        setTimeout(runAlign, 180);
       });
     };
 
@@ -1356,6 +1367,14 @@ export default function Notepad() {
       }
     };
   }, [editor, settings.ruledLines, settings.fontSize, settings.lineHeight]);
+
+  // Tab Switch Calibration Dispatcher
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [activeId]);
 
   // ── Load Google Identity Services ──────────────────────────────────────────
   useEffect(() => {

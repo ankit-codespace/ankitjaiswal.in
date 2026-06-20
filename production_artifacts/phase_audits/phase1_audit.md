@@ -1,8 +1,6 @@
-# Phase 1: Desktop Implementation Audit
+# Phase 1: Tab Switch Calibration Audit
 
 ## Changes Done:
-1. **Utility Function**: Added a high-performance `countWords(text)` function using clean regex splits `clean.match(/\S+/g)` to prevent word miscounts or empty selection counting bugs.
-2. **Word Count State Calculation**: Replaced the transaction-lagged `@tiptap/extension-character-count` storage check with a reactive `useMemo` block called `wordCountStatus`.
-3. **Selection Awareness**: Checks current ProseMirror selection dynamically using `editor.state.selection`. If a range of text is highlighted, displays `${selected} of ${total} words selected`.
-4. **UI Integration**: Mapped the dual-state word status into the main toolbar header.
-5. **Initial Load Mismatch Resolution**: Because the text is read synchronously from ProseMirror's `editor.state.doc.textContent` object, it immediately computes word counts on startup, completely eliminating the initial `0 words` load bug.
+1. **Calibration Dispatcher Hook**: Added a `useEffect` hook in both `App.tsx` and `notepad.tsx` that monitors `activeId` (representing the current selected note/document).
+2. **Deferred Resize Dispatch**: Dispatches a custom window `resize` event 100ms after the active document switch.
+3. **Outcome**: Because the event is dispatched 100ms later, it executes after the browser layout engine completes toggling the visibility of the text editor container to `block`. This triggers the registered resize alignment listeners with accurate DOM geometries.

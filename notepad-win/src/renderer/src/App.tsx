@@ -1157,45 +1157,55 @@ const NotepadEditor = ({
 
     const alignBlocksToGrid = () => {
       if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
-      const editorEl = editor.view.dom;
 
-      const blocks = editorEl.querySelectorAll(".notepad-code-block-wrapper, table, blockquote, hr, img, .image-node");
+      const runAlign = () => {
+        if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
+        const editorEl = editor.view.dom;
+        const blocks = editorEl.querySelectorAll(".notepad-code-block-wrapper, table, blockquote, hr, img, .image-node");
 
-      if (!settings.ruledLines) {
+        if (!settings.ruledLines) {
+          blocks.forEach((el: any) => {
+            if (el.style.paddingBottom) el.style.paddingBottom = "";
+            if (el.style.marginTop) el.style.marginTop = "";
+            if (el.style.marginBottom) el.style.marginBottom = "";
+          });
+          return;
+        }
+
+        const G = settings.fontSize * settings.lineHeight;
+
         blocks.forEach((el: any) => {
           if (el.style.paddingBottom) el.style.paddingBottom = "";
           if (el.style.marginTop) el.style.marginTop = "";
-          if (el.style.marginBottom) el.style.marginBottom = "";
+
+          const naturalHeight = el.offsetHeight;
+          if (naturalHeight === 0) return;
+
+          const minGap = G / 2;
+          const targetHeight = Math.ceil((naturalHeight + minGap) / G) * G;
+          const needed = targetHeight - naturalHeight;
+          const neededStr = needed > 0 ? `${needed}px` : "";
+
+          if (el.style.marginBottom !== neededStr) {
+            el.style.marginBottom = neededStr;
+          }
         });
-        return;
-      }
 
-      const G = settings.fontSize * settings.lineHeight;
+        const images = editorEl.querySelectorAll("img");
+        images.forEach((img: any) => {
+          if (!img.onload) {
+            img.onload = () => {
+              alignBlocksToGrid();
+            };
+          }
+        });
+      };
 
-      blocks.forEach((el: any) => {
-        if (el.style.paddingBottom) el.style.paddingBottom = "";
-        if (el.style.marginTop) el.style.marginTop = "";
-
-        const naturalHeight = el.offsetHeight;
-        if (naturalHeight === 0) return;
-
-        const minGap = G / 2;
-        const targetHeight = Math.ceil((naturalHeight + minGap) / G) * G;
-        const needed = targetHeight - naturalHeight;
-        const neededStr = needed > 0 ? `${needed}px` : "";
-
-        if (el.style.marginBottom !== neededStr) {
-          el.style.marginBottom = neededStr;
-        }
-      });
-
-      const images = editorEl.querySelectorAll("img");
-      images.forEach((img: any) => {
-        if (!img.onload) {
-          img.onload = () => {
-            alignBlocksToGrid();
-          };
-        }
+      // Defer measurements to allow DOM layouts to compute and React custom node views to paint
+      requestAnimationFrame(() => {
+        runAlign();
+        setTimeout(runAlign, 60);
+        setTimeout(runAlign, 180);
       });
     };
 
@@ -1210,6 +1220,14 @@ const NotepadEditor = ({
       window.removeEventListener("resize", alignBlocksToGrid);
     };
   }, [editor, settings.ruledLines, settings.fontSize, settings.lineHeight]);
+
+  // Tab Switch Calibration Dispatcher
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [doc.id]);
 
   const effectiveDark = settings.bgColor ? !isLightHex(settings.bgColor) : !settings.lightSurface;
   const tb = (): React.CSSProperties => {
