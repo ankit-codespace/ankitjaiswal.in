@@ -691,7 +691,7 @@ const NOTEPAD_SHORTCUTS: { group: string; rows: { keys: string; action: string }
       { keys: "Cmd/Ctrl + U", action: "Underline" },
       { keys: "Cmd/Ctrl + Shift + X", action: "Strikethrough" },
       { keys: isElectron ? "Cmd/Ctrl + E" : "Cmd/Ctrl + Alt + E", action: "Inline code" },
-      { keys: isElectron ? "Cmd/Ctrl + H or Cmd/Ctrl + Shift + H" : "Cmd/Ctrl + Shift + H", action: "Highlight" },
+      { keys: "Cmd/Ctrl + H or Cmd/Ctrl + Shift + H", action: "Highlight" },
     ],
   },
   {
@@ -1900,11 +1900,8 @@ export default function Notepad() {
       const inEditor = ae?.closest?.(".ProseMirror");
       const inInput = ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable);
 
-      // Highlight: Ctrl + H (Electron) vs. Ctrl + Shift + H (Web)
-      const isHighlight = isElectron
-        ? (ctrl && !e.shiftKey && e.key.toLowerCase() === "h")
-        : (ctrl && e.shiftKey && e.key.toLowerCase() === "h");
-      if (isHighlight) {
+      // Highlight: Ctrl + H or Ctrl + Shift + H - editor focused only
+      if (ctrl && e.key.toLowerCase() === "h") {
         if (inEditor) {
           e.preventDefault();
           editor?.chain().focus().toggleHighlight().run();
@@ -3392,7 +3389,7 @@ export default function Notepad() {
             <button title={getTooltip("Italic", "Ctrl+I")} style={tb(editor?.isActive("italic"))} onClick={() => editor?.chain().focus().toggleItalic().run()}><ItalicIcon size={14} /></button>
             <button title={getTooltip("Underline", "Ctrl+U")} style={tb(editor?.isActive("underline"))} onClick={() => editor?.chain().focus().toggleUnderline().run()}><UnderlineIcon size={14} /></button>
             <button title={getTooltip("Strikethrough", "Ctrl+Shift+X")} style={tb(editor?.isActive("strike"))} onClick={() => editor?.chain().focus().toggleStrike().run()}><Strikethrough size={14} /></button>
-            <button title={getTooltip("Highlight")} style={tb(editor?.isActive("highlight"))} onClick={() => editor?.chain().focus().toggleHighlight().run()}><Highlighter size={13} /></button>
+            <button title={getTooltip("Highlight", "Ctrl+H")} style={tb(editor?.isActive("highlight"))} onClick={() => editor?.chain().focus().toggleHighlight().run()}><Highlighter size={13} /></button>
             <button
               title={getTooltip("Clear Formatting")}
               style={tb()}
@@ -5382,7 +5379,7 @@ export default function Notepad() {
                         { keys: ["Ctrl", "B"], desc: "Bold Text" },
                         { keys: ["Ctrl", "I"], desc: "Italic Text" },
                         { keys: ["Ctrl", "U"], desc: "Underline Text" },
-                        { keys: isElectron ? ["Ctrl", "H"] : ["Ctrl", "Shift", "H"], desc: "Highlight Text" },
+                        { keys: ["Ctrl", "H"], desc: "Highlight Text" },
                         { keys: ["Ctrl", "Shift", "X"], desc: "Strikethrough" },
                         { keys: ["Ctrl", "Shift", "C"], desc: "Toggle Code Block" },
                         { keys: isElectron ? ["Ctrl", "Shift", "B"] : ["Ctrl", "Shift", "Q"], desc: "Toggle Blockquote" },
