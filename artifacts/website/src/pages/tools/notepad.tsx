@@ -675,6 +675,12 @@ const NOTEPAD_FAQS: { q: string; a: string }[] = [
   { q: "Can I sync notes across devices?", a: "Not by default — and that's intentional. Sync would require uploading your text to a server, which would break the privacy guarantee. If you need notes on another device, export to PDF, Markdown or DOCX and move the file yourself." },
 ];
 
+const isElectron = typeof window !== "undefined" && (
+  !!(window as any).electron || 
+  !!(window as any).api || 
+  (typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("electron"))
+);
+
 // ── Keyboard shortcuts reference ─────────────────────────────────────────────
 const NOTEPAD_SHORTCUTS: { group: string; rows: { keys: string; action: string }[] }[] = [
   {
@@ -684,8 +690,8 @@ const NOTEPAD_SHORTCUTS: { group: string; rows: { keys: string; action: string }
       { keys: "Cmd/Ctrl + I", action: "Italic" },
       { keys: "Cmd/Ctrl + U", action: "Underline" },
       { keys: "Cmd/Ctrl + Shift + X", action: "Strikethrough" },
-      { keys: "Cmd/Ctrl + E", action: "Inline code" },
-      { keys: "Cmd/Ctrl + H or Cmd/Ctrl + Shift + H", action: "Highlight" },
+      { keys: isElectron ? "Cmd/Ctrl + E" : "Cmd/Ctrl + Alt + E", action: "Inline code" },
+      { keys: isElectron ? "Cmd/Ctrl + H or Cmd/Ctrl + Shift + H" : "Cmd/Ctrl + Shift + H", action: "Highlight" },
     ],
   },
   {
@@ -697,7 +703,7 @@ const NOTEPAD_SHORTCUTS: { group: string; rows: { keys: string; action: string }
       { keys: "Cmd/Ctrl + Shift + 7", action: "Numbered list" },
       { keys: "Cmd/Ctrl + Shift + 8", action: "Bullet list" },
       { keys: "Cmd/Ctrl + Shift + 9", action: "Checklist" },
-      { keys: "Cmd/Ctrl + Shift + B", action: "Blockquote" },
+      { keys: isElectron ? "Cmd/Ctrl + Shift + B" : "Cmd/Ctrl + Shift + Q", action: "Blockquote" },
       { keys: "Cmd/Ctrl + Alt + C", action: "Code block" },
     ],
   },
@@ -719,7 +725,6 @@ const NOTEPAD_SHORTCUTS: { group: string; rows: { keys: string; action: string }
     ],
   },
 ];
-
 // ── Comparison: this notepad vs the obvious alternatives ─────────────────────
 const NOTEPAD_COMPARISON_HEADERS = [
   "Feature",
@@ -909,6 +914,7 @@ export default function Notepad() {
   });
 
   const contextMenuOpenTimeRef = useRef<number>(0);
+  const undoStackRef = useRef<Array<{ docs: NotepadDoc[]; activeId: string }>>([]);
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
   const [imageContextMenu, setImageContextMenu] = useState<{ x: number; y: number; src: string; pos: number } | null>(null);
 
@@ -949,11 +955,12 @@ export default function Notepad() {
   const closeOtherDocs = useCallback((idToKeep: string) => {
     const target = docs.find((d) => d.id === idToKeep);
     if (!target) return;
+    undoStackRef.current.push({ docs: [...docs], activeId });
     setDocs([target]);
     saveDocs([target]);
     setActiveId(target.id);
     toast.success("Other tabs closed");
-  }, [docs]);
+  }, [docs, activeId]);
 
   const sortedDocs = useMemo(() => {
     const pinned = docs.filter((d) => d.isPinned);
@@ -965,6 +972,7 @@ export default function Notepad() {
     const idx = sortedDocs.findIndex((d) => d.id === id);
     if (idx === -1) return;
     const idsToKeep = new Set(sortedDocs.slice(0, idx + 1).map((d) => d.id));
+    undoStackRef.current.push({ docs: [...docs], activeId });
     if (!idsToKeep.has(activeId)) {
       setActiveId(id);
     }
@@ -1210,6 +1218,36 @@ export default function Notepad() {
     }
     localStorage.setItem(LS_ACTIVE, activeId);
   }, [activeId]); // eslint-disable-line
+
+  // Scroll active tab into view when activeId changes (boundary-checked)
+  useEffect(() => {
+    if (activeId) {
+      const scrollTab = () => {
+        const activeTabEl = document.querySelector(".notepad-tab-item.active") as HTMLElement;
+        const container = document.querySelector(".notepad-tabs-container") as HTMLElement;
+        if (activeTabEl && container) {
+          const containerRect = container.getBoundingClientRect();
+          const tabRect = activeTabEl.getBoundingClientRect();
+
+          // Check if the tab is cut off on the left or right of the visible container
+          const isLeftCutOff = tabRect.left < containerRect.left;
+          const isRightCutOff = tabRect.right > containerRect.right;
+
+          if (isLeftCutOff) {
+            const targetScrollLeft = container.scrollLeft + (tabRect.left - containerRect.left) - 8;
+            container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+          } else if (isRightCutOff) {
+            const targetScrollLeft = container.scrollLeft + (tabRect.right - containerRect.right) + 8;
+            container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+          }
+        }
+      };
+      scrollTab();
+      const timer = setTimeout(scrollTab, 150);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [activeId]);
 
   // ── Spellcheck toggle ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -1680,8 +1718,8 @@ export default function Notepad() {
     const handler = (e: KeyboardEvent) => {
       const ctrl = e.ctrlKey || e.metaKey;
 
-      // Ctrl + = or Ctrl + + (Zoom In)
-      if (ctrl && (e.key === "=" || e.key === "+")) {
+      // Ctrl + = or Ctrl + + (Zoom In) - Electron Only
+      if (isElectron && ctrl && (e.key === "=" || e.key === "+")) {
         e.preventDefault();
         setSettings((prev) => {
           const current = prev.zoom || 1.0;
@@ -1693,8 +1731,8 @@ export default function Notepad() {
         return;
       }
 
-      // Ctrl + - (Zoom Out)
-      if (ctrl && e.key === "-") {
+      // Ctrl + - (Zoom Out) - Electron Only
+      if (isElectron && ctrl && e.key === "-") {
         e.preventDefault();
         setSettings((prev) => {
           const current = prev.zoom || 1.0;
@@ -1706,8 +1744,8 @@ export default function Notepad() {
         return;
       }
 
-      // Ctrl + 0 (Reset Zoom)
-      if (ctrl && e.key === "0" && !e.shiftKey) {
+      // Ctrl + 0 (Reset Zoom) - Electron Only
+      if (isElectron && ctrl && e.key === "0" && !e.shiftKey) {
         e.preventDefault();
         setSettings((prev) => {
           const next = { ...prev, zoom: 1.0 };
@@ -1782,16 +1820,118 @@ export default function Notepad() {
         return;
       }
 
+      // New Note: Ctrl + Alt + N (Web) / Ctrl + N or Ctrl + T (Electron)
+      const isNewNote = isElectron 
+        ? (ctrl && !e.shiftKey && (e.key.toLowerCase() === "n" || e.key.toLowerCase() === "t"))
+        : (ctrl && e.altKey && e.key.toLowerCase() === "n");
+      if (isNewNote) {
+        e.preventDefault();
+        createDoc();
+        return;
+      }
+
+      // Close Current Note: Ctrl + Alt + W (Web) / Ctrl + W (Electron)
+      const isCloseNote = isElectron
+        ? (ctrl && !e.shiftKey && e.key.toLowerCase() === "w")
+        : (ctrl && e.altKey && e.key.toLowerCase() === "w");
+      if (isCloseNote) {
+        e.preventDefault();
+        deleteDoc(activeId);
+        return;
+      }
+
+      // Restore Closed Note (Ctrl + Shift + T)
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        undoLastDelete();
+        return;
+      }
+
+      // Next Tab: Ctrl + Alt + ArrowRight (Web) / Ctrl + Tab (Electron)
+      const isNextTab = isElectron
+        ? (ctrl && !e.shiftKey && e.key === "Tab")
+        : (ctrl && e.altKey && (e.key === "ArrowRight" || e.code === "ArrowRight"));
+      if (isNextTab) {
+        e.preventDefault();
+        if (sortedDocs.length > 1) {
+          const currentIndex = sortedDocs.findIndex((d) => d.id === activeId);
+          const nextIndex = (currentIndex + 1) % sortedDocs.length;
+          setActiveId(sortedDocs[nextIndex].id);
+        }
+        return;
+      }
+
+      // Previous Tab: Ctrl + Alt + ArrowLeft (Web) / Ctrl + Shift + Tab (Electron)
+      const isPrevTab = isElectron
+        ? (ctrl && e.shiftKey && e.key === "Tab")
+        : (ctrl && e.altKey && (e.key === "ArrowLeft" || e.code === "ArrowLeft"));
+      if (isPrevTab) {
+        e.preventDefault();
+        if (sortedDocs.length > 1) {
+          const currentIndex = sortedDocs.findIndex((d) => d.id === activeId);
+          const prevIndex = (currentIndex - 1 + sortedDocs.length) % sortedDocs.length;
+          setActiveId(sortedDocs[prevIndex].id);
+        }
+        return;
+      }
+
+      // Tab selection by index (1-9): Alt + [1-9] (Web) / Ctrl + [1-9] (Electron)
+      const isTabIndexMatch = isElectron
+        ? (ctrl && !e.altKey && !e.shiftKey && /^[1-9]$/.test(e.key))
+        : (!ctrl && e.altKey && !e.shiftKey && /^[1-9]$/.test(e.key));
+      if (isTabIndexMatch) {
+        e.preventDefault();
+        const tabNumber = parseInt(e.key, 10);
+        if (tabNumber === 9) {
+          if (sortedDocs.length > 0) {
+            setActiveId(sortedDocs[sortedDocs.length - 1].id);
+          }
+        } else {
+          const targetIndex = tabNumber - 1;
+          if (targetIndex < sortedDocs.length) {
+            setActiveId(sortedDocs[targetIndex].id);
+          }
+        }
+        return;
+      }
+
       // Editor-level focus check helpers
       const ae = document.activeElement as HTMLElement | null;
       const inEditor = ae?.closest?.(".ProseMirror");
       const inInput = ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable);
 
-      // Ctrl + H / Ctrl + Shift + H (Highlight) - editor focused only
-      if (ctrl && e.key.toLowerCase() === "h") {
+      // Highlight: Ctrl + H (Electron) vs. Ctrl + Shift + H (Web)
+      const isHighlight = isElectron
+        ? (ctrl && !e.shiftKey && e.key.toLowerCase() === "h")
+        : (ctrl && e.shiftKey && e.key.toLowerCase() === "h");
+      if (isHighlight) {
         if (inEditor) {
           e.preventDefault();
           editor?.chain().focus().toggleHighlight().run();
+          return;
+        }
+      }
+
+      // Blockquote: Ctrl + Shift + B (Electron) vs. Ctrl + Shift + Q (Web)
+      const isBlockquote = isElectron
+        ? (ctrl && e.shiftKey && e.key.toLowerCase() === "b")
+        : (ctrl && e.shiftKey && e.key.toLowerCase() === "q");
+      if (isBlockquote) {
+        if (inEditor) {
+          e.preventDefault();
+          editor?.chain().focus().toggleBlockquote().run();
+          return;
+        }
+      }
+
+      // Inline Code: Ctrl + E (Electron) vs. Ctrl + Alt + E (Web)
+      const isInlineCode = isElectron
+        ? (ctrl && !e.shiftKey && e.key.toLowerCase() === "e")
+        : (ctrl && e.altKey && e.key.toLowerCase() === "e");
+      if (isInlineCode) {
+        if (inEditor) {
+          e.preventDefault();
+          editor?.chain().focus().toggleCode().run();
           return;
         }
       }
@@ -1845,7 +1985,7 @@ export default function Notepad() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [editor, activeDoc, showFind, showReplace, closeFind]); // eslint-disable-line
+  }, [editor, activeDoc, activeId, sortedDocs, showFind, showReplace, closeFind]); // eslint-disable-line
 
   // Cmd/Ctrl+Z restores last deleted note(s) when focus is OUTSIDE the editor
   // (e.g. doc menu open). Inside the editor, ProseMirror handles its own undo.
@@ -2017,7 +2157,6 @@ export default function Notepad() {
   // Pattern matches Linear/Notion: row morphs into "Delete?" inline confirm,
   // confirm pushes a snapshot onto an undo stack so Ctrl+Z (when not focused
   // in the editor) or the toast "Undo" action restores the docs.
-  const undoStackRef = useRef<Array<{ docs: NotepadDoc[]; activeId: string }>>([]);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelConfirm = useCallback(() => {
@@ -2927,8 +3066,9 @@ export default function Notepad() {
                       color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
                       cursor: "pointer",
                       position: "relative",
+                      flex: doc.isPinned ? "0 0 44px" : "0 1 150px",
                       width: doc.isPinned ? 44 : undefined,
-                      minWidth: doc.isPinned ? 44 : 80,
+                      minWidth: doc.isPinned ? 44 : (isActive ? 80 : 36),
                       maxWidth: doc.isPinned ? 44 : 150,
                       marginBottom: -2,
                       zIndex: isActive ? 3 : 1,
@@ -5192,11 +5332,11 @@ export default function Notepad() {
                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: surfAccent, marginBottom: 10 }}>File & App</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {[
-                        { keys: ["Ctrl", "N"], desc: "New Note" },
+                        { keys: isElectron ? ["Ctrl", "N"] : ["Ctrl", "Alt", "N"], desc: "New Note" },
                         { keys: ["Ctrl", "O"], desc: "Open Text File" },
                         { keys: ["Ctrl", "S"], desc: "Save Text File" },
                         { keys: ["Ctrl", "P"], desc: "Export PDF" },
-                        { keys: ["Ctrl", "W"], desc: "Close Current Note" },
+                        { keys: isElectron ? ["Ctrl", "W"] : ["Ctrl", "Alt", "W"], desc: "Close Current Note" },
                         { keys: ["Ctrl", "Shift", "T"], desc: "Restore Closed Note" },
                       ].map((item, idx) => (
                         <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
@@ -5215,10 +5355,10 @@ export default function Notepad() {
                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: surfAccent, marginBottom: 10 }}>Tab Navigation</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {[
-                        { keys: ["Ctrl", "Tab"], desc: "Next Tab" },
-                        { keys: ["Ctrl", "Shift", "Tab"], desc: "Previous Tab" },
-                        { keys: ["Ctrl", "1-8"], desc: "Switch to Tab 1-8" },
-                        { keys: ["Ctrl", "9"], desc: "Switch to Last Tab" }
+                        { keys: isElectron ? ["Ctrl", "Tab"] : ["Ctrl", "Alt", "→"], desc: "Next Tab" },
+                        { keys: isElectron ? ["Ctrl", "Shift", "Tab"] : ["Ctrl", "Alt", "←"], desc: "Previous Tab" },
+                        { keys: isElectron ? ["Ctrl", "1-8"] : ["Alt", "1-8"], desc: "Switch to Tab 1-8" },
+                        { keys: isElectron ? ["Ctrl", "9"] : ["Alt", "9"], desc: "Switch to Last Tab" }
                       ].map((item, idx) => (
                         <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
                           <span style={{ color: "var(--t2)" }}>{item.desc}</span>
@@ -5242,10 +5382,10 @@ export default function Notepad() {
                         { keys: ["Ctrl", "B"], desc: "Bold Text" },
                         { keys: ["Ctrl", "I"], desc: "Italic Text" },
                         { keys: ["Ctrl", "U"], desc: "Underline Text" },
-                        { keys: ["Ctrl", "H"], desc: "Highlight Text" },
+                        { keys: isElectron ? ["Ctrl", "H"] : ["Ctrl", "Shift", "H"], desc: "Highlight Text" },
                         { keys: ["Ctrl", "Shift", "X"], desc: "Strikethrough" },
                         { keys: ["Ctrl", "Shift", "C"], desc: "Toggle Code Block" },
-                        { keys: ["Ctrl", "Shift", "B"], desc: "Toggle Blockquote" },
+                        { keys: isElectron ? ["Ctrl", "Shift", "B"] : ["Ctrl", "Shift", "Q"], desc: "Toggle Blockquote" },
                         { keys: ["Ctrl", "Shift", "U"], desc: "Bullet List" },
                         { keys: ["Ctrl", "Shift", "L"], desc: "Numbered List" },
                         { keys: ["Ctrl", "Shift", "K"], desc: "Checklist" }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from "react";
 import { Editor, useEditor, EditorContent, BubbleMenu, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent, Extension } from "@tiptap/react";
 
 // Global Error Overlay for Debugging
@@ -477,7 +477,7 @@ const CodeBlockNodeView = ({ node }: any) => {
           zIndex: 10,
         }}
       >
-        {copied ? <Check size={14} /> : <BoldIcon size={14} />}
+        {copied ? <Check size={14} /> : <Copy size={14} />}
       </button>
     </NodeViewWrapper>
   );
@@ -503,7 +503,10 @@ const CustomCodeBlock = CodeBlock.extend({
           return commands.toggleNode("codeBlock", "paragraph");
         }
 
-        const selectedText = state.doc.textBetween(from, to, "\n");
+        const selectedText = state.doc.textBetween(from, to, "\n", (node: any) => {
+          if (node.type.name === "hardBreak") return "\n";
+          return "";
+        });
         return chain()
           .insertContentAt({ from, to }, {
             type: "codeBlock",
@@ -1316,6 +1319,13 @@ export default function App() {
   const scrollPositionsRef = useRef<{ [id: string]: number }>({});
   const isRestoringScrollRef = useRef<boolean>(false);
 
+  const changeTab = useCallback((id: string) => {
+    if (activeId) {
+      scrollPositionsRef.current[activeId] = window.scrollY;
+    }
+    setActiveId(id);
+  }, [activeId]);
+
   // Track and save scroll position per tab
   useEffect(() => {
     const handleScroll = () => {
@@ -1411,6 +1421,7 @@ export default function App() {
   const editorsRef = useRef<{ [id: string]: Editor }>({});
   const [editors, setEditors] = useState<{ [id: string]: Editor }>({});
   const editor = editors[activeId] || null;
+  const wordCount = editor?.storage.characterCount?.words() ?? 0;
 
   const handleEditorCreated = useCallback((id: string, instance: Editor) => {
     editorsRef.current[id] = instance;
@@ -1427,7 +1438,7 @@ export default function App() {
   }, []);
 
   // Sync editor content when switching documents & restore scroll position
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (activeDoc) {
       const savedScroll = scrollPositionsRef.current[activeId];
       isRestoringScrollRef.current = true;
@@ -1447,20 +1458,21 @@ export default function App() {
       }
 
       // Auto focus the active editor & restore scroll position on switch
-      const timer = setTimeout(() => {
-        const activeEditor = editorsRef.current[activeId];
-        if (activeEditor && !activeEditor.isDestroyed) {
-          // Focus using native preventScroll to block browser caret scroll hijack
-          activeEditor.view.dom.focus({ preventScroll: true });
-          
-          // Re-enforce scroll recovery to override any native browser focus scroll-into-view triggers
-          if (savedScroll !== undefined) {
-            window.scrollTo({ top: savedScroll, behavior: "auto" });
-          } else {
-            window.scrollTo({ top: 0, behavior: "auto" });
-          }
+      const activeEditor = editorsRef.current[activeId];
+      if (activeEditor && !activeEditor.isDestroyed) {
+        // Focus using native preventScroll to block browser caret scroll hijack
+        activeEditor.view.dom.focus({ preventScroll: true });
+        
+        // Re-enforce scroll recovery to override any native browser focus scroll-into-view triggers
+        if (savedScroll !== undefined) {
+          window.scrollTo({ top: savedScroll, behavior: "auto" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "auto" });
         }
-        // Clear scroll lock once layout and focus are fully established
+      }
+
+      // Clear scroll lock once layout and focus are fully established
+      const timer = setTimeout(() => {
         isRestoringScrollRef.current = false;
       }, 50);
 
@@ -1475,17 +1487,27 @@ export default function App() {
 
 
 
-  // Scroll active tab into view when activeId changes
+  // Scroll active tab into view when activeId changes (boundary-checked)
   useEffect(() => {
     if (activeId) {
       const scrollTab = () => {
-        const activeTabEl = document.querySelector(".notepad-tab-item.active");
-        if (activeTabEl) {
-          activeTabEl.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-            inline: "nearest"
-          });
+        const activeTabEl = document.querySelector(".notepad-tab-item.active") as HTMLElement;
+        const container = document.querySelector(".notepad-tabs-container") as HTMLElement;
+        if (activeTabEl && container) {
+          const containerRect = container.getBoundingClientRect();
+          const tabRect = activeTabEl.getBoundingClientRect();
+
+          // Check if the tab is cut off on the left or right of the visible container
+          const isLeftCutOff = tabRect.left < containerRect.left;
+          const isRightCutOff = tabRect.right > containerRect.right;
+
+          if (isLeftCutOff) {
+            const targetScrollLeft = container.scrollLeft + (tabRect.left - containerRect.left) - 8;
+            container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+          } else if (isRightCutOff) {
+            const targetScrollLeft = container.scrollLeft + (tabRect.right - containerRect.right) + 8;
+            container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+          }
         }
       };
       scrollTab();
@@ -1589,7 +1611,7 @@ export default function App() {
         // Check if file is already open
         const existing = docs.find((d) => d.filePath === res.path);
         if (existing) {
-          setActiveId(existing.id);
+          changeTab(existing.id);
           toast.success(`Switched to already open note: ${res.name}`);
           return;
         }
@@ -1612,7 +1634,7 @@ export default function App() {
           saveDocs(next);
           return next;
         });
-        setActiveId(fresh.id);
+        changeTab(fresh.id);
         toast.success(`Opened ${res.name}`);
       }
     } catch (err: any) {
@@ -1627,7 +1649,7 @@ export default function App() {
       // Check if file is already open
       const existing = docs.find((d) => d.filePath === data.path);
       if (existing) {
-        setActiveId(existing.id);
+        changeTab(existing.id);
         return;
       }
 
@@ -1648,7 +1670,7 @@ export default function App() {
         saveDocs(next);
         return next;
       });
-      setActiveId(fresh.id);
+      changeTab(fresh.id);
       toast.success(`Loaded ${data.name}`);
     });
 
@@ -1665,7 +1687,7 @@ export default function App() {
   const createDoc = () => {
     const fresh = newDoc();
     setDocs((prev) => { const next = [...prev, fresh]; saveDocs(next); return next; });
-    setActiveId(fresh.id);
+    changeTab(fresh.id);
     toast.success("New note created");
   };
 
@@ -1684,7 +1706,7 @@ export default function App() {
 
     if (idToDelete === activeId) {
       const fallbackIndex = index === 0 ? 0 : index - 1;
-      setActiveId(nextDocs[fallbackIndex].id);
+      changeTab(nextDocs[fallbackIndex].id);
     }
     toast.success(`Note "${targetDoc.title}" closed`);
   };
@@ -1703,7 +1725,7 @@ export default function App() {
       saveDocs(next);
       return next;
     });
-    setActiveId(restored.id);
+    changeTab(restored.id);
     toast.success(`Restored "${restored.title}"`);
   };
 
@@ -1730,16 +1752,18 @@ export default function App() {
       saveDocs(next);
       return next;
     });
-    setActiveId(fresh.id);
+    changeTab(fresh.id);
     toast.success(`Duplicated "${target.title}"`);
   };
 
   const closeOtherDocs = (idToKeep: string) => {
     const target = docs.find((d) => d.id === idToKeep);
     if (!target) return;
+    const closedDocs = docs.filter((d) => d.id !== idToKeep);
+    setClosedDocsHistory((prev) => [...prev, ...closedDocs]);
     setDocs([target]);
     saveDocs([target]);
-    setActiveId(target.id);
+    changeTab(target.id);
     toast.success("Other tabs closed");
   };
 
@@ -1748,9 +1772,11 @@ export default function App() {
     if (idx === -1) return;
     const idsToKeep = new Set(sortedDocs.slice(0, idx + 1).map((d) => d.id));
     if (!idsToKeep.has(activeId)) {
-      setActiveId(id);
+      changeTab(id);
     }
     const nextDocs = docs.filter((d) => idsToKeep.has(d.id));
+    const closedDocs = docs.filter((d) => !idsToKeep.has(d.id));
+    setClosedDocsHistory((prev) => [...prev, ...closedDocs]);
     setDocs(nextDocs);
     saveDocs(nextDocs);
     toast.success("Tabs to the right closed");
@@ -1962,7 +1988,7 @@ export default function App() {
         if (sortedDocs.length > 1) {
           const currentIndex = sortedDocs.findIndex((d) => d.id === activeId);
           const nextIndex = (currentIndex + 1) % sortedDocs.length;
-          setActiveId(sortedDocs[nextIndex].id);
+          changeTab(sortedDocs[nextIndex].id);
         }
         return;
       }
@@ -1973,7 +1999,7 @@ export default function App() {
         if (sortedDocs.length > 1) {
           const currentIndex = sortedDocs.findIndex((d) => d.id === activeId);
           const prevIndex = (currentIndex - 1 + sortedDocs.length) % sortedDocs.length;
-          setActiveId(sortedDocs[prevIndex].id);
+          changeTab(sortedDocs[prevIndex].id);
         }
         return;
       }
@@ -2040,18 +2066,18 @@ export default function App() {
         return;
       }
 
-      // Ctrl + [1-9] (Switch to tab index) — only without Shift
-      if (isCtrl && !e.shiftKey && /^[1-9]$/.test(e.key)) {
+      // Ctrl + [1-9] (Switch to tab index) — only without Shift & Alt
+      if (isCtrl && !e.altKey && !e.shiftKey && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
         const tabNumber = parseInt(e.key, 10);
         if (tabNumber === 9) {
           if (sortedDocs.length > 0) {
-            setActiveId(sortedDocs[sortedDocs.length - 1].id);
+            changeTab(sortedDocs[sortedDocs.length - 1].id);
           }
         } else {
           const targetIndex = tabNumber - 1;
           if (targetIndex < sortedDocs.length) {
-            setActiveId(sortedDocs[targetIndex].id);
+            changeTab(sortedDocs[targetIndex].id);
           }
         }
         return;
@@ -2059,7 +2085,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeDoc, activeId, docs, sortedDocs, closedDocsHistory, editor]);
+  }, [activeDoc, activeId, docs, sortedDocs, closedDocsHistory, editor, changeTab]);
 
   // Ctrl + Mouse Wheel Zoom Listener
   useEffect(() => {
@@ -2109,7 +2135,7 @@ export default function App() {
     const fresh = newDoc();
     setDocs([fresh]);
     saveDocs([fresh]);
-    setActiveId(fresh.id);
+    changeTab(fresh.id);
     toast.success("All documents cleared");
   };
 
@@ -2534,7 +2560,7 @@ export default function App() {
                     aria-selected={isActive}
                     onClick={() => {
                       if (!isActive) {
-                        setActiveId(doc.id);
+                        changeTab(doc.id);
                       }
                     }}
                     onContextMenu={(e) => {
@@ -2555,13 +2581,13 @@ export default function App() {
                       background: isActive ? activeTabSurface : (effectiveDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"),
                       color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
                       cursor: "pointer", position: "relative",
-                      flex: doc.isPinned ? "0 0 44px" : (isActive ? "1 1 auto" : "0 1 auto"),
+                      flex: doc.isPinned ? "0 0 44px" : "0 1 150px",
                       width: doc.isPinned ? 44 : undefined,
-                      minWidth: doc.isPinned ? 44 : (isActive ? 80 : 50),
-                      maxWidth: doc.isPinned ? 44 : (isActive ? 160 : 130),
+                      minWidth: doc.isPinned ? 44 : (isActive ? 80 : 36),
+                      maxWidth: doc.isPinned ? 44 : 150,
                       marginBottom: isActive ? -1 : -2, zIndex: isActive ? 3 : 1,
                       boxShadow: isActive ? activeTabShadow : "none",
-                      transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease, flex 140ms ease, min-width 140ms ease, max-width 140ms ease",
+                      transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease",
                       WebkitAppRegion: "no-drag"
                     } as any}
                   >
@@ -2642,7 +2668,7 @@ export default function App() {
                           <span
                             onDoubleClick={() => {
                               if (!doc.isPinned) {
-                                setActiveId(doc.id);
+                                changeTab(doc.id);
                                 setEditingTabId(doc.id);
                                 setTimeout(() => titleInputRef.current?.select(), 80);
                               }
@@ -2707,7 +2733,7 @@ export default function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0, height: "100%", WebkitAppRegion: "no-drag" } as any}>
             <div style={{ display: "flex", alignItems: "center", height: "100%", transform: "translateY(2.5px)" }}>
               <span className="saved-ago-status" style={{ fontSize: 11, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif", paddingBottom: 0, marginRight: 6 }}>
-                {savedAgoText}
+                {wordCount} {wordCount === 1 ? "word" : "words"} · {savedAgoText}
               </span>
 
               <div style={{ width: 1, height: 20, background: sepColor, margin: "0 6px", flexShrink: 0, alignSelf: "center", paddingBottom: 0 }} />
@@ -3198,7 +3224,7 @@ export default function App() {
           {sortedDocs.map((d) => (
             <div
               key={d.id}
-              onClick={() => { setActiveId(d.id); setShowDocMenu(false); }}
+              onClick={() => { changeTab(d.id); setShowDocMenu(false); }}
               style={{
                 display: "flex", alignItems: "center", padding: "7px 12px", cursor: "pointer",
                 background: d.id === activeId ? (effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.06)") : "transparent",
@@ -3645,48 +3671,52 @@ export default function App() {
               </div>
             )}
 
-            {activeDoc && (
-              <NotepadEditor
-                key={activeDoc.id}
-                doc={activeDoc}
-                settings={settings}
-                onCreated={handleEditorCreated}
-                onDestroyed={handleEditorDestroyed}
-                onUpdate={(inst) => {
-                  const html = inst.getHTML();
-                  const text = inst.getText();
-                  const docId = activeDoc.id;
-                  setEditorVersion((v) => v + 1);
-                  setDocs((prev) => {
-                    const next = prev.map((d) => {
-                      if (d.id === docId) {
-                        let title = d.title;
-                        if (d.isTitleAutoGenerated !== false) {
-                          title = getAutoTitleFromText(text);
-                        }
-                        return {
-                          ...d,
-                          content: html,
-                          title,
-                          updatedAt: Date.now(),
-                          isUnsaved: d.filePath ? true : undefined
-                        };
-                      }
-                      return d;
-                    });
-                    saveDocs(next);
-                    return next;
-                  });
-                }}
-                onSelectionUpdate={() => {
-                  setEditorVersion((v) => v + 1);
-                }}
-                onImageContextMenu={(x, y, src) => {
-                  setTabContextMenu(null);
-                  setImageContextMenu({ x, y, src });
-                }}
-              />
-            )}
+            {docs.map((doc) => {
+              const isActive = doc.id === activeId;
+              return (
+                <div key={doc.id} style={{ display: isActive ? "block" : "none" }}>
+                  <NotepadEditor
+                    doc={doc}
+                    settings={settings}
+                    onCreated={handleEditorCreated}
+                    onDestroyed={handleEditorDestroyed}
+                    onUpdate={(inst) => {
+                      const html = inst.getHTML();
+                      const text = inst.getText();
+                      const docId = doc.id;
+                      setEditorVersion((v) => v + 1);
+                      setDocs((prev) => {
+                        const next = prev.map((d) => {
+                          if (d.id === docId) {
+                            let title = d.title;
+                            if (d.isTitleAutoGenerated !== false) {
+                              title = getAutoTitleFromText(text);
+                            }
+                            return {
+                              ...d,
+                              content: html,
+                              title,
+                              updatedAt: Date.now(),
+                              isUnsaved: d.filePath ? true : undefined
+                            };
+                          }
+                          return d;
+                        });
+                        saveDocs(next);
+                        return next;
+                      });
+                    }}
+                    onSelectionUpdate={() => {
+                      setEditorVersion((v) => v + 1);
+                    }}
+                    onImageContextMenu={(x, y, src) => {
+                      setTabContextMenu(null);
+                      setImageContextMenu({ x, y, src });
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
