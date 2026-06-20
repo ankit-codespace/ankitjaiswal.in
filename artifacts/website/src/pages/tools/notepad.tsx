@@ -823,8 +823,10 @@ export default function Notepad() {
   const [focusMode, setFocusMode] = useState(false);
   const [showFind, setShowFind] = useState(false);
   const [findText, setFindText] = useState("");
+  const [isFindFocused, setIsFindFocused] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
   const [replaceText, setReplaceText] = useState("");
+  const [isReplaceFocused, setIsReplaceFocused] = useState(false);
   const [findResultsCount, setFindResultsCount] = useState(0);
   const [findActiveIndex, setFindActiveIndex] = useState(0);
   const [showDocMenu, setShowDocMenu] = useState(false);
@@ -4408,7 +4410,6 @@ export default function Notepad() {
           </div>
         )}
 
-      {/* ── FLOATING FIND / REPLACE CARD ─────────────────────────────────────── */}
       {showFind && (
         <div
           className="notepad-find-panel"
@@ -4416,7 +4417,7 @@ export default function Notepad() {
             position: "fixed",
             top: 88,
             right: 20,
-            width: 320,
+            width: 340,
             background: effectiveDark ? "rgba(30, 30, 30, 0.88)" : "rgba(255, 255, 255, 0.94)",
             border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.1)",
             borderRadius: 12,
@@ -4426,10 +4427,10 @@ export default function Notepad() {
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
             zIndex: 250,
-            padding: "8px 10px",
+            padding: "10px",
             display: "flex",
             flexDirection: "column",
-            gap: 6,
+            gap: 8,
             transition: "all 0.2s ease-in-out",
           }}
         >
@@ -4441,18 +4442,27 @@ export default function Notepad() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 24,
-                height: 24,
-                borderRadius: 4,
+                width: 26,
+                height: 26,
+                borderRadius: 6,
                 border: "none",
                 background: "transparent",
                 color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)",
                 cursor: "pointer",
                 padding: 0,
+                transition: "background 0.15s, color 0.15s",
               }}
               onClick={() => {
                 setShowReplace(!showReplace);
                 if (!showReplace) setTimeout(() => replaceInputRef.current?.focus(), 50);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                e.currentTarget.style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)";
               }}
               title={showReplace ? "Collapse replace" : "Expand replace"}
             >
@@ -4465,17 +4475,23 @@ export default function Notepad() {
               alignItems: "center",
               flex: 1,
               minWidth: 0,
-              background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.04)",
-              border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+              background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.03)",
+              border: isFindFocused
+                ? `1px solid ${surfAccent}`
+                : (effectiveDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.12)"),
               borderRadius: 6,
-              padding: "0 6px",
-              height: 26,
+              padding: "0 8px",
+              height: 28,
+              transition: "border-color 0.15s, box-shadow 0.15s",
+              boxShadow: isFindFocused ? `0 0 0 2px ${surfAccent}25` : "none",
             }}>
-              <Search size={12} style={{ color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.4)", marginRight: 4, flexShrink: 0 }} />
+              <Search size={12} style={{ color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.4)", marginRight: 6, flexShrink: 0 }} />
               <input
                 ref={findInputRef}
                 value={findText}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => setIsFindFocused(true)}
+                onBlur={() => setIsFindFocused(false)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -4509,7 +4525,8 @@ export default function Notepad() {
                   fontFamily: "Inter,sans-serif",
                   marginLeft: 4,
                   whiteSpace: "nowrap",
-                  userSelect: "none"
+                  userSelect: "none",
+                  fontWeight: 500
                 }}>
                   {findResultsCount > 0 ? `${findActiveIndex + 1}/${findResultsCount}` : "0/0"}
                 </span>
@@ -4525,14 +4542,29 @@ export default function Notepad() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
+                  width: 26,
+                  height: 26,
+                  borderRadius: 6,
                   border: "none",
                   background: "transparent",
-                  color: findResultsCount === 0 ? "rgba(128,128,128,0.3)" : (effectiveDark ? "var(--t2)" : "rgba(0, 0, 0, 0.6)"),
-                  cursor: findResultsCount === 0 ? "default" : "pointer",
+                  color: findResultsCount === 0
+                    ? (effectiveDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)")
+                    : (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"),
+                  cursor: findResultsCount === 0 ? "not-allowed" : "pointer",
                   padding: 0,
+                  transition: "background 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (findResultsCount > 0) {
+                    e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                    e.currentTarget.style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.9)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (findResultsCount > 0) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)";
+                  }
                 }}
                 title="Previous Match (Shift+Enter)"
               >
@@ -4545,14 +4577,29 @@ export default function Notepad() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
+                  width: 26,
+                  height: 26,
+                  borderRadius: 6,
                   border: "none",
                   background: "transparent",
-                  color: findResultsCount === 0 ? "rgba(128,128,128,0.3)" : (effectiveDark ? "var(--t2)" : "rgba(0, 0, 0, 0.6)"),
-                  cursor: findResultsCount === 0 ? "default" : "pointer",
+                  color: findResultsCount === 0
+                    ? (effectiveDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)")
+                    : (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"),
+                  cursor: findResultsCount === 0 ? "not-allowed" : "pointer",
                   padding: 0,
+                  transition: "background 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (findResultsCount > 0) {
+                    e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                    e.currentTarget.style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.9)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (findResultsCount > 0) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)";
+                  }
                 }}
                 title="Next Match (Enter)"
               >
@@ -4564,14 +4611,23 @@ export default function Notepad() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
+                  width: 26,
+                  height: 26,
+                  borderRadius: 6,
                   border: "none",
                   background: "transparent",
-                  color: effectiveDark ? "var(--t2)" : "rgba(0, 0, 0, 0.6)",
+                  color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)",
                   cursor: "pointer",
                   padding: 0,
+                  transition: "background 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = effectiveDark ? "rgba(255,99,99,0.15)" : "rgba(255,0,0,0.08)";
+                  e.currentTarget.style.color = effectiveDark ? "#FF5555" : "#CC0000";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)";
                 }}
                 title="Close (Esc)"
               >
@@ -4583,22 +4639,28 @@ export default function Notepad() {
           {/* Replace Row */}
           {showReplace && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-              <div style={{ width: 24, flexShrink: 0 }} />
+              <div style={{ width: 26, flexShrink: 0 }} />
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 flex: 1,
                 minWidth: 0,
-                background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.04)",
-                border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+                background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.03)",
+                border: isReplaceFocused
+                  ? `1px solid ${surfAccent}`
+                  : (effectiveDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.12)"),
                 borderRadius: 6,
-                padding: "0 6px",
-                height: 26,
+                padding: "0 8px",
+                height: 28,
+                transition: "border-color 0.15s, box-shadow 0.15s",
+                boxShadow: isReplaceFocused ? `0 0 0 2px ${surfAccent}25` : "none",
               }}>
                 <input
                   ref={replaceInputRef}
                   value={replaceText}
                   onChange={(e) => setReplaceText(e.target.value)}
+                  onFocus={() => setIsReplaceFocused(true)}
+                  onBlur={() => setIsReplaceFocused(false)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -4623,21 +4685,38 @@ export default function Notepad() {
                 />
               </div>
 
-              <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                 <button
                   onClick={handleReplace}
                   disabled={findResultsCount === 0}
                   style={{
                     fontSize: 11,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     fontFamily: "Inter,sans-serif",
-                    color: findResultsCount === 0 ? (effectiveDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)") : (effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.8)"),
-                    background: findResultsCount === 0 ? "transparent" : (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"),
-                    border: "none",
-                    borderRadius: 4,
-                    height: 24,
-                    padding: "0 8px",
-                    cursor: findResultsCount === 0 ? "default" : "pointer",
+                    border: effectiveDark ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(0,0,0,0.12)",
+                    borderRadius: 6,
+                    height: 28,
+                    padding: "0 10px",
+                    cursor: findResultsCount === 0 ? "not-allowed" : "pointer",
+                    background: findResultsCount === 0
+                      ? (effectiveDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)")
+                      : (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"),
+                    color: findResultsCount === 0
+                      ? (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)")
+                      : (effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"),
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (findResultsCount > 0) {
+                      e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.09)";
+                      e.currentTarget.style.borderColor = surfAccent;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (findResultsCount > 0) {
+                      e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                      e.currentTarget.style.borderColor = effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)";
+                    }
                   }}
                   title="Replace next"
                 >
@@ -4648,15 +4727,32 @@ export default function Notepad() {
                   disabled={findResultsCount === 0}
                   style={{
                     fontSize: 11,
-                    fontWeight: 500,
+                    fontWeight: 600,
                     fontFamily: "Inter,sans-serif",
-                    color: findResultsCount === 0 ? (effectiveDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)") : (effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.8)"),
-                    background: findResultsCount === 0 ? "transparent" : (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"),
-                    border: "none",
-                    borderRadius: 4,
-                    height: 24,
-                    padding: "0 8px",
-                    cursor: findResultsCount === 0 ? "default" : "pointer",
+                    border: effectiveDark ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(0,0,0,0.12)",
+                    borderRadius: 6,
+                    height: 28,
+                    padding: "0 10px",
+                    cursor: findResultsCount === 0 ? "not-allowed" : "pointer",
+                    background: findResultsCount === 0
+                      ? (effectiveDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)")
+                      : (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"),
+                    color: findResultsCount === 0
+                      ? (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)")
+                      : (effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"),
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (findResultsCount > 0) {
+                      e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.09)";
+                      e.currentTarget.style.borderColor = surfAccent;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (findResultsCount > 0) {
+                      e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                      e.currentTarget.style.borderColor = effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)";
+                    }
                   }}
                   title="Replace all"
                 >

@@ -1,12 +1,16 @@
 # Session Changelog - June 20, 2026
 
 ## What was worked on this session
+- Redesigned the Find & Replace panels in both the desktop app (`App.tsx`) and the web portfolio (`notepad.tsx`) for premium visual contrast, theme awareness, and custom hover states.
+- Restored standard global keydown bindings (`Ctrl+F` and `Ctrl+Shift+F`) to toggle and focus the Find & Replace panel on the desktop target.
+- Wired support for both `Ctrl+H` and `Ctrl+Shift+H` to act as universal highlighting triggers.
 - Implemented a professional scroll restoration and tab persistence fix for the "I Love Notepad" desktop app and online web version.
 - Added Chrome-like uniform tab widths and selective boundary-checked tab scrolling to eliminate layout shifting and erratic page-wide jumps.
 - Implemented real-time word count tracking for the "I Love Notepad" desktop (Electron) app.
 - Fixed a button icon bug in the code block preview.
 - Fixed the tab switching keyboard shortcut to prevent triggers when the Alt key is held.
 - Fixed a code block conversion bug that stripped line breaks.
+
 
 ## What was completed
 - **Scroll Stutter & Layout Shift Resolution**:
@@ -22,9 +26,13 @@
   - Added a custom `leafText` serialization callback to `textBetween` in the `toggleCodeBlock` command in `App.tsx` to preserve `hardBreak` inline line breaks (`\n`) when converting selection to code blocks.
 - **Shortcut Fix**: Added an explicit check (`!e.altKey`) in the keydown handler for tab index switching, ensuring `Ctrl + Alt + [1-9]` is ignored and only `Ctrl + [1-9]` triggers tab changes.
 - **Responsive Handling**: Maintained visual responsiveness where the status header hides on viewports narrower than 600px width.
+- **Find & Replace UX Hardening**:
+  - **Keyboard Shortcut Support**: Wired `Ctrl+F` and `Ctrl+Shift+F` global keydown events to toggle and autofocus the panel inputs in the desktop app.
+  - **Universal Highlight Trigger**: Standardized highlighting triggers on both `Ctrl+H` and `Ctrl+Shift+H` for both targets.
+  - **Contrast and Layout Redesign**: Sized inputs to `28px` heights, added theme-aware focused borders, customized chevrons/navigation buttons, and created high-contrast disabled and hover states for "Replace"/"All" actions.
 - **Packaging & Compilation**:
-  - Ran successful frontend builds (`npm run build:renderer`).
-  - Compiled and packaged the update into an NSIS installer and AppX package using `electron-builder` (`npm run build`).
+  - Ran successful desktop renderer and web page compilation audits.
+  - Compiled and packaged update versions of the Windows installer (`dist/I Love Notepad Setup 1.0.0.exe`) and Microsoft Store package (`dist/I Love Notepad 1.0.0.appx`).
   - Reinstalled and verified local execution.
 
 ## What was attempted but not solved

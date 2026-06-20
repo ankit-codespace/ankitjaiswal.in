@@ -1342,8 +1342,10 @@ export default function App() {
   const [focusMode, setFocusMode] = useState(false);
   const [showFind, setShowFind] = useState(false);
   const [findText, setFindText] = useState("");
+  const [isFindFocused, setIsFindFocused] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
   const [replaceText, setReplaceText] = useState("");
+  const [isReplaceFocused, setIsReplaceFocused] = useState(false);
   const [findResultsCount, setFindResultsCount] = useState(0);
   const [findActiveIndex, setFindActiveIndex] = useState(0);
   const [showDocMenu, setShowDocMenu] = useState(false);
@@ -1854,6 +1856,16 @@ export default function App() {
     };
   }, [editor, showOutline, headings]);
 
+  const closeFind = () => {
+    setShowFind(false);
+    setFindText("");
+    if (editor) {
+      (editor.commands as any).setSearchTerm("");
+    }
+    setFindResultsCount(0);
+    setFindActiveIndex(0);
+  };
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2004,11 +2016,43 @@ export default function App() {
         return;
       }
 
+      // Ctrl + Shift + F (Replace Pane)
+      if (isCtrl && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        if (showFind && showReplace) {
+          closeFind();
+        } else {
+          setShowFind(true);
+          setShowReplace(true);
+          setTimeout(() => {
+            replaceInputRef.current?.focus();
+            replaceInputRef.current?.select();
+          }, 50);
+        }
+        return;
+      }
+
+      // Ctrl + F (Find Pane)
+      if (isCtrl && !e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        if (showFind && !showReplace) {
+          findInputRef.current?.select();
+        } else {
+          setShowFind(true);
+          setShowReplace(false);
+          setTimeout(() => {
+            findInputRef.current?.focus();
+            findInputRef.current?.select();
+          }, 50);
+        }
+        return;
+      }
+
       // Editor-level shortcuts (require editor focus)
       if (!editor) return;
 
-      // Ctrl + H (Highlight)
-      if (isCtrl && !e.shiftKey && e.key.toLowerCase() === "h") {
+      // Ctrl + H or Ctrl + Shift + H (Highlight)
+      if (isCtrl && e.key.toLowerCase() === "h") {
         e.preventDefault();
         editor.chain().focus().toggleHighlight().run();
         return;
@@ -2085,7 +2129,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeDoc, activeId, docs, sortedDocs, closedDocsHistory, editor, changeTab]);
+  }, [activeDoc, activeId, docs, sortedDocs, closedDocsHistory, editor, changeTab, showFind, showReplace, closeFind]);
 
   // Ctrl + Mouse Wheel Zoom Listener
   useEffect(() => {
@@ -2272,16 +2316,6 @@ export default function App() {
     (editor.commands as any).replaceAll(replaceText);
     (editor.commands as any).setSearchTerm(findText);
     updateSearchMatchCount();
-  };
-
-  const closeFind = () => {
-    setShowFind(false);
-    setFindText("");
-    if (editor) {
-      (editor.commands as any).setSearchTerm("");
-    }
-    setFindResultsCount(0);
-    setFindActiveIndex(0);
   };
 
   const scrollToMatch = () => {
@@ -3447,23 +3481,61 @@ export default function App() {
 
       {/* ── Find / Replace Panel ── */}
       {showFind && (
-        <div className="notepad-find-panel" style={{ position: "fixed", top: 88, right: 20, width: 320, background: effectiveDark ? "rgba(30, 30, 30, 0.88)" : "rgba(255, 255, 255, 0.94)", border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.1)", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,0.25)", backdropFilter: "blur(12px)", zIndex: 250, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div className="notepad-find-panel" style={{ position: "fixed", top: 88, right: 20, width: 340, background: effectiveDark ? "rgba(30, 30, 30, 0.88)" : "rgba(255, 255, 255, 0.94)", border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.1)", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,0.25)", backdropFilter: "blur(12px)", zIndex: 250, padding: "10px", display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <button
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, border: "none", background: "transparent", color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", cursor: "pointer" }}
+              title={showReplace ? "Collapse Replace" : "Expand Replace"}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 26,
+                height: 26,
+                borderRadius: 6,
+                border: "none",
+                background: "transparent",
+                color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)",
+                cursor: "pointer",
+                transition: "background 0.15s, color 0.15s",
+              }}
               onClick={() => {
                 setShowReplace(!showReplace);
                 if (!showReplace) setTimeout(() => replaceInputRef.current?.focus(), 50);
               }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                e.currentTarget.style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)";
+              }}
             >
               <ChevronRight size={14} style={{ transform: showReplace ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
             </button>
-            <div style={{ display: "flex", alignItems: "center", flex: 1, background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.04)", border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)", borderRadius: 6, padding: "0 6px", height: 26 }}>
-              <Search size={12} style={{ color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.4)", marginRight: 4 }} />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flex: 1,
+                background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.03)",
+                border: isFindFocused
+                  ? `1px solid ${surfAccent}`
+                  : (effectiveDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.12)"),
+                borderRadius: 6,
+                padding: "0 8px",
+                height: 28,
+                transition: "border-color 0.15s, box-shadow 0.15s",
+                boxShadow: isFindFocused ? `0 0 0 2px ${surfAccent}25` : "none",
+              }}
+            >
+              <Search size={12} style={{ color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.4)", marginRight: 6 }} />
               <input
                 ref={findInputRef}
                 value={findText}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => setIsFindFocused(true)}
+                onBlur={() => setIsFindFocused(false)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -3476,25 +3548,134 @@ export default function App() {
                 style={{ background: "transparent", border: "none", outline: "none", color: effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.85)", fontSize: 12, flex: 1 }}
               />
               {findText && (
-                <span style={{ fontSize: 10, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)" }}>
+                <span style={{ fontSize: 10, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontWeight: 500, marginLeft: 4 }}>
                   {findResultsCount > 0 ? `${findActiveIndex + 1}/${findResultsCount}` : "0/0"}
                 </span>
               )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <button disabled={findResultsCount === 0} onClick={handlePrevMatch} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, border: "none", background: "transparent", color: findResultsCount === 0 ? "rgba(128,128,128,0.3)" : "inherit", cursor: "pointer" }}><ChevronRight size={14} style={{ transform: "rotate(-90deg)" }} /></button>
-              <button disabled={findResultsCount === 0} onClick={handleNextMatch} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, border: "none", background: "transparent", color: findResultsCount === 0 ? "rgba(128,128,128,0.3)" : "inherit", cursor: "pointer" }}><ChevronRight size={14} style={{ transform: "rotate(90deg)" }} /></button>
-              <button onClick={closeFind} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, border: "none", background: "transparent", cursor: "pointer" }}><X size={14} /></button>
+              <button
+                disabled={findResultsCount === 0}
+                onClick={handlePrevMatch}
+                title="Previous Match"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 26,
+                  height: 26,
+                  borderRadius: 6,
+                  border: "none",
+                  background: "transparent",
+                  color: findResultsCount === 0
+                    ? (effectiveDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)")
+                    : (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"),
+                  cursor: findResultsCount === 0 ? "not-allowed" : "pointer",
+                  transition: "background 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (findResultsCount > 0) {
+                    e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                    e.currentTarget.style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.9)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (findResultsCount > 0) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)";
+                  }
+                }}
+              >
+                <ChevronRight size={14} style={{ transform: "rotate(-90deg)" }} />
+              </button>
+              <button
+                disabled={findResultsCount === 0}
+                onClick={handleNextMatch}
+                title="Next Match"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 26,
+                  height: 26,
+                  borderRadius: 6,
+                  border: "none",
+                  background: "transparent",
+                  color: findResultsCount === 0
+                    ? (effectiveDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)")
+                    : (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"),
+                  cursor: findResultsCount === 0 ? "not-allowed" : "pointer",
+                  transition: "background 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  if (findResultsCount > 0) {
+                    e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                    e.currentTarget.style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.9)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (findResultsCount > 0) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)";
+                  }
+                }}
+              >
+                <ChevronRight size={14} style={{ transform: "rotate(90deg)" }} />
+              </button>
+              <button
+                onClick={closeFind}
+                title="Close"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 26,
+                  height: 26,
+                  borderRadius: 6,
+                  border: "none",
+                  background: "transparent",
+                  color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)",
+                  cursor: "pointer",
+                  transition: "background 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = effectiveDark ? "rgba(255,99,99,0.15)" : "rgba(255,0,0,0.08)";
+                  e.currentTarget.style.color = effectiveDark ? "#FF5555" : "#CC0000";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)";
+                }}
+              >
+                <X size={14} />
+              </button>
             </div>
           </div>
           {showReplace && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-              <div style={{ width: 24 }} />
-              <div style={{ display: "flex", alignItems: "center", flex: 1, background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.04)", border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)", borderRadius: 6, padding: "0 6px", height: 26 }}>
+              <div style={{ width: 26 }} />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flex: 1,
+                  background: effectiveDark ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.03)",
+                  border: isReplaceFocused
+                    ? `1px solid ${surfAccent}`
+                    : (effectiveDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.12)"),
+                  borderRadius: 6,
+                  padding: "0 8px",
+                  height: 28,
+                  transition: "border-color 0.15s, box-shadow 0.15s",
+                  boxShadow: isReplaceFocused ? `0 0 0 2px ${surfAccent}25` : "none",
+                }}
+              >
                 <input
                   ref={replaceInputRef}
                   value={replaceText}
                   onChange={(e) => setReplaceText(e.target.value)}
+                  onFocus={() => setIsReplaceFocused(true)}
+                  onBlur={() => setIsReplaceFocused(false)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") { e.preventDefault(); handleReplace(); }
                     if (e.key === "Escape") closeFind();
@@ -3503,9 +3684,75 @@ export default function App() {
                   style={{ background: "transparent", border: "none", outline: "none", color: effectiveDark ? "var(--t1)" : "rgba(0, 0, 0, 0.85)", fontSize: 12, flex: 1 }}
                 />
               </div>
-              <div style={{ display: "flex", gap: 3 }}>
-                <button onClick={handleReplace} disabled={findResultsCount === 0} style={{ fontSize: 11, border: "none", borderRadius: 4, height: 24, padding: "0 8px", cursor: "pointer" }}>Replace</button>
-                <button onClick={handleReplaceAll} disabled={findResultsCount === 0} style={{ fontSize: 11, border: "none", borderRadius: 4, height: 24, padding: "0 8px", cursor: "pointer" }}>All</button>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button
+                  onClick={handleReplace}
+                  disabled={findResultsCount === 0}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    border: effectiveDark ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(0,0,0,0.12)",
+                    borderRadius: 6,
+                    height: 28,
+                    padding: "0 10px",
+                    cursor: findResultsCount === 0 ? "not-allowed" : "pointer",
+                    background: findResultsCount === 0
+                      ? (effectiveDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)")
+                      : (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"),
+                    color: findResultsCount === 0
+                      ? (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)")
+                      : (effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"),
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (findResultsCount > 0) {
+                      e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.09)";
+                      e.currentTarget.style.borderColor = surfAccent;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (findResultsCount > 0) {
+                      e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                      e.currentTarget.style.borderColor = effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)";
+                    }
+                  }}
+                >
+                  Replace
+                </button>
+                <button
+                  onClick={handleReplaceAll}
+                  disabled={findResultsCount === 0}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    border: effectiveDark ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(0,0,0,0.12)",
+                    borderRadius: 6,
+                    height: 28,
+                    padding: "0 10px",
+                    cursor: findResultsCount === 0 ? "not-allowed" : "pointer",
+                    background: findResultsCount === 0
+                      ? (effectiveDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)")
+                      : (effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)"),
+                    color: findResultsCount === 0
+                      ? (effectiveDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)")
+                      : (effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"),
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (findResultsCount > 0) {
+                      e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.09)";
+                      e.currentTarget.style.borderColor = surfAccent;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (findResultsCount > 0) {
+                      e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                      e.currentTarget.style.borderColor = effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)";
+                    }
+                  }}
+                >
+                  All
+                </button>
               </div>
             </div>
           )}
