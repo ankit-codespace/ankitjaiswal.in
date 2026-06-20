@@ -2471,9 +2471,6 @@ export default function App() {
     return { ...base, maxWidth: 580, margin: "0 auto", padding: `${pt} 40px 96px` };
   })();
 
-  const wordCount = editor?.storage.characterCount?.words() ?? 0;
-  const charCount = editor?.storage.characterCount?.characters() ?? 0;
-
   const savedAgoText = (() => {
     const s = Math.round((Date.now() - lastSaved.getTime()) / 1000);
     if (s < 5) return "Saved";
@@ -2710,7 +2707,7 @@ export default function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0, height: "100%", WebkitAppRegion: "no-drag" } as any}>
             <div style={{ display: "flex", alignItems: "center", height: "100%", transform: "translateY(2.5px)" }}>
               <span className="saved-ago-status" style={{ fontSize: 11, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif", paddingBottom: 0, marginRight: 6 }}>
-                {wordCount} {wordCount === 1 ? "word" : "words"} ({charCount} {charCount === 1 ? "char" : "chars"}) · {savedAgoText}
+                {savedAgoText}
               </span>
 
               <div style={{ width: 1, height: 20, background: sepColor, margin: "0 6px", flexShrink: 0, alignSelf: "center", paddingBottom: 0 }} />
