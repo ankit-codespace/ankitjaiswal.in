@@ -404,9 +404,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 Building high-performance utilities and search-optimized digital spaces.
               </p>
-              <div className="text-[11px]" style={{ color: "#4B5563", fontFamily: "'Inter', sans-serif" }}>
-                Punjab, IN (GMT+5:30)
-              </div>
+
             </div>
 
             {/* Column 2: Explore */}
