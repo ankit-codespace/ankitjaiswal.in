@@ -1,9 +1,19 @@
-# Layout Calibration Build Plan
+# Image Annotation Highlighting & Upgrades — Build Plan
 
-## Phase 1: Tab Switch Calibration Event Dispatch
-- In `notepad-win/src/renderer/src/App.tsx` and `artifacts/website/src/pages/tools/notepad.tsx`, add a `useEffect` hook listening to `activeId` changes.
-- Within this hook, use a `setTimeout` of 100ms to dispatch a window `resize` event. This will trigger the alignment function after the display state resolves to `block`.
-
-## Phase 2: Paint Settle Deferrals
-- In the `alignBlocksToGrid` functions of both files, wrap the layout height measurements in a `requestAnimationFrame` block.
-- Add a subsequent `setTimeout` execution of the calculations to handle asynchronous custom component paintings.
+## Implement Steps
+1. **Extend Schemas**:
+   - Update `Annotation` interface in `paste-to-image.tsx`.
+   - Add state hook `[textStyle, setTextStyle]` in `PasteToImage` component.
+2. **Implement Helper Functions**:
+   - Write `isLightHex(hex)` for auto-contrasting text colors.
+   - Write `drawRoundedRect(ctx, x, y, w, h, r)` for background bounding boxes.
+3. **Live Overlay Style Hardening**:
+   - Bind background, textShadow, padding, margin, color, and caretColor properties to textStyle values on the absolute editing overlay block.
+4. **Active Toolbar Selector UI**:
+   - Render a button pill group for "Plain", "Highlight", and "Solid" in the active text tool options bar.
+5. **Canvas Redraw & Export Rendering**:
+   - Modify `redrawCanvas()` to calculate multi-line bounding boxes and render colored/yellow backdrops before drawing text. Add drop shadow parameters to plain style annotations.
+   - Mirror the rendering modifications in `buildExportCanvas()` with appropriate image scale adjustments.
+6. **Compile & Deploy**:
+   - Run `npm run build` on the website repository.
+   - Commit changes and deploy.

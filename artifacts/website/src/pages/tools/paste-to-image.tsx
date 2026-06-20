@@ -112,11 +112,47 @@ interface Annotation {
   // Text-specific (only present when type === "text")
   text?: string;
   fontSize?: number;  // normalized to image-native pixels at display scale
+  textStyle?: "plain" | "highlight" | "solid";
 }
 
 type StrokeWidth = 2 | 4 | 6;
 
 const COLORS = ["#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#007AFF", "#AF52DE", "#FFFFFF"];
+
+function isLightHex(hex: string): boolean {
+  const c = hex.replace("#", "");
+  if (c.length === 3) {
+    const r = parseInt(c[0] + c[0], 16);
+    const g = parseInt(c[1] + c[1], 16);
+    const b = parseInt(c[2] + c[2], 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5;
+  }
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5;
+}
+
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
 
 /* ─────────────── SEO content ─────────────── */
 
@@ -249,6 +285,7 @@ export default function PasteToImage() {
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fontSize, setFontSize] = useState(20);
+  const [textStyle, setTextStyle] = useState<"plain" | "highlight" | "solid">("plain");
   const [activeTextPos, setActiveTextPos] = useState<{ x: number; y: number } | null>(null);
   const [autoDownload, setAutoDownload] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -402,11 +439,46 @@ export default function PasteToImage() {
         const displayFontSize = (ann.fontSize ?? 20 * imageScale) / imageScale;
         ctx.save();
         ctx.font = `500 ${displayFontSize}px Inter, system-ui, sans-serif`;
-        ctx.fillStyle = ann.color;
         ctx.textBaseline = "top";
+
         const lines = ann.text.split("\n");
+        let maxLineWidth = 0;
+        lines.forEach(line => {
+          const width = ctx.measureText(line).width;
+          if (width > maxLineWidth) maxLineWidth = width;
+        });
+        const lineHeight = displayFontSize * 1.35;
+        const totalHeight = lines.length * lineHeight;
+
+        const paddingX = displayFontSize * 0.4;
+        const paddingY = displayFontSize * 0.2;
+        const bgX = sx - paddingX;
+        const bgY = sy - paddingY;
+        const bgW = maxLineWidth + paddingX * 2;
+        const bgH = totalHeight + paddingY * 2;
+
+        const style = ann.textStyle ?? "plain";
+
+        if (style === "highlight") {
+          ctx.fillStyle = "rgba(255, 235, 59, 0.95)";
+          drawRoundedRect(ctx, bgX, bgY, bgW, bgH, displayFontSize * 0.2);
+          ctx.fill();
+          ctx.fillStyle = "#000000";
+        } else if (style === "solid") {
+          ctx.fillStyle = ann.color;
+          drawRoundedRect(ctx, bgX, bgY, bgW, bgH, displayFontSize * 0.2);
+          ctx.fill();
+          ctx.fillStyle = isLightHex(ann.color) ? "#000000" : "#FFFFFF";
+        } else {
+          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
+          ctx.fillStyle = ann.color;
+        }
+
         lines.forEach((line, i) => {
-          ctx.fillText(line, sx, sy + i * displayFontSize * 1.35);
+          ctx.fillText(line, sx, sy + i * lineHeight);
         });
         ctx.restore();
       }
@@ -762,10 +834,11 @@ export default function PasteToImage() {
       strokeWidth: 0,
       text,
       fontSize: fontSize * imageScale,
+      textStyle: textStyle,
     }]);
     setActiveTextPos(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTextPos, currentColor, fontSize, image, displaySize]);
+  }, [activeTextPos, currentColor, fontSize, image, displaySize, textStyle]);
 
   const discardTextAnnotation = useCallback(() => {
     setActiveTextPos(null);
@@ -930,13 +1003,48 @@ export default function PasteToImage() {
         const fs = ann.fontSize ?? (20 * imageScale);
         ctx.save();
         ctx.font = `500 ${fs}px Inter, system-ui, sans-serif`;
-        ctx.fillStyle = ann.color;
         ctx.textBaseline = "top";
         ctx.textRendering = "optimizeLegibility" as unknown as CanvasTextRendering;
-        // Draw each line (support multi-line)
+
         const lines = ann.text.split("\n");
+        let maxLineWidth = 0;
+        lines.forEach(line => {
+          const width = ctx.measureText(line).width;
+          if (width > maxLineWidth) maxLineWidth = width;
+        });
+        const lineHeight = fs * 1.35;
+        const totalHeight = lines.length * lineHeight;
+
+        const paddingX = fs * 0.4;
+        const paddingY = fs * 0.2;
+        const bgX = px - paddingX;
+        const bgY = py - paddingY;
+        const bgW = maxLineWidth + paddingX * 2;
+        const bgH = totalHeight + paddingY * 2;
+
+        const style = ann.textStyle ?? "plain";
+
+        if (style === "highlight") {
+          ctx.fillStyle = "rgba(255, 235, 59, 0.95)";
+          drawRoundedRect(ctx, bgX, bgY, bgW, bgH, fs * 0.2);
+          ctx.fill();
+          ctx.fillStyle = "#000000";
+        } else if (style === "solid") {
+          ctx.fillStyle = ann.color;
+          drawRoundedRect(ctx, bgX, bgY, bgW, bgH, fs * 0.2);
+          ctx.fill();
+          ctx.fillStyle = isLightHex(ann.color) ? "#000000" : "#FFFFFF";
+        } else {
+          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+          ctx.shadowBlur = 4 * imageScale;
+          ctx.shadowOffsetX = 1 * imageScale;
+          ctx.shadowOffsetY = 1 * imageScale;
+          ctx.fillStyle = ann.color;
+        }
+
+        // Draw each line (support multi-line)
         lines.forEach((line, i) => {
-          ctx.fillText(line, px, py + i * fs * 1.35);
+          ctx.fillText(line, px, py + i * lineHeight);
         });
         ctx.restore();
       }
@@ -1722,24 +1830,52 @@ export default function PasteToImage() {
                     <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
                     {currentTool === "text" ? (
-                      /* Font size stepper — shown only when text tool active */
-                      <div className="flex items-center gap-0.5 shrink-0" title="Font size">
-                        <button
-                          onClick={() => setFontSize(s => Math.max(10, s - 2))}
-                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
-                          style={{ color: "#8C8A85" }}
-                          title="Decrease font size"
-                        >−</button>
-                        <span
-                          className="w-7 text-center text-[12px] font-medium tabular-nums select-none"
-                          style={{ color: "#F0EDE8" }}
-                        >{fontSize}</span>
-                        <button
-                          onClick={() => setFontSize(s => Math.min(72, s + 2))}
-                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
-                          style={{ color: "#8C8A85" }}
-                          title="Increase font size"
-                        >+</button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Font size stepper — shown only when text tool active */}
+                        <div className="flex items-center gap-0.5" title="Font size">
+                          <button
+                            onClick={() => setFontSize(s => Math.max(10, s - 2))}
+                            className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                            style={{ color: "#8C8A85" }}
+                            title="Decrease font size"
+                          >−</button>
+                          <span
+                            className="w-7 text-center text-[12px] font-medium tabular-nums select-none"
+                            style={{ color: "#F0EDE8" }}
+                          >{fontSize}</span>
+                          <button
+                            onClick={() => setFontSize(s => Math.min(72, s + 2))}
+                            className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                            style={{ color: "#8C8A85" }}
+                            title="Increase font size"
+                          >+</button>
+                        </div>
+
+                        <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
+
+                        {/* Text style selector */}
+                        <div className="flex gap-0.5" title="Text Style">
+                          {(["plain", "highlight", "solid"] as const).map((styleOption) => (
+                            <button
+                              key={styleOption}
+                              onClick={() => setTextStyle(styleOption)}
+                              className="px-2.5 h-6 rounded-[5px] text-[11px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221] capitalize"
+                              style={textStyle === styleOption
+                                ? { background: "#282826", color: "#F0EDE8" }
+                                : { color: "#8C8A85" }
+                              }
+                              title={
+                                styleOption === "plain"
+                                  ? "Plain text with drop shadow"
+                                  : styleOption === "highlight"
+                                    ? "Yellow highlight box"
+                                    : "Solid color fill box"
+                              }
+                            >
+                              {styleOption}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     ) : (
                       <div className="flex gap-0.5 shrink-0" title="Stroke Width">
@@ -1947,17 +2083,31 @@ export default function PasteToImage() {
                             minWidth: 80,
                             maxWidth: displaySize.width - activeTextPos.x - 8,
                             outline: "none",
-                            border: "1px dashed rgba(240,237,232,0.2)",
-                            borderRadius: 3,
-                            padding: "1px 3px",
-                            color: currentColor,
+                            border: textStyle === "plain" ? "1px dashed rgba(240,237,232,0.2)" : "none",
+                            borderRadius: "4px",
+                            padding: `${fontSize * 0.2}px ${fontSize * 0.4}px`,
+                            margin: `-${fontSize * 0.2}px -${fontSize * 0.4}px`,
+                            color: textStyle === "highlight" 
+                              ? "#000000" 
+                              : (textStyle === "solid" 
+                                  ? (isLightHex(currentColor) ? "#000000" : "#FFFFFF") 
+                                  : currentColor),
                             fontSize: fontSize,
                             fontFamily: "Inter, system-ui, sans-serif",
                             fontWeight: 500,
                             lineHeight: 1.35,
-                            background: "transparent",
+                            background: textStyle === "highlight" 
+                              ? "rgba(255, 235, 59, 0.95)" 
+                              : (textStyle === "solid" ? currentColor : "transparent"),
+                            textShadow: textStyle === "plain" 
+                              ? "1px 1px 1px rgba(0, 0, 0, 0.75), 0 0 4px rgba(0, 0, 0, 0.75)" 
+                              : "none",
                             whiteSpace: "pre",
-                            caretColor: currentColor,
+                            caretColor: textStyle === "highlight" 
+                              ? "#000000" 
+                              : (textStyle === "solid" 
+                                  ? (isLightHex(currentColor) ? "#000000" : "#FFFFFF") 
+                                  : currentColor),
                             zIndex: 10,
                             pointerEvents: "auto",
                             // Prevent layout from shifting the canvas

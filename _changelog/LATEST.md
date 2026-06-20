@@ -1,6 +1,8 @@
 # Session Changelog - June 20, 2026
 
 ## What was worked on this session
+- Resolved background ruler alignment calibration mismatches and delay in the "I Love Notepad" app by deferring grid measurement queries (using `requestAnimationFrame` and sequential timeouts) and dispatching a custom resize event post tab-switch.
+- Implemented high-contrast yellow highlights and solid background box text styles for the browser clipboard paste-to-image annotation tool, aligning editing canvas overlay text visual styling with exported canvas files.
 - Redesigned the Find & Replace panels in both the desktop app (`App.tsx`) and the web portfolio (`notepad.tsx`) for premium visual contrast, theme awareness, and custom hover states.
 - Restored standard global keydown bindings (`Ctrl+F` and `Ctrl+Shift+F`) to toggle and focus the Find & Replace panel on the desktop target.
 - Wired support for both `Ctrl+H` and `Ctrl+Shift+H` to act as universal highlighting triggers.
@@ -13,6 +15,15 @@
 
 
 ## What was completed
+- **Notebook Ruler Layout Calibration**:
+  - **Deferred Measure Calls**: Deferred layout grid computations via nested `requestAnimationFrame` and sequential timeouts (`setTimeout` at 60ms and 180ms) in desktop `App.tsx` and web `notepad.tsx`.
+  - **Tab Switch Resize Dispatch**: Injected a post-tab-switch effect dispatching a window `resize` event after a 100ms delay to force DOM layout recalibration.
+- **Image Annotation Highlighting & Upgrades**:
+  - **State and Style Schema**: Added `textStyle: "plain" | "highlight" | "solid"` properties to the canvas `Annotation` schemas.
+  - **High-contrast Yellow Highlights**: Implemented a yellow highlight bounding box (`rgba(255, 235, 59, 0.95)`) for canvas drawing, export canvas drawing, and live editing overlay text.
+  - **Active Fill Solid Boxes**: Added solid bounding fills matching the drawing color with automatic dark/light text contrast calculation via luminance checking.
+  - **Readability Drop Shadows**: Applied soft drop shadows on plain text annotations for legibility across variable background details.
+  - **Toolbar Controls**: Integrated a new Text Style button group in the text tools options bar for plain, highlight, and solid presets.
 - **Scroll Stutter & Layout Shift Resolution**:
   - **Early Scroll Capture**: Added `changeTab` wrapper to capture scroll position immediately on tab navigation before layout updates.
   - **Parallel Editor DOM Mounting**: Mounted all open tabs in parallel wrapper divs with CSS display toggles, preventing page height collapse and scroll resets.

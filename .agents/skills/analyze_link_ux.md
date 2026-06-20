@@ -13,16 +13,34 @@ This skill conducts a deep analysis of ProseMirror/Tiptap link nodes, mouse even
      }
      ```
      This instructs the browser to ignore the link element on click, letting clicks pass through to ProseMirror as normal text. This instantly restores native text cursor placement, double-click word selection, drag selection, and Shift+Click selection inside links.
-2. **Toolbar Link Insertion Bug**:
-   - **Diagnosis**: Currently, clicking the link button in the toolbar triggers `window.prompt()`. This is an outdated design pattern that blocks the browser main thread, interrupts focus state, and doesn't match modern SaaS design principles.
-   - **The Golden Solution**: Implement a React-based floating Popover or BubbleMenu that contains editing inputs for URL and Display Text, triggered by clicking the link button or pressing `Ctrl + K`.
+
+2. **The Toolbar Link Insertion & BubbleMenu Blur Bug**:
+   - **Diagnosis**:
+     In the current setup, the `<BubbleMenu>` is configured with:
+     ```tsx
+     shouldShow={({ editor }) => {
+       return !!(editor.isFocused && (editor.isActive("link") || isLinkPopoverOpen));
+     }}
+     ```
+     When the user clicks the "Insert Link" button on the toolbar or focuses the `<input>` element inside the `<BubbleMenu>` popover:
+     - The editor view loses focus (focus shifts to the toolbar button or the input field).
+     - Therefore, `editor.isFocused` immediately evaluates to `false`.
+     - Therefore, `shouldShow` evaluates to `false`, causing the link popover to vanish instantly or fail to mount.
+   - **The Golden Solution**:
+     Decouple `isLinkPopoverOpen` from the editor's focus state in `shouldShow`. If the popover is explicitly open, it must stay visible regardless of editor focus:
+     ```tsx
+     shouldShow={({ editor }) => {
+       return !!(isLinkPopoverOpen || (editor.isFocused && editor.isActive("link")));
+     }}
+     ```
+     This permits focusing the popover input field and clicking the toolbar button without triggering an immediate close.
+
 3. **Floating Link Tooltip (BubbleMenu)**:
    - **Diagnosis**: Since `pointer-events: none` is applied to editor links, users cannot click the link to visit the site directly.
    - **The Golden Solution**: We will implement a custom `<BubbleMenu>` container positioned on the active link. When the cursor is inside a link node, a premium, theme-aware tooltip floats above the cursor. The tooltip contains:
-     - The target URL represented as a clickable link (with `pointer-events: auto` so it can be clicked to open in a new tab).
+     - The target URL represented as a clickable link (with `pointer-events: auto` so it can be clicked to open in a new tab / browser).
      - An **Edit Link** button.
      - An **Unlink** button (`unsetLink()`) to quickly remove the link markup.
-4. **Markdown Code Blocks Precaution**:
-   - Ensure that URLs inside `codeBlock` nodes are not auto-linked by configuring the Tiptap Link extension with `autolink: true` but ensuring it does not apply within code-formatted environments.
-5. **Self-Audit of the Analysis**:
-   - Using CSS `pointer-events: none` inside the editor + a floating BubbleMenu outside the editor canvas is the exact pattern used by Figma, Notion, and Google Docs. It provides a flawless editing experience while preserving link navigation utility.
+
+4. **Self-Audit of the Analysis**:
+   - Decoupling focus from the popover state inside `shouldShow` resolves the vanishing input field issue. CSS pointer-events bypass combined with a bubble menu is the modern standard for Notion, Figma, and Medium editors.
