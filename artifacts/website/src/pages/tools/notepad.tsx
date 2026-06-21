@@ -314,6 +314,7 @@ interface NotepadSettings {
   paperGrain: boolean; // subtle paper-fiber texture on the canvas
   imageBorder: boolean; // soft hairline frame around inline images
   zoom?: number;
+  rulerOpacity?: "less" | "normal" | "more";
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -341,6 +342,7 @@ const DEFAULT_SETTINGS: NotepadSettings = {
   paperGrain: true,
   imageBorder: true,
   zoom: 1.1,
+  rulerOpacity: "normal",
 };
 
 /**
@@ -3048,6 +3050,8 @@ export default function Notepad() {
 
   // ── Editor container layout based on width setting ─────────────────────────
   const editorInnerStyle: React.CSSProperties = (() => {
+    const rulerOpacityVal = settings.rulerOpacity === "less" ? 0.03 : (settings.rulerOpacity === "more" ? 0.15 : 0.07);
+    const rulerOpacityLightVal = settings.rulerOpacity === "less" ? 0.04 : (settings.rulerOpacity === "more" ? 0.18 : 0.08);
     const base: React.CSSProperties = {
       color: surfTxt,
       // Set line-height as a real CSS property so it reliably propagates to the
@@ -3061,6 +3065,8 @@ export default function Notepad() {
       // (which uses calc(var(--np-lh) * var(--np-fs))) still works.
       ["--np-lh" as string]: String(settings.lineHeight),
       ["--np-fs" as string]: `${settings.fontSize}px`,
+      ["--np-ruler-opacity" as string]: String(rulerOpacityVal),
+      ["--np-ruler-opacity-light" as string]: String(rulerOpacityLightVal),
     };
     if (settings.writingWidth === "wide") return { ...base, padding: "44px 7% 96px" };
     if (settings.writingWidth === "focused") return { ...base, maxWidth: 760, margin: "0 auto", padding: "44px 40px 96px" };
@@ -3068,7 +3074,7 @@ export default function Notepad() {
   })();
 
   // ── Pill button for settings popup ────────────────────────────────────────
-  const pill = (active: boolean, onClick: () => void, label: string) => (
+  const pill = (active: boolean, onClick: () => void, label: string, padding: string = "0 12px") => (
     <button
       key={label}
       onClick={onClick}
@@ -3078,7 +3084,7 @@ export default function Notepad() {
         // this, Inter's cap-heavy text reads as "stuck to the top" inside an
         // equally-padded pill.
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        height: 26, padding: "0 12px",
+        height: 26, padding,
         borderRadius: 6, border: "1px solid",
         borderColor: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.1)",
         background: active ? "rgba(255,255,255,0.93)" : "transparent",
@@ -4380,6 +4386,18 @@ export default function Notepad() {
                       {pill(settings.ruledLines, () => updateSetting("ruledLines", true), "Ruled")}
                     </div>
                   </div>
+                  {settings.ruledLines ? (
+                    <div>
+                      <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Line Intensity</div>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {pill(settings.rulerOpacity === "less", () => updateSetting("rulerOpacity", "less"), "Faint", "0 8px")}
+                        {pill(settings.rulerOpacity === "normal" || !settings.rulerOpacity, () => updateSetting("rulerOpacity", "normal"), "Normal", "0 8px")}
+                        {pill(settings.rulerOpacity === "more", () => updateSetting("rulerOpacity", "more"), "Distinct", "0 8px")}
+                      </div>
+                    </div>
+                  ) : (
+                    <div />
+                  )}
                   <div>
                     <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Underline typos as you write">Spell check</div>
                     <div style={{ display: "flex", gap: 4 }}>

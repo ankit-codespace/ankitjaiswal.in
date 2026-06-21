@@ -687,6 +687,7 @@ interface NotepadSettings {
   paperGrain: boolean;
   imageBorder: boolean;
   zoom?: number;
+  rulerOpacity?: "less" | "normal" | "more";
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -706,6 +707,7 @@ const DEFAULT_SETTINGS: NotepadSettings = {
   paperGrain: true,
   imageBorder: true,
   zoom: 1.1,
+  rulerOpacity: "normal",
 };
 
 const THEMES = [
@@ -2696,12 +2698,16 @@ export default function App() {
   const editorInnerStyle: React.CSSProperties = (() => {
     const ruledSize = settings.fontSize * settings.lineHeight;
     const pt = settings.ruledLines ? `${ruledSize}px` : "44px";
+    const rulerOpacityVal = settings.rulerOpacity === "less" ? 0.03 : (settings.rulerOpacity === "more" ? 0.15 : 0.07);
+    const rulerOpacityLightVal = settings.rulerOpacity === "less" ? 0.04 : (settings.rulerOpacity === "more" ? 0.18 : 0.08);
     const base: React.CSSProperties = {
       color: surfTxt,
       lineHeight: settings.lineHeight,
       zoom: settings.zoom || 1.0,
       ["--np-lh" as string]: String(settings.lineHeight),
       ["--np-fs" as string]: `${settings.fontSize}px`,
+      ["--np-ruler-opacity" as string]: String(rulerOpacityVal),
+      ["--np-ruler-opacity-light" as string]: String(rulerOpacityLightVal),
     };
     if (settings.writingWidth === "wide") return { ...base, padding: `${pt} 7% 96px` };
     if (settings.writingWidth === "focused") return { ...base, maxWidth: 760, margin: "0 auto", padding: `${pt} 40px 96px` };
@@ -3661,6 +3667,18 @@ export default function App() {
                   {pill(settings.ruledLines, () => updateSetting("ruledLines", true), "Ruled")}
                 </div>
               </div>
+              {settings.ruledLines ? (
+                <div>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>Line Intensity</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {pill(settings.rulerOpacity === "less", () => updateSetting("rulerOpacity", "less"), "Faint", "0 8px")}
+                    {pill(settings.rulerOpacity === "normal" || !settings.rulerOpacity, () => updateSetting("rulerOpacity", "normal"), "Normal", "0 8px")}
+                    {pill(settings.rulerOpacity === "more", () => updateSetting("rulerOpacity", "more"), "Distinct", "0 8px")}
+                  </div>
+                </div>
+              ) : (
+                <div />
+              )}
               <div>
                 <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>Spell check</div>
                 <div style={{ display: "flex", gap: 4 }}>

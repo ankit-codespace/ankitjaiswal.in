@@ -321,8 +321,8 @@
     to bottom,
     transparent,
     transparent calc(var(--ruled-size) - 1px),
-    rgba(255, 255, 255, 0.07) calc(var(--ruled-size) - 1px),
-    rgba(255, 255, 255, 0.07) var(--ruled-size)
+    rgba(255, 255, 255, var(--np-ruler-opacity, 0.07)) calc(var(--ruled-size) - 1px),
+    rgba(255, 255, 255, var(--np-ruler-opacity, 0.07)) var(--ruled-size)
   );
   background-size: 100% var(--ruled-size);
   background-origin: content-box;
@@ -334,8 +334,8 @@
     to bottom,
     transparent,
     transparent calc(var(--ruled-size) - 1px),
-    rgba(0, 0, 0, 0.08) calc(var(--ruled-size) - 1px),
-    rgba(0, 0, 0, 0.08) var(--ruled-size)
+    rgba(0, 0, 0, var(--np-ruler-opacity-light, 0.08)) calc(var(--ruled-size) - 1px),
+    rgba(0, 0, 0, var(--np-ruler-opacity-light, 0.08)) var(--ruled-size)
   );
 }
 
