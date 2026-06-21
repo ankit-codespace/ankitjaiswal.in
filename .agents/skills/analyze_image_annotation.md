@@ -1,28 +1,34 @@
-# Skill: Analyze Image Annotation Toolbar and Text Rendering
+# Skill: Analyze Image Annotation Editor and Canvas Text Rendering
 
-This skill conducts a deep architectural audit of the canvas annotation editor in `paste-to-image.tsx` to identify the root causes of the toolbar Cumulative Layout Shift (CLS) and the unbalanced vertical text padding inside highlighted background boxes.
+This skill conducts a deep architectural audit of the canvas annotation editor in `paste-to-image.tsx` to identify the root causes of the toolbar Cumulative Layout Shift (CLS), text shadow contrast issues, coordinate-shifting bugs, and vertical text alignment mismatches.
 
 ## Analysis & Findings
 
-### 1. Cumulative Layout Shift (CLS) in the Toolbar
-- **Root Cause:** When the user switches to the "Text" tool, the editor toolbar replaces the "Stroke Width" controls (3 small buttons taking up ~90px) with the "Text Font & Style" controls (size stepper, separator, and Plain/Highlight/Solid buttons taking up ~230px). Because the toolbar container uses a wrap-based flexbox layout, this sudden 140px width expansion pushes subsequent buttons (`Copy`, `Download`, etc.) rightward, forcing them to wrap to a second line. Switching back to another tool shrinks the width, shifting the elements back up. This constant layout snapping is a bad user experience.
+### 1. Toolbar wrapping & layout options (CLS)
+- **Root Cause:** Showing the font size stepper and style selector directly inline when the "Text" tool is active expands the toolbar width by ~140px. On smaller viewports, this causes the main action buttons (`Download`, `Copy`) to wrap onto a second line, creating layout clutter and CLS.
 - **Top 1% SaaS Solution:**
-  Wrap both the "Text font & style" controls and the "Stroke width" controls inside a statically sized container (`w-[270px]` or `w-[17rem]`) using a centered flex alignment and `shrink-0`. 
-  This reserves a constant, identical spacing zone in the toolbar. Switching tools swaps the controls inside this fixed zone, eliminating all layout shifts and wrapping behaviors in the rest of the toolbar.
+  Remove inline text styling options completely from the horizontal layout flow. When the user clicks the "Text" (T) tool button, display a floating settings popover card positioned absolutely below the "T" button.
+  This popover will contain the size stepper and a segmented control for style options (`Plain`, `Highlight`, `Solid`). This maintains a completely static, single-line toolbar with zero layout shift.
 
-### 2. Unbalanced Text Padding inside highlighted boxes
-- **Root Cause:**
-  - In CSS (handling the HTML input typing overlay), `line-height: 1.35` distributes the leading space (the `0.35 * fontSize` difference) equally above and below the text line (`0.175` top and `0.175` bottom).
-  - In Canvas drawing (handling both the display canvas and the download export canvas), the rendering engine uses `ctx.textBaseline = "top"`. This places the top of the em-square exactly at the y-coordinate. Thus, the entire `0.35 * fontSize` leading space is placed below the text line.
-  - The background box is drawn with height `bgH = lines.length * lineHeight + paddingY * 2` and starts at `bgY = sy - paddingY`.
-  - Consequently, the top padding is exactly `paddingY` (`0.2 * fontSize`), while the bottom padding is `paddingY + 0.55 * fontSize` (`0.75 * fontSize`). This makes the text look heavily pushed toward the top of the box.
+### 2. Plain Text Shadows & Contrast Awareness
+- **Root Cause:** Plain text uses an outdated CSS-style text shadow (`ctx.shadowBlur = 4`, `textShadow: "1px 1px 1px..."`) which looks fuzzy and unprofessional.
 - **Top 1% SaaS Solution:**
-  To distribute the leading space equally (matching the CSS rendering), we calculate the half-leading offset:
-  `halfLeading = (lineHeight - fontSize) / 2 = 0.175 * fontSize`.
-  When rendering text on the canvas, we offset the text drawing y-coordinate downward by `halfLeading`:
-  `ctx.fillText(line, x, y + halfLeading + i * lineHeight);`
-  This shifts the text down by `0.175 * fontSize`, making the visual top padding and bottom padding perfectly symmetrical at `paddingY + halfLeading`, achieving pixel-perfect centering!
+  - Remove all shadows from plain text rendering.
+  - Implement a contrast-aware color selector: when drawing plain text on the canvas, sample the pixel color directly from the background image at the text's coordinate using `ctx.getImageData(sx, sy, 1, 1).data`.
+  - Calculate its relative luminance: `luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255`.
+  - If the sampled background brightness matches the selected text color's brightness (e.g. black text on a dark background or white text on a light background), automatically invert the text fill color to its opposite (`#FFFFFF` or `#000000`) to maintain perfect legibility.
+  - Apply the same contrast awareness to the HTML preview overlay by sampling the click coordinates during text editing.
+
+### 3. Text coordinate-shifting bug
+- **Root Cause:** When editing text, the overlay has an `onBlur` listener that calls `commitTextAnnotation()`. If the user clicks elsewhere on the canvas, `onMouseDown` on the canvas fires *before* the input overlay blurs. `handleMouseDown` immediately overwrites `activeTextPos` with the new click coordinates. Once the overlay finally blurs, `commitTextAnnotation` reads the *new* `activeTextPos` from state and saves the text at the new click location, causing it to shift.
+- **Top 1% SaaS Solution:**
+  In `handleMouseDown`, check if `activeTextPos` is already open. If it is, call `commitTextAnnotation()` immediately (which uses the current input text and the correct old position) and return early. This saves the note at the correct location, closes the editor, and prevents a new text box from being created on the same click.
+
+### 4. Unbalanced Text Padding inside highlighted boxes
+- **Root Cause:** Canvas uses `textBaseline = "top"`, which aligns the top of the em-square to the y-coordinate, leaving the font's internal leading space entirely at the bottom. Since CSS centers this space, the canvas output looked shifted upwards.
+- **Top 1% SaaS Solution:**
+  Calculate the half-leading offset: `halfLeading = (lineHeight - fontSize) / 2 = 0.175 * fontSize`. Offset the text drawing coordinate downward: `y + halfLeading + i * lineHeight` to balance the margins symmetrically.
 
 ## Analysis Self-Audit
-- **Toolbar CLS Fix:** Verified that wrapping the conditional elements inside a fixed-width container is standard practice in SaaS image editors (e.g. Figma and Miro) to prevent content shift.
-- **Padding Centering Math:** Symmetrical padding calculation is mathematically verified to align the canvas rendering with the browser font box rendering.
+- **Racial State Audit:** Confirmed that committing the text annotation early inside `handleMouseDown` solves the race condition before state updates.
+- **Contrast Check:** Verified that sampling `ctx.getImageData` dynamically on local image files is fast and robust.
