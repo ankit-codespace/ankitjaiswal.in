@@ -13,3 +13,7 @@ Status: SUCCESS
 - [PHASE 4 COMPLETE] 2026-06-21T14:55:05
 - [PHASE 5 COMPLETE] 2026-06-21T14:56:19
 - [WORKFLOW COMPLETE] 2026-06-21T14:56:26
+- [PDF FIX STARTED] 2026-06-21T15:00:00 - Diagnosed native PDF print dialog issue
+- [PDF FIX IMPLEMENTED] 2026-06-21T15:01:25 - Implemented 'native-save-pdf' handler in main.js, exposed via preload.js, wired into exportPdf in App.tsx
+- [PDF FIX COMPILED] 2026-06-21T15:02:50 - Packaged new installers
+- [PDF FIX INSTALLED] 2026-06-21T15:04:58 - Silently updated local installation to verify fix

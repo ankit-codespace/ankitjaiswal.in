@@ -80,6 +80,7 @@ interface ElectronAPI {
   maximizeApp: () => Promise<void>;
   setWindowSize: (w: number, h: number) => Promise<void>;
   openExternal: (url: string) => Promise<boolean>;
+  savePdf: (options: { title: string; html: string }) => Promise<{ success: boolean; filePath?: string; reason?: string }>;
   onOpenFile: (callback: (data: { path: string; name: string; content: string }) => void) => () => void;
 }
 
@@ -2664,9 +2665,31 @@ export default function App() {
     setShowExportMenu(false);
   };
 
-  const exportPdf = () => {
+  const exportPdf = async () => {
     setShowExportMenu(false);
-    window.print();
+    if (!editor) return;
+    
+    if (window.electronAPI?.savePdf) {
+      const html = editor.getHTML() ?? "";
+      toast.loading("Preparing PDF export...", { id: "pdf-export" });
+      try {
+        const result = await window.electronAPI.savePdf({
+          title: activeDoc.title,
+          html
+        });
+        if (result.success) {
+          toast.success("PDF saved successfully!", { id: "pdf-export" });
+        } else if (result.reason !== "cancelled") {
+          toast.error(`Failed to save PDF: ${result.reason}`, { id: "pdf-export" });
+        } else {
+          toast.dismiss("pdf-export");
+        }
+      } catch (err: any) {
+        toast.error(`Error saving PDF: ${err.message || err}`, { id: "pdf-export" });
+      }
+    } else {
+      window.print();
+    }
   };
 
   const exportSmart = () => {

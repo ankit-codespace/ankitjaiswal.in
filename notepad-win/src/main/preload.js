@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximizeApp: () => ipcRenderer.invoke('maximize-app'),
   setWindowSize: (w, h) => ipcRenderer.invoke('set-window-size', w, h),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  savePdf: ({ title, html }) => ipcRenderer.invoke('native-save-pdf', { title, html }),
   onOpenFile: (callback) => {
     const subscription = (event, data) => callback(data);
     ipcRenderer.on('open-file-channel', subscription);
