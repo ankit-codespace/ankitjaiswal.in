@@ -833,6 +833,7 @@ export default function Notepad() {
   const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
   const [linkInputUrl, setLinkInputUrl] = useState("");
   const [isEditingLink, setIsEditingLink] = useState(false);
+  const [linkPopoverCoords, setLinkPopoverCoords] = useState<{ top: number; left: number } | null>(null);
   const [editorContextMenu, setEditorContextMenu] = useState<{ x: number; y: number; visible: boolean; targetUrl?: string } | null>(null);
   const [editorVersion, setEditorVersion] = useState(0);
   const [showFind, setShowFind] = useState(false);
@@ -1098,6 +1099,25 @@ export default function Notepad() {
         }
       },
       handleKeyDown(view, event) {
+        // If they press Space immediately after/at the end of a link
+        if (event.key === " " || event.code === "Space") {
+          const { state } = view;
+          const { selection } = state;
+          if (selection.empty) {
+            const { $from } = selection;
+            const hasLinkBefore = $from.nodeBefore && $from.nodeBefore.marks.some(m => m.type.name === "link");
+            const hasLinkAfter = $from.nodeAfter && $from.nodeAfter.marks.some(m => m.type.name === "link");
+            if (hasLinkBefore && !hasLinkAfter) {
+              const tr = state.tr.insertText(" ", selection.from);
+              const linkType = state.schema.marks.link;
+              tr.removeStoredMark(linkType);
+              view.dispatch(tr);
+              event.preventDefault();
+              return true;
+            }
+          }
+        }
+
         // Top-priority Enter handler: when the cursor is in an empty paragraph
         // sandwiched between an image (above) and a non-empty paragraph (below),
         // pressing Enter removes the redundant blank line and lands the cursor
@@ -2347,6 +2367,56 @@ export default function Notepad() {
       }
     }, 10);
   };
+
+  const updateLinkPopoverCoords = () => {
+    if (!editor || !isLinkPopoverOpen) {
+      setLinkPopoverCoords(null);
+      return;
+    }
+    try {
+      const { selection } = editor.state;
+      const fromCoords = editor.view.coordsAtPos(selection.from);
+      const toCoords = editor.view.coordsAtPos(selection.to);
+      
+      const left = (fromCoords.left + toCoords.left) / 2;
+      const top = Math.max(fromCoords.bottom, toCoords.bottom) + 8;
+      
+      const popoverWidth = 340;
+      const viewportWidth = window.innerWidth;
+      const adjustedLeft = Math.max(12, Math.min(left - popoverWidth / 2, viewportWidth - popoverWidth - 12));
+      
+      setLinkPopoverCoords({
+        top,
+        left: adjustedLeft
+      });
+    } catch (e) {
+      try {
+        const domRect = editor.view.dom.getBoundingClientRect();
+        setLinkPopoverCoords({
+          top: domRect.top + 80,
+          left: domRect.left + (domRect.width - 340) / 2
+        });
+      } catch (err) {}
+    }
+  };
+
+  useEffect(() => {
+    if (!editor) return;
+    const update = () => {
+      updateLinkPopoverCoords();
+    };
+    editor.on("selectionUpdate", update);
+    editor.on("transaction", update);
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    update();
+    return () => {
+      editor.off("selectionUpdate", update);
+      editor.off("transaction", update);
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [editor, isLinkPopoverOpen]);
 
   const saveLink = (url: string) => {
     if (!editor) return;
@@ -5490,21 +5560,13 @@ export default function Notepad() {
       </AnimatePresence>
 
       {/* ── Link Bubble Menu & Popover ── */}
-      {editor && (
-        <BubbleMenu
-          editor={editor}
-          options={{
-            placement: "bottom",
-            onHide: () => {
-              setIsLinkPopoverOpen(false);
-              setIsEditingLink(false);
-            }
-          }}
-          shouldShow={({ editor }: { editor: any }) => {
-            const isEditorFocused = editor.isFocused;
-            const isInputFocused = document.activeElement?.closest(".tippy-content") || document.activeElement?.closest("[data-tippy-root]");
-            const hasFocus = isEditorFocused || isInputFocused;
-            return !!(hasFocus && (editor.isActive("link") || isLinkPopoverOpen));
+      {editor && isLinkPopoverOpen && linkPopoverCoords && (
+        <div
+          style={{
+            position: "fixed",
+            top: linkPopoverCoords.top,
+            left: linkPopoverCoords.left,
+            zIndex: 1000,
           }}
         >
           <div
@@ -5672,7 +5734,7 @@ export default function Notepad() {
               </>
             )}
           </div>
-        </BubbleMenu>
+        </div>
       )}
 
       {/* ── Custom Context Menu ── */}
