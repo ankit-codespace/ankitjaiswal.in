@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeApp: () => ipcRenderer.invoke('close-app'),
   minimizeApp: () => ipcRenderer.invoke('minimize-app'),
   maximizeApp: () => ipcRenderer.invoke('maximize-app'),
+  setWindowSize: (w, h) => ipcRenderer.invoke('set-window-size', w, h),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   onOpenFile: (callback) => {
     const subscription = (event, data) => callback(data);

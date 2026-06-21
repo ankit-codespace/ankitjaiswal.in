@@ -329,6 +329,16 @@ ipcMain.handle('maximize-app', () => {
   }
 });
 
+ipcMain.handle('set-window-size', (event, w, h) => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    }
+    mainWindow.setSize(w, h, true);
+    mainWindow.center();
+  }
+});
+
 ipcMain.handle('open-external', async (event, url) => {
   try {
     await shell.openExternal(url);

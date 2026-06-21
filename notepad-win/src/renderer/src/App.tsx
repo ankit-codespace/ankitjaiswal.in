@@ -66,7 +66,7 @@ import {
   ImageIcon, Link as LinkIcon, Minus, Undo2, Redo2, Search, X, Maximize2,
   Minimize2, Download, ChevronDown, ChevronRight, Plus, FileText, PanelLeft,
   Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Clock, Quote, Settings, Eraser,
-  Trash2, Save, Pin, Table2, Code2, Copy, Keyboard, ExternalLink, Edit
+  Trash2, Save, Pin, Table2, Code2, Copy, Keyboard, ExternalLink, Edit, Monitor
 } from "lucide-react";
 
 // ── ElectronAPI Types ─────────────────────────────────────────────────────────
@@ -78,6 +78,7 @@ interface ElectronAPI {
   closeApp: () => Promise<void>;
   minimizeApp: () => Promise<void>;
   maximizeApp: () => Promise<void>;
+  setWindowSize: (w: number, h: number) => Promise<void>;
   openExternal: (url: string) => Promise<boolean>;
   onOpenFile: (callback: (data: { path: string; name: string; content: string }) => void) => () => void;
 }
@@ -3364,6 +3365,60 @@ export default function App() {
                 title="Zoom In (Ctrl++)"
               >
                 +
+              </button>
+            </div>
+          </div>
+
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+          {/* Window Size Control */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Monitor size={13} style={{ opacity: 0.7, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)" }} />
+              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif", fontSize: 13, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)" }}>Window Size</span>
+            </div>
+            <div style={{ display: "flex", gap: 4, background: effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", borderRadius: 6, padding: "2px" }}>
+              <button
+                onClick={() => {
+                  window.electronAPI.setWindowSize(380, 600);
+                  setShowFileMenu(false);
+                }}
+                className="notepad-file-menu-item"
+                style={{
+                  flex: 1, background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
+                  cursor: "pointer", fontSize: 11, fontWeight: 500, padding: "4px 8px", borderRadius: 4,
+                  display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter,sans-serif"
+                }}
+              >
+                Compact
+              </button>
+              <button
+                onClick={() => {
+                  window.electronAPI.setWindowSize(800, 600);
+                  setShowFileMenu(false);
+                }}
+                className="notepad-file-menu-item"
+                style={{
+                  flex: 1, background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
+                  cursor: "pointer", fontSize: 11, fontWeight: 500, padding: "4px 8px", borderRadius: 4,
+                  display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter,sans-serif"
+                }}
+              >
+                Standard
+              </button>
+              <button
+                onClick={() => {
+                  window.electronAPI.setWindowSize(1200, 800);
+                  setShowFileMenu(false);
+                }}
+                className="notepad-file-menu-item"
+                style={{
+                  flex: 1, background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
+                  cursor: "pointer", fontSize: 11, fontWeight: 500, padding: "4px 8px", borderRadius: 4,
+                  display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter,sans-serif"
+                }}
+              >
+                Expanded
               </button>
             </div>
           </div>
