@@ -1380,7 +1380,17 @@ const NotepadEditor = ({
 export default function App() {
   const [docs, setDocs] = useState<NotepadDoc[]>(() => loadDocs());
   const [activeId, setActiveId] = useState<string>(() => loadActiveId(loadDocs()));
+  const [visitedDocIds, setVisitedDocIds] = useState<string[]>(() => {
+    const initialActive = loadActiveId(loadDocs());
+    return initialActive ? [initialActive] : [];
+  });
   const [settings, setSettings] = useState<NotepadSettings>(() => loadSettings());
+
+  useEffect(() => {
+    if (activeId && !visitedDocIds.includes(activeId)) {
+      setVisitedDocIds((prev) => [...prev, activeId]);
+    }
+  }, [activeId, visitedDocIds]);
 
   const scrollPositionsRef = useRef<{ [id: string]: number }>({});
   const isRestoringScrollRef = useRef<boolean>(false);
@@ -1795,6 +1805,9 @@ export default function App() {
     const nextDocs = docs.filter((d) => d.id !== idToDelete);
     setDocs(nextDocs);
     saveDocs(nextDocs);
+
+    // Clean up visited state to free up memory
+    setVisitedDocIds((prev) => prev.filter((id) => id !== idToDelete));
 
     if (idToDelete === activeId) {
       const fallbackIndex = index === 0 ? 0 : index - 1;
@@ -4169,6 +4182,10 @@ export default function App() {
 
             {docs.map((doc) => {
               const isActive = doc.id === activeId;
+              const hasBeenVisited = visitedDocIds.includes(doc.id);
+              if (!hasBeenVisited) {
+                return <div key={doc.id} style={{ display: "none" }} />;
+              }
               return (
                 <div key={doc.id} style={{ display: isActive ? "block" : "none" }}>
                   <NotepadEditor
