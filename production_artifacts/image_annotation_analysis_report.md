@@ -1,9 +1,13 @@
-# Image Annotation & CLS Audit Report
+# Image Annotation Layout & Alignment Hardening Audit Report
 
 ## 1. Findings
-- **Cumulative Layout Shift (CLS)**: The annotation toolbar experiences CLS because when `currentTool === 'text'`, a font-size control and style selection buttons are rendered. Otherwise, stroke-width selection buttons are rendered. These two sets of controls have different widths, causing adjacent tools (Undo, Clear, Copy, Download) to shift left or right.
-- **Canvas Text Alignment**: Text drawn on the canvas uses `ctx.textBaseline = 'top'`. This creates an asymmetric vertical layout inside the background boxes (especially for highlight and solid text styles), because font metrics have implicit top leading. Shifting the text baseline offset downward by `halfLeading = (lineHeight - fontSize) / 2` will center the text lines relative to the background boxes.
+- **Toolbar Layout Shift (CLS)**: The current horizontal layout inline text settings increase toolbar width dynamically when the text tool is active, leading to layout shifts and wrapping.
+- **Coordinate-Shifting Bug**: Clicking on the canvas while editing text updates the coordinates in state before the input box finishes its blur handler. When `commitTextAnnotation` runs on blur, it saves the text at the new coordinate instead of the original editing position.
+- **Plain Text Contrast & Drop Shadows**: Fuzzy drop shadows look unprofessional. Contrast-awareness is needed to automatically switch text color to black or white if the background color is too close in brightness.
+- **Vertical Padding**: Em-square baseline offset leaves text misaligned relative to highlight boxes. Symmetrical half-leading vertical offset resolves this.
 
-## 2. Recommendation
-- Wrap the conditional rendering blocks inside a static-width `w-[270px]` flex container.
-- Calculate and apply `halfLeading` to both the display and download canvas text rendering loops.
+## 2. Plan
+- Move text settings into a floating settings popover card under the "T" button.
+- Fix the coordinate-shifting race condition by committing text early when clicking the canvas.
+- Sample background pixel color at the text coordinate to invert text color if contrast is too low, and remove fuzzy plain text shadows.
+- Calibrate canvas text vertical offset by `halfLeading`.

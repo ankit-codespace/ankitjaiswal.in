@@ -295,6 +295,9 @@ export default function PasteToImage() {
   });
   const [shouldAutoDownload, setShouldAutoDownload] = useState(false);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showTextSettings, setShowTextSettings] = useState(false);
+  const textSettingsRef = useRef<HTMLDivElement>(null);
+  const [bgBrightnessUnderText, setBgBrightnessUnderText] = useState<'light' | 'dark' | null>(null);
 
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -458,6 +461,22 @@ export default function PasteToImage() {
         const bgH = totalHeight + paddingY * 2;
 
         const style = ann.textStyle ?? "plain";
+        let contrastColor = ann.color;
+        if (style === "plain") {
+          try {
+            const clampX = Math.max(0, Math.min(canvas.width - 1, Math.round(sx)));
+            const clampY = Math.max(0, Math.min(canvas.height - 1, Math.round(sy)));
+            const pixel = ctx.getImageData(clampX, clampY, 1, 1).data;
+            const bgLuminance = (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2]) / 255;
+            const textIsLight = isLightHex(ann.color);
+            const bgIsLight = bgLuminance > 0.5;
+            if (textIsLight === bgIsLight) {
+              contrastColor = bgIsLight ? "#000000" : "#FFFFFF";
+            }
+          } catch (e) {
+            console.error("Contrast sampling failed:", e);
+          }
+        }
 
         if (style === "highlight") {
           ctx.fillStyle = "rgba(255, 235, 59, 0.95)";
@@ -470,11 +489,7 @@ export default function PasteToImage() {
           ctx.fill();
           ctx.fillStyle = isLightHex(ann.color) ? "#000000" : "#FFFFFF";
         } else {
-          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetX = 1;
-          ctx.shadowOffsetY = 1;
-          ctx.fillStyle = ann.color;
+          ctx.fillStyle = contrastColor;
         }
 
         const halfLeading = (lineHeight - displayFontSize) / 2;
@@ -774,9 +789,29 @@ export default function PasteToImage() {
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!image) return;
 
+    if (activeTextPos) {
+      commitTextAnnotation();
+      return;
+    }
+
     // Text tool: show overlay at click position, don't start a draw
     if (currentTool === "text") {
       const pos = getMousePos(e);
+      try {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            const clampX = Math.max(0, Math.min(canvas.width - 1, Math.round(pos.x)));
+            const clampY = Math.max(0, Math.min(canvas.height - 1, Math.round(pos.y)));
+            const pixel = ctx.getImageData(clampX, clampY, 1, 1).data;
+            const bgLuminance = (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2]) / 255;
+            setBgBrightnessUnderText(bgLuminance > 0.5 ? 'light' : 'dark');
+          }
+        }
+      } catch (err) {
+        console.error("Sampling error in handleMouseDown: ", err);
+      }
       setActiveTextPos(pos);
       // Focus the overlay after React has rendered it
       requestAnimationFrame(() => {
@@ -1024,6 +1059,22 @@ export default function PasteToImage() {
         const bgH = totalHeight + paddingY * 2;
 
         const style = ann.textStyle ?? "plain";
+        let contrastColor = ann.color;
+        if (style === "plain") {
+          try {
+            const clampX = Math.max(0, Math.min(exportCanvas.width - 1, Math.round(px)));
+            const clampY = Math.max(0, Math.min(exportCanvas.height - 1, Math.round(py)));
+            const pixel = ctx.getImageData(clampX, clampY, 1, 1).data;
+            const bgLuminance = (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2]) / 255;
+            const textIsLight = isLightHex(ann.color);
+            const bgIsLight = bgLuminance > 0.5;
+            if (textIsLight === bgIsLight) {
+              contrastColor = bgIsLight ? "#000000" : "#FFFFFF";
+            }
+          } catch (e) {
+            console.error("Contrast sampling failed on export:", e);
+          }
+        }
 
         if (style === "highlight") {
           ctx.fillStyle = "rgba(255, 235, 59, 0.95)";
@@ -1036,11 +1087,7 @@ export default function PasteToImage() {
           ctx.fill();
           ctx.fillStyle = isLightHex(ann.color) ? "#000000" : "#FFFFFF";
         } else {
-          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
-          ctx.shadowBlur = 4 * imageScale;
-          ctx.shadowOffsetX = 1 * imageScale;
-          ctx.shadowOffsetY = 1 * imageScale;
-          ctx.fillStyle = ann.color;
+          ctx.fillStyle = contrastColor;
         }
 
         const halfLeading = (lineHeight - fs) / 2;
@@ -1299,6 +1346,20 @@ export default function PasteToImage() {
     }
     return undefined;
   }, [showDownloadMenu]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (textSettingsRef.current && !textSettingsRef.current.contains(e.target as Node)) {
+        setShowTextSettings(false);
+      }
+    };
+
+    if (showTextSettings) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+    return undefined;
+  }, [showTextSettings]);
   useEffect(() => {
     if (image && displaySize.width > 0 && shouldAutoDownload) {
       setShouldAutoDownload(false);
@@ -1725,26 +1786,125 @@ export default function PasteToImage() {
                 >
                   <div ref={toolbarRef} className="flex flex-wrap items-center gap-1 p-1.5 rounded-[10px]" style={{ background: "#1C1C1B", border: "1px solid #252523" }}>
                     <div className="flex gap-0.5 shrink-0">
-                      {tools.map((tool) => (
-                        <button
-                          key={tool.id}
-                          onClick={() => {
-                            setCurrentTool(tool.id);
-                            if (tool.id !== "crop") {
-                              setIsCropping(false);
-                              setCropArea(null);
+                      {tools.map((tool) => {
+                        if (tool.id === "text") {
+                          return (
+                            <div key={tool.id} className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCurrentTool(tool.id);
+                                  setShowTextSettings(!showTextSettings);
+                                  if (tool.id !== "crop") {
+                                    setIsCropping(false);
+                                    setCropArea(null);
+                                  }
+                                }}
+                                className="p-1.5 rounded-[7px] transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                                style={currentTool === tool.id
+                                  ? { background: "#282826", color: "#F0EDE8" }
+                                  : { color: "#8C8A85" }
+                                }
+                                title={tool.label}
+                              >
+                                <tool.icon className="h-4 w-4" />
+                              </button>
+                              <AnimatePresence>
+                                {showTextSettings && currentTool === "text" && (
+                                  <motion.div
+                                    ref={textSettingsRef}
+                                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                                    transition={{ duration: 0.15, ease: "easeOut" }}
+                                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 p-3 min-w-[240px] flex flex-col gap-3"
+                                    style={{
+                                      background: "rgba(22, 22, 21, 0.96)",
+                                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                                      borderRadius: "12px",
+                                      boxShadow: "0 12px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+                                      backdropFilter: "blur(12px)"
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[11px] font-medium" style={{ color: "#8C8A85" }}>Font Size</span>
+                                      <div className="flex items-center gap-0.5">
+                                        <button
+                                          onClick={() => setFontSize(s => Math.max(10, s - 2))}
+                                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                                          style={{ color: "#8C8A85" }}
+                                          title="Decrease font size"
+                                        >−</button>
+                                        <span
+                                          className="w-7 text-center text-[12px] font-medium tabular-nums select-none"
+                                          style={{ color: "#F0EDE8" }}
+                                        >{fontSize}</span>
+                                        <button
+                                          onClick={() => setFontSize(s => Math.min(72, s + 2))}
+                                          className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                                          style={{ color: "#8C8A85" }}
+                                          title="Increase font size"
+                                        >+</button>
+                                      </div>
+                                    </div>
+
+                                    <div className="h-px w-full" style={{ background: "#252523" }} />
+
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[11px] font-medium" style={{ color: "#8C8A85" }}>Text Style</span>
+                                      <div className="flex gap-0.5 bg-[#141413] p-0.5 rounded-[6px]" title="Text Style">
+                                        {(["plain", "highlight", "solid"] as const).map((styleOption) => (
+                                          <button
+                                            key={styleOption}
+                                            onClick={() => setTextStyle(styleOption)}
+                                            className="flex-1 py-1 rounded-[5px] text-[11px] font-medium transition-all duration-[140ms] capitalize"
+                                            style={textStyle === styleOption
+                                              ? { background: "#282826", color: "#F0EDE8" }
+                                              : { color: "#8C8A85" }
+                                            }
+                                            title={
+                                              styleOption === "plain"
+                                                ? "Plain text"
+                                                : styleOption === "highlight"
+                                                  ? "Yellow highlight box"
+                                                  : "Solid color fill box"
+                                            }
+                                          >
+                                            {styleOption}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={tool.id}
+                            onClick={() => {
+                              setCurrentTool(tool.id);
+                              setShowTextSettings(false);
+                              if (tool.id !== "crop") {
+                                setIsCropping(false);
+                                setCropArea(null);
+                              }
+                            }}
+                            className="p-1.5 rounded-[7px] transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                            style={currentTool === tool.id
+                              ? { background: "#282826", color: "#F0EDE8" }
+                              : { color: "#8C8A85" }
                             }
-                          }}
-                          className="p-1.5 rounded-[7px] transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
-                          style={currentTool === tool.id
-                            ? { background: "#282826", color: "#F0EDE8" }
-                            : { color: "#8C8A85" }
-                          }
-                          title={tool.label}
-                        >
-                          <tool.icon className="h-4 w-4" />
-                        </button>
-                      ))}
+                            title={tool.label}
+                          >
+                            <tool.icon className="h-4 w-4" />
+                          </button>
+                        );
+                      })}
                       <div className="relative">
                         <button
                           onClick={(e) => {
@@ -1844,55 +2004,7 @@ export default function PasteToImage() {
                     <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
                     <div className="w-[270px] flex items-center justify-center shrink-0">
-                      {currentTool === "text" ? (
-                        <div className="flex items-center gap-2 shrink-0">
-                          {/* Font size stepper — shown only when text tool active */}
-                          <div className="flex items-center gap-0.5" title="Font size">
-                            <button
-                              onClick={() => setFontSize(s => Math.max(10, s - 2))}
-                              className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
-                              style={{ color: "#8C8A85" }}
-                              title="Decrease font size"
-                            >−</button>
-                            <span
-                              className="w-7 text-center text-[12px] font-medium tabular-nums select-none"
-                              style={{ color: "#F0EDE8" }}
-                            >{fontSize}</span>
-                            <button
-                              onClick={() => setFontSize(s => Math.min(72, s + 2))}
-                              className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
-                              style={{ color: "#8C8A85" }}
-                              title="Increase font size"
-                            >+</button>
-                          </div>
-
-                          <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
-
-                          {/* Text style selector */}
-                          <div className="flex gap-0.5" title="Text Style">
-                            {(["plain", "highlight", "solid"] as const).map((styleOption) => (
-                              <button
-                                key={styleOption}
-                                onClick={() => setTextStyle(styleOption)}
-                                className="px-2.5 h-6 rounded-[5px] text-[11px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221] capitalize"
-                                style={textStyle === styleOption
-                                  ? { background: "#282826", color: "#F0EDE8" }
-                                  : { color: "#8C8A85" }
-                                }
-                                title={
-                                  styleOption === "plain"
-                                    ? "Plain text with drop shadow"
-                                    : styleOption === "highlight"
-                                      ? "Yellow highlight box"
-                                      : "Solid color fill box"
-                                }
-                              >
-                                {styleOption}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
+                      {currentTool !== "text" && (
                         <div className="flex gap-0.5 shrink-0" title="Stroke Width">
                           {([2, 4, 6] as StrokeWidth[]).map((w) => (
                             <button
@@ -2113,7 +2225,9 @@ export default function PasteToImage() {
                               ? "#000000" 
                               : (textStyle === "solid" 
                                   ? (isLightHex(currentColor) ? "#000000" : "#FFFFFF") 
-                                  : currentColor),
+                                  : (bgBrightnessUnderText && isLightHex(currentColor) === (bgBrightnessUnderText === "light")
+                                      ? (bgBrightnessUnderText === "light" ? "#000000" : "#FFFFFF")
+                                      : currentColor)),
                             fontSize: fontSize,
                             fontFamily: "Inter, system-ui, sans-serif",
                             fontWeight: 500,
@@ -2121,15 +2235,15 @@ export default function PasteToImage() {
                             background: textStyle === "highlight" 
                               ? "rgba(255, 235, 59, 0.95)" 
                               : (textStyle === "solid" ? currentColor : "transparent"),
-                            textShadow: textStyle === "plain" 
-                              ? "1px 1px 1px rgba(0, 0, 0, 0.75), 0 0 4px rgba(0, 0, 0, 0.75)" 
-                              : "none",
+                            textShadow: "none",
                             whiteSpace: "pre",
                             caretColor: textStyle === "highlight" 
                               ? "#000000" 
                               : (textStyle === "solid" 
                                   ? (isLightHex(currentColor) ? "#000000" : "#FFFFFF") 
-                                  : currentColor),
+                                  : (bgBrightnessUnderText && isLightHex(currentColor) === (bgBrightnessUnderText === "light")
+                                      ? (bgBrightnessUnderText === "light" ? "#000000" : "#FFFFFF")
+                                      : currentColor)),
                             zIndex: 10,
                             pointerEvents: "auto",
                             // Prevent layout from shifting the canvas
