@@ -2393,7 +2393,7 @@ export default function App() {
       const toCoords = editor.view.coordsAtPos(selection.to);
       
       const left = (fromCoords.left + toCoords.left) / 2;
-      const top = Math.max(fromCoords.bottom, toCoords.bottom) + 8;
+      const top = Math.max(fromCoords.bottom, toCoords.bottom) + 14;
       
       const popoverWidth = 340;
       const viewportWidth = window.innerWidth;
@@ -4475,7 +4475,7 @@ export default function App() {
                     transition: "border-color 0.15s ease"
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "var(--np-accent, #10B981)";
+                    e.target.style.borderColor = surfAccent;
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = effectiveDark ? "#2E2E2C" : "rgba(0,0,0,0.15)";
@@ -4489,7 +4489,7 @@ export default function App() {
                     justifyContent: "center",
                     width: "28px",
                     height: "28px",
-                    background: "var(--np-accent, #10B981)",
+                    background: surfAccent,
                     border: "none",
                     borderRadius: "4px",
                     color: "#FFFFFF",
@@ -4531,7 +4531,7 @@ export default function App() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
-                    color: "var(--np-accent, #10B981)",
+                    color: surfAccent,
                     background: "none",
                     border: "none",
                     cursor: "pointer",

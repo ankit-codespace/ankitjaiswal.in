@@ -2379,7 +2379,7 @@ export default function Notepad() {
       const toCoords = editor.view.coordsAtPos(selection.to);
       
       const left = (fromCoords.left + toCoords.left) / 2;
-      const top = Math.max(fromCoords.bottom, toCoords.bottom) + 8;
+      const top = Math.max(fromCoords.bottom, toCoords.bottom) + 14;
       
       const popoverWidth = 340;
       const viewportWidth = window.innerWidth;
@@ -5612,7 +5612,7 @@ export default function Notepad() {
                     transition: "border-color 0.15s ease"
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "var(--np-accent, #10B981)";
+                    e.target.style.borderColor = surfAccent;
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = effectiveDark ? "#2E2E2C" : "rgba(0,0,0,0.15)";
@@ -5626,7 +5626,7 @@ export default function Notepad() {
                     justifyContent: "center",
                     width: "28px",
                     height: "28px",
-                    background: "var(--np-accent, #10B981)",
+                    background: surfAccent,
                     border: "none",
                     borderRadius: "4px",
                     color: "#FFFFFF",
@@ -5665,7 +5665,7 @@ export default function Notepad() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
-                    color: "var(--np-accent, #10B981)",
+                    color: surfAccent,
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -5770,7 +5770,7 @@ export default function Notepad() {
                   gap: "8px",
                   padding: "6px 12px",
                   fontSize: "12.5px",
-                  color: "var(--np-accent, #10B981)",
+                  color: surfAccent,
                   textDecoration: "none",
                   borderRadius: "4px",
                   cursor: "pointer",
