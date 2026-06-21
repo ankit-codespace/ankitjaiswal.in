@@ -1641,22 +1641,28 @@ export default function PasteToImage() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.96 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="absolute top-full right-5 mt-2 z-50 w-56 border rounded-[10px] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
-                      style={{ background: "#1C1C1B", borderColor: "#2E2E2C" }}
+                      className="absolute top-full right-5 mt-2 z-50 w-56 p-4"
+                      style={{
+                        background: "rgba(22, 22, 21, 0.96)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "12px",
+                        boxShadow: "0 12px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+                        backdropFilter: "blur(12px)"
+                      }}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="space-y-5">
                         <div>
-                          <span className="text-[10px] font-medium tracking-[0.12em] uppercase block mb-2.5" style={{ color: "#3E3E3B" }}>Format</span>
+                          <span className="text-[10px] font-semibold tracking-[0.12em] uppercase block mb-2.5" style={{ color: "#8C8A85" }}>Format</span>
                           <div className="flex flex-wrap gap-1.5">
                             {(["jpeg", "png", "webp", "pdf"] as Format[]).map((f) => (
                               <button
                                 key={f}
                                 onClick={() => setFormat(f)}
-                                className="py-1.5 px-2.5 rounded-[7px] text-[11px] font-medium tracking-[0.08em] uppercase transition-all duration-[140ms]"
+                                className="py-1.5 px-2.5 rounded-[6px] text-[11px] font-medium tracking-[0.08em] uppercase transition-all duration-[140ms] border"
                                 style={format === f
-                                  ? { background: "#F0EDE8", color: "#0F0F0E" }
-                                  : { background: "#222221", color: "#7A7874", border: "1px solid #2E2E2C" }
+                                  ? { background: "#F0EDE8", color: "#0F0F0E", borderColor: "#F0EDE8" }
+                                  : { background: "rgba(255, 255, 255, 0.04)", color: "#7A7874", borderColor: "rgba(255, 255, 255, 0.08)" }
                                 }
                               >
                                 {f === "jpeg" ? "JPG" : f.toUpperCase()}
@@ -1679,12 +1685,12 @@ export default function PasteToImage() {
                               value={quality}
                               onChange={(e) => setQuality(parseFloat(e.target.value))}
                               className="w-full appearance-none cursor-pointer rounded-full"
-                              style={{ height: 2, background: `linear-gradient(to right,#F0EDE8 ${(quality - 0.5) * 200}%,#2E2E2C ${(quality - 0.5) * 200}%)` }}
+                              style={{ height: 2, background: `linear-gradient(to right, #F0EDE8 ${(quality - 0.5) * 200}%, rgba(255, 255, 255, 0.08) ${(quality - 0.5) * 200}%)` }}
                             />
                           </div>
                         )}
 
-                        <div className="pt-3 border-t" style={{ borderColor: "#2E2E2C" }}>
+                        <div className="pt-3 border-t" style={{ borderColor: "rgba(255, 255, 255, 0.08)" }}>
                           <label className="flex items-center justify-between cursor-pointer select-none">
                             <span className="text-[11px] font-medium" style={{ color: "#7A7874" }}>Auto-download</span>
                             <div className="relative flex items-center">
@@ -1695,7 +1701,7 @@ export default function PasteToImage() {
                                 className="sr-only peer"
                               />
                               <div className="w-8 h-4 rounded-full transition-colors duration-[140ms] peer-focus:outline-none"
-                                   style={{ background: autoDownload ? "#52C47A" : "#2E2E2C" }}
+                                   style={{ background: autoDownload ? "#52C47A" : "rgba(255, 255, 255, 0.08)" }}
                               />
                               <div className="absolute top-[2px] left-[2px] w-3 h-3 bg-[#F0EDE8] rounded-full transition-transform duration-[140ms]"
                                    style={{ transform: autoDownload ? "translateX(16px)" : "none" }}
@@ -1760,47 +1766,53 @@ export default function PasteToImage() {
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               exit={{ opacity: 0, y: -8, scale: 0.96 }}
                               transition={{ duration: 0.15, ease: "easeOut" }}
-                              className="absolute top-full left-0 mt-2 z-50 border rounded-[10px] py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55)] min-w-[168px]"
-                              style={{ background: "#1C1C1B", borderColor: "#2E2E2C" }}
+                              className="absolute top-full left-0 mt-2 z-50 py-1.5 min-w-[168px]"
+                              style={{
+                                background: "rgba(22, 22, 21, 0.96)",
+                                border: "1px solid rgba(255, 255, 255, 0.08)",
+                                borderRadius: "12px",
+                                boxShadow: "0 12px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+                                backdropFilter: "blur(12px)"
+                              }}
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button
                                 onClick={() => transformImage("flipH")}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] transition-all duration-[140ms]"
-                              style={{ color: "#7A7874" }}
-                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
-                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                                className="w-full flex items-center gap-3 px-4 py-2 text-[12px] transition-all duration-[140ms] rounded-[6px]"
+                                style={{ color: "#7A7874" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "rgba(255, 255, 255, 0.06)"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <FlipHorizontal className="h-4 w-4" />
                                 Flip Horizontal
                               </button>
                               <button
                                 onClick={() => transformImage("flipV")}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] transition-all duration-[140ms]"
-                              style={{ color: "#7A7874" }}
-                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
-                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                                className="w-full flex items-center gap-3 px-4 py-2 text-[12px] transition-all duration-[140ms] rounded-[6px]"
+                                style={{ color: "#7A7874" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "rgba(255, 255, 255, 0.06)"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <FlipVertical className="h-4 w-4" />
                                 Flip Vertical
                               </button>
-                              <div className="h-px bg-white/10 my-1" />
+                              <div className="h-px bg-white/5 my-1" />
                               <button
                                 onClick={() => transformImage("rotateL")}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] transition-all duration-[140ms]"
-                              style={{ color: "#7A7874" }}
-                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
-                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                                className="w-full flex items-center gap-3 px-4 py-2 text-[12px] transition-all duration-[140ms] rounded-[6px]"
+                                style={{ color: "#7A7874" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "rgba(255, 255, 255, 0.06)"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <RotateCcw className="h-4 w-4" />
                                 Rotate Left
                               </button>
                               <button
                                 onClick={() => transformImage("rotateR")}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] transition-all duration-[140ms]"
-                              style={{ color: "#7A7874" }}
-                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
-                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                                className="w-full flex items-center gap-3 px-4 py-2 text-[12px] transition-all duration-[140ms] rounded-[6px]"
+                                style={{ color: "#7A7874" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "rgba(255, 255, 255, 0.06)"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <RotateCw className="h-4 w-4" />
                                 Rotate Right
@@ -1984,8 +1996,14 @@ export default function PasteToImage() {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.96 }}
                             transition={{ duration: 0.15, ease: "easeOut" }}
-                            className="absolute top-full right-0 mt-2 z-50 border rounded-[10px] py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55)] min-w-[140px]"
-                            style={{ background: "#1C1C1B", borderColor: "#2E2E2C" }}
+                            className="absolute top-full right-0 mt-2 z-50 py-1.5 min-w-[140px]"
+                            style={{
+                              background: "rgba(22, 22, 21, 0.96)",
+                              border: "1px solid rgba(255, 255, 255, 0.08)",
+                              borderRadius: "12px",
+                              boxShadow: "0 12px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+                              backdropFilter: "blur(12px)"
+                            }}
                             onClick={(e) => e.stopPropagation()}
                           >
                             {(["png", "jpeg", "webp", "pdf"] as Format[]).map((f) => (
@@ -1996,9 +2014,9 @@ export default function PasteToImage() {
                                   setShowDownloadMenu(false);
                                   downloadImage(f);
                                 }}
-                                className="w-full flex items-center justify-between px-4 py-2 text-[12px] transition-all duration-[140ms] text-left"
+                                className="w-full flex items-center justify-between px-4 py-2 text-[12px] transition-all duration-[140ms] text-left rounded-[6px]"
                                 style={{ color: format === f ? "#F0EDE8" : "#7A7874" }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "#222221"; }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#F0EDE8"; (e.currentTarget as HTMLElement).style.background = "rgba(255, 255, 255, 0.06)"; }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = format === f ? "#F0EDE8" : "#7A7874"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                               >
                                 <span>{f === "jpeg" ? "JPG" : f.toUpperCase()}</span>
