@@ -477,8 +477,9 @@ export default function PasteToImage() {
           ctx.fillStyle = ann.color;
         }
 
+        const halfLeading = (lineHeight - displayFontSize) / 2;
         lines.forEach((line, i) => {
-          ctx.fillText(line, sx, sy + i * lineHeight);
+          ctx.fillText(line, sx, sy + i * lineHeight + halfLeading);
         });
         ctx.restore();
       }
@@ -1042,9 +1043,10 @@ export default function PasteToImage() {
           ctx.fillStyle = ann.color;
         }
 
+        const halfLeading = (lineHeight - fs) / 2;
         // Draw each line (support multi-line)
         lines.forEach((line, i) => {
-          ctx.fillText(line, px, py + i * lineHeight);
+          ctx.fillText(line, px, py + i * lineHeight + halfLeading);
         });
         ctx.restore();
       }
@@ -1841,75 +1843,77 @@ export default function PasteToImage() {
 
                     <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
-                    {currentTool === "text" ? (
-                      <div className="flex items-center gap-2 shrink-0">
-                        {/* Font size stepper — shown only when text tool active */}
-                        <div className="flex items-center gap-0.5" title="Font size">
-                          <button
-                            onClick={() => setFontSize(s => Math.max(10, s - 2))}
-                            className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
-                            style={{ color: "#8C8A85" }}
-                            title="Decrease font size"
-                          >−</button>
-                          <span
-                            className="w-7 text-center text-[12px] font-medium tabular-nums select-none"
-                            style={{ color: "#F0EDE8" }}
-                          >{fontSize}</span>
-                          <button
-                            onClick={() => setFontSize(s => Math.min(72, s + 2))}
-                            className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
-                            style={{ color: "#8C8A85" }}
-                            title="Increase font size"
-                          >+</button>
-                        </div>
-
-                        <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
-
-                        {/* Text style selector */}
-                        <div className="flex gap-0.5" title="Text Style">
-                          {(["plain", "highlight", "solid"] as const).map((styleOption) => (
+                    <div className="w-[270px] flex items-center justify-center shrink-0">
+                      {currentTool === "text" ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* Font size stepper — shown only when text tool active */}
+                          <div className="flex items-center gap-0.5" title="Font size">
                             <button
-                              key={styleOption}
-                              onClick={() => setTextStyle(styleOption)}
-                              className="px-2.5 h-6 rounded-[5px] text-[11px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221] capitalize"
-                              style={textStyle === styleOption
+                              onClick={() => setFontSize(s => Math.max(10, s - 2))}
+                              className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                              style={{ color: "#8C8A85" }}
+                              title="Decrease font size"
+                            >−</button>
+                            <span
+                              className="w-7 text-center text-[12px] font-medium tabular-nums select-none"
+                              style={{ color: "#F0EDE8" }}
+                            >{fontSize}</span>
+                            <button
+                              onClick={() => setFontSize(s => Math.min(72, s + 2))}
+                              className="w-6 h-6 rounded-[5px] flex items-center justify-center text-[14px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                              style={{ color: "#8C8A85" }}
+                              title="Increase font size"
+                            >+</button>
+                          </div>
+
+                          <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
+
+                          {/* Text style selector */}
+                          <div className="flex gap-0.5" title="Text Style">
+                            {(["plain", "highlight", "solid"] as const).map((styleOption) => (
+                              <button
+                                key={styleOption}
+                                onClick={() => setTextStyle(styleOption)}
+                                className="px-2.5 h-6 rounded-[5px] text-[11px] font-medium transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221] capitalize"
+                                style={textStyle === styleOption
+                                  ? { background: "#282826", color: "#F0EDE8" }
+                                  : { color: "#8C8A85" }
+                                }
+                                title={
+                                  styleOption === "plain"
+                                    ? "Plain text with drop shadow"
+                                    : styleOption === "highlight"
+                                      ? "Yellow highlight box"
+                                      : "Solid color fill box"
+                                }
+                              >
+                                {styleOption}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-0.5 shrink-0" title="Stroke Width">
+                          {([2, 4, 6] as StrokeWidth[]).map((w) => (
+                            <button
+                              key={w}
+                              onClick={() => setStrokeWidth(w)}
+                              className="w-7 h-7 rounded-[7px] flex items-center justify-center transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
+                              style={strokeWidth === w
                                 ? { background: "#282826", color: "#F0EDE8" }
                                 : { color: "#8C8A85" }
                               }
-                              title={
-                                styleOption === "plain"
-                                  ? "Plain text with drop shadow"
-                                  : styleOption === "highlight"
-                                    ? "Yellow highlight box"
-                                    : "Solid color fill box"
-                              }
+                              title={w === 2 ? "Thin" : w === 4 ? "Medium" : "Thick"}
                             >
-                              {styleOption}
+                              <div
+                                className="rounded-full bg-current"
+                                style={{ width: w + 2, height: w + 2 }}
+                              />
                             </button>
                           ))}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex gap-0.5 shrink-0" title="Stroke Width">
-                        {([2, 4, 6] as StrokeWidth[]).map((w) => (
-                          <button
-                            key={w}
-                            onClick={() => setStrokeWidth(w)}
-                            className="w-7 h-7 rounded-[7px] flex items-center justify-center transition-all duration-[140ms] hover:text-[#F0EDE8] hover:bg-[#222221]"
-                            style={strokeWidth === w
-                              ? { background: "#282826", color: "#F0EDE8" }
-                              : { color: "#8C8A85" }
-                            }
-                            title={w === 2 ? "Thin" : w === 4 ? "Medium" : "Thick"}
-                          >
-                            <div
-                              className="rounded-full bg-current"
-                              style={{ width: w + 2, height: w + 2 }}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 

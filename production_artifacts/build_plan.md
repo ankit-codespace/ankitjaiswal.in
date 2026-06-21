@@ -1,25 +1,30 @@
-# Link UX & Selection Hardening — Build Plan
+# Build Plan: Image Annotation Hardening
 
-## Phased Implementation Plan
+## Phase 1: Stabilize Toolbar Layout (Prevent CLS)
+Wrap the conditional rendering inside a static-width `w-[270px]` flex container:
+```tsx
+<div className="w-[270px] flex items-center justify-center shrink-0">
+  {currentTool === "text" ? (...) : (...)}
+</div>
+```
 
-### Phase 1: CSS Selection & Click Bypass
-- Verify `.ProseMirror a { pointer-events: none; }` is active in `artifacts/website/src/index.css`.
-- Verify `.ProseMirror a { pointer-events: none; }` is active in `notepad-win/src/renderer/src/index.css`.
+## Phase 2: Calibrate Canvas Display Text Centering
+Update `redrawCanvas` display rendering for `type === "text"` to compute and add `halfLeading` when placing text lines:
+```typescript
+const halfLeading = (lineHeight - displayFontSize) / 2;
+lines.forEach((line, i) => {
+  ctx.fillText(line, sx, sy + i * lineHeight + halfLeading);
+});
+```
 
-### Phase 2: Web Note-Switching State Isolation
-- Add a `useEffect` hook listening to `activeId` in `notepad.tsx` that resets link popover states by invoking `closeLinkPopover()`.
+## Phase 3: Calibrate Canvas Export Text Centering
+Update export rendering for `type === "text"` to compute and add `halfLeading` when placing text lines:
+```typescript
+const halfLeading = (lineHeight - fs) / 2;
+lines.forEach((line, i) => {
+  ctx.fillText(line, px, py + i * lineHeight + halfLeading);
+});
+```
 
-### Phase 3: Desktop Note-Switching State Isolation
-- Add a `useEffect` hook listening to `activeId` in `App.tsx` that resets link popover states by invoking `closeLinkPopover()`.
-
-### Phase 4: Decoupled Focus BubbleMenu (Web)
-- In `notepad.tsx`, update `<BubbleMenu>`'s `shouldShow` callback to assess focus on either the editor or the active element inside Tippy.
-- In `notepad.tsx`, update `insertLink()` to chain focus onto the editor.
-
-### Phase 5: Decoupled Focus BubbleMenu (Desktop)
-- In `App.tsx`, apply the same `shouldShow` decoupled callback to the link `<BubbleMenu>`.
-- In `App.tsx`, update `insertLink()` to chain focus onto the editor.
-
-### Phase 6: Verification & Compilation
-- Build the web bundle (`npm run build`).
-- Build the desktop renderer (`npm run build:renderer` inside `notepad-win`).
+## Phase 4: Verification
+Build the web assets and verify type safety.
