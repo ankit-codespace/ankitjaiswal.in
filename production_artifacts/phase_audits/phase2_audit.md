@@ -1,7 +1,6 @@
-# Phase 2 Audit: Live Clock Widget Implementation
+# Phase 2 Audit: Web Note-Switching State Isolation
 Status: COMPLETE
 
 ## Changes
-- Declared React state `[currentTime, setCurrentTime]` to hold local Punjab, India time values.
-- Integrated a `useEffect` layout timer on a 1-second interval using options configured for `timeZone: "Asia/Kolkata"` with standard 12-hour AM/PM formatting.
-- Integrated the live clock inside a pill layout featuring a pulsing green availability indicator.
+- Injected an activeId dependent `useEffect` hook in `notepad.tsx`.
+- Ensured switching note tabs invokes `closeLinkPopover()` to clear open states, preventing popovers from leaking onto new notes.

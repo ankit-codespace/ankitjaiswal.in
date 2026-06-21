@@ -1,23 +1,25 @@
-# Footer Redesign & Alignment — Build Plan
+# Link UX & Selection Hardening — Build Plan
 
-## Phased Execution Plan
+## Phased Implementation Plan
 
-### Phase 1: Brand Footer Structure & Styles
-- Modify `layout.tsx` footer container to use a dark background with a bottom radial glow.
-- Add a client-facing brand conversion card with a "Work with Me" contact action.
+### Phase 1: CSS Selection & Click Bypass
+- Verify `.ProseMirror a { pointer-events: none; }` is active in `artifacts/website/src/index.css`.
+- Verify `.ProseMirror a { pointer-events: none; }` is active in `notepad-win/src/renderer/src/index.css`.
 
-### Phase 2: Live Clock Widget Implementation
-- Inject a time state hook (`currentTime`) updating on a 1000ms timer interval.
-- Render the local clock display in the India Standard Time (IST) timezone `"Asia/Kolkata"` with a pulsing green indicator.
+### Phase 2: Web Note-Switching State Isolation
+- Add a `useEffect` hook listening to `activeId` in `notepad.tsx` that resets link popover states by invoking `closeLinkPopover()`.
 
-### Phase 3: Visual Polish & Micro-Animations
-- Restructure columns into:
-  1. About & Live Clock
-  2. Explore (Pages)
-  3. Professional Tools
-  4. Connect (WhatsApp, Email, LinkedIn)
-- Polish all text colors, fonts, hover scaling, and focus rings.
+### Phase 3: Desktop Note-Switching State Isolation
+- Add a `useEffect` hook listening to `activeId` in `App.tsx` that resets link popover states by invoking `closeLinkPopover()`.
 
-### Phase 4: Compile & Deploy
-- Execute production website compilation via `npm run build`.
-- Stage, commit, and push modifications to remote branches and mirror locally.
+### Phase 4: Decoupled Focus BubbleMenu (Web)
+- In `notepad.tsx`, update `<BubbleMenu>`'s `shouldShow` callback to assess focus on either the editor or the active element inside Tippy.
+- In `notepad.tsx`, update `insertLink()` to chain focus onto the editor.
+
+### Phase 5: Decoupled Focus BubbleMenu (Desktop)
+- In `App.tsx`, apply the same `shouldShow` decoupled callback to the link `<BubbleMenu>`.
+- In `App.tsx`, update `insertLink()` to chain focus onto the editor.
+
+### Phase 6: Verification & Compilation
+- Build the web bundle (`npm run build`).
+- Build the desktop renderer (`npm run build:renderer` inside `notepad-win`).

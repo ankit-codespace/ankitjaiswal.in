@@ -1565,6 +1565,11 @@ export default function App() {
     return undefined;
   }, [activeId]);
 
+  // Reset link popover states when notes change to prevent leakage
+  useEffect(() => {
+    closeLinkPopover();
+  }, [activeId]);
+
   // ── Native File Interactions & Autosave ──────────────────────────────────────
   
   // debounced autosave to native path
@@ -2318,6 +2323,7 @@ export default function App() {
 
   const insertLink = () => {
     if (!editor) return;
+    editor.commands.focus();
     const existing = editor.getAttributes("link").href ?? "";
     setLinkInputUrl(existing);
     setIsEditingLink(!existing); // if no existing link, start in editing mode; if there is one, start in preview mode
@@ -4333,7 +4339,10 @@ export default function App() {
             }
           }}
           shouldShow={({ editor }) => {
-            return !!(editor.isFocused && (editor.isActive("link") || isLinkPopoverOpen));
+            const isEditorFocused = editor.isFocused;
+            const isInputFocused = document.activeElement?.closest(".tippy-content") || document.activeElement?.closest("[data-tippy-root]");
+            const hasFocus = isEditorFocused || isInputFocused;
+            return !!(hasFocus && (editor.isActive("link") || isLinkPopoverOpen));
           }}
         >
           <div

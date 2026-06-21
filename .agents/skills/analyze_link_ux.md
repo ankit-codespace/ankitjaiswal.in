@@ -1,46 +1,54 @@
 # Skill: Analyze Link Selection and Toolbar UX
 
-This skill conducts a deep analysis of ProseMirror/Tiptap link nodes, mouse event interception in contenteditable, and the toolbar insertion UX to outline a permanent solution for link interaction.
+This skill conducts a deep architectural audit of the ProseMirror/Tiptap editor, mouse event/selection conflicts, state lifecycle during note switching, and Tippy.js popover focus conflicts.
 
-## Analysis Findings
+## Analysis & Findings
 
-1. **Selection & Click Hijacking Bug**:
-   - **Diagnosis**: Chromium-based environments (Electron and Chrome/Brave/Edge) treat `<a>` tags inside contenteditable as draggable/navigable blocks. Clicking inside a link fails to place the text cursor at that click position, drag selection over a link fails, and Shift+Click selection is hijacked.
-   - **The Golden Solution**: Style the editor links with `pointer-events: none` in the CSS:
-     ```css
-     .ProseMirror a {
-       pointer-events: none;
-     }
-     ```
-     This instructs the browser to ignore the link element on click, letting clicks pass through to ProseMirror as normal text. This instantly restores native text cursor placement, double-click word selection, drag selection, and Shift+Click selection inside links.
+### 1. The Toolbar "Insert Link" Button Focus-Loss Issue
+- **Root Cause:** When the user clicks the "Insert Link" button in the toolbar, browser focus moves from the editor to the toolbar button. This sets `editor.isFocused` to `false`.
+- **Popover Disappearance / Failure to Open:** The `shouldShow` callback of Tiptap's `<BubbleMenu>` is configured to check:
+  `return !!(editor.isFocused && (editor.isActive("link") || isLinkPopoverOpen));`
+  Since `editor.isFocused` is now `false`, `shouldShow` immediately evaluates to `false`, causing Tippy to either completely fail to mount or immediately unmount when clicked.
+- **Tippy.js Input Focus Conflict:** Even if the editor is focused first, the moment Tippy mounts and focuses the `<input>` element inside it (via `autoFocus`), focus leaves the editor. This triggers `editor.isFocused` to become `false`, unmounting the BubbleMenu and causing it to vanish.
+- **The Top 1% SaaS Solution:**
+  Decouple the focus check inside `shouldShow` to verify if the editor *or* the Tippy popover itself has focus. We check `document.activeElement?.closest('[data-tippy-root]')` to see if focus is inside the BubbleMenu.
+  ```tsx
+  shouldShow={({ editor }) => {
+    const isEditorFocused = editor.isFocused;
+    const isInputFocused = document.activeElement?.closest('[data-tippy-root]');
+    const hasFocus = isEditorFocused || isInputFocused;
+    return !!(hasFocus && (editor.isActive("link") || isLinkPopoverOpen));
+  }}
+  ```
+  Additionally, in the `insertLink` function, we must refocus the editor:
+  `editor.chain().focus().run();`
+  so that Tiptap registers the active selection/focus before Tippy steals it.
 
-2. **The Toolbar Link Insertion & BubbleMenu Blur Bug**:
-   - **Diagnosis**:
-     In the current setup, the `<BubbleMenu>` is configured with:
-     ```tsx
-     shouldShow={({ editor }) => {
-       return !!(editor.isFocused && (editor.isActive("link") || isLinkPopoverOpen));
-     }}
-     ```
-     When the user clicks the "Insert Link" button on the toolbar or focuses the `<input>` element inside the `<BubbleMenu>` popover:
-     - The editor view loses focus (focus shifts to the toolbar button or the input field).
-     - Therefore, `editor.isFocused` immediately evaluates to `false`.
-     - Therefore, `shouldShow` evaluates to `false`, causing the link popover to vanish instantly or fail to mount.
-   - **The Golden Solution**:
-     Decouple `isLinkPopoverOpen` from the editor's focus state in `shouldShow`. If the popover is explicitly open, it must stay visible regardless of editor focus:
-     ```tsx
-     shouldShow={({ editor }) => {
-       return !!(isLinkPopoverOpen || (editor.isFocused && editor.isActive("link")));
-     }}
-     ```
-     This permits focusing the popover input field and clicking the toolbar button without triggering an immediate close.
+### 2. State Leakage during Note Switching
+- **Root Cause:** The `isLinkPopoverOpen` and `isEditingLink` states are local component states. When the user switches notes, the page component does not unmount. The state persists as `true`.
+- **Automatic Popover Appearance:** When a new note is loaded or created, the editor is automatically focused. Because `isLinkPopoverOpen` is still `true`, `shouldShow` immediately returns `true`, causing the popover to show up automatically on the new note, which feels broken and buggy.
+- **The Top 1% SaaS Solution:**
+  Add a `useEffect` hook that listens to changes in the active document ID (`activeId`) and resets the link popover states:
+  ```tsx
+  useEffect(() => {
+    closeLinkPopover();
+  }, [activeId]);
+  ```
 
-3. **Floating Link Tooltip (BubbleMenu)**:
-   - **Diagnosis**: Since `pointer-events: none` is applied to editor links, users cannot click the link to visit the site directly.
-   - **The Golden Solution**: We will implement a custom `<BubbleMenu>` container positioned on the active link. When the cursor is inside a link node, a premium, theme-aware tooltip floats above the cursor. The tooltip contains:
-     - The target URL represented as a clickable link (with `pointer-events: auto` so it can be clicked to open in a new tab / browser).
-     - An **Edit Link** button.
-     - An **Unlink** button (`unsetLink()`) to quickly remove the link markup.
+### 3. Selection & Clicks Inside Links (CSS Selection Bypass)
+- **Root Cause:** Browsers treat `<a>` elements inside a `contenteditable` container as navigable links, interfering with click cursor placement, drag selections, double-clicks, and Shift+Click ranges.
+- **The Golden Solution:**
+  Apply `pointer-events: none` on `.ProseMirror a` elements. This bypasses pointer actions inside the editor to let clicks fall through natively to the text engine.
+  To let the user open the link, the floating BubbleMenu (which has `pointer-events: auto`) displays the target link, which the user can click to open in a new tab.
 
-4. **Self-Audit of the Analysis**:
-   - Decoupling focus from the popover state inside `shouldShow` resolves the vanishing input field issue. CSS pointer-events bypass combined with a bubble menu is the modern standard for Notion, Figma, and Medium editors.
+### 4. Link BubbleMenu Design & Theme Hardening
+- **Light Theme Colors:** `#F2EEDF` input background with black text.
+- **Dark Theme Colors:** `#1C1C1B` input background with light text.
+- **Accent Highlighting:** Consistent application of `var(--np-accent)` on buttons and borders.
+
+## Analysis Audit
+The analysis resolves:
+- Auto-appearing popover (resetting state on note switch)
+- Broken toolbar button clicks (refocusing editor + Tippy focus inclusion)
+- Broken editor selection over links (CSS pointer-events bypass)
+- Low-quality native dialogs (custom high-fidelity CSS input popover)
