@@ -5573,13 +5573,16 @@ export default function Notepad() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              padding: "6px 10px",
-              background: effectiveDark ? "rgba(30, 30, 30, 0.98)" : "rgba(255, 255, 255, 0.98)",
-              border: effectiveDark ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(0,0,0,0.15)",
-              borderRadius: "8px",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-              backdropFilter: "blur(8px)"
+              gap: "8px",
+              padding: "8px",
+              background: effectiveDark ? "rgba(22, 22, 21, 0.96)" : "rgba(250, 248, 242, 0.96)",
+              border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+              borderRadius: "12px",
+              boxShadow: effectiveDark 
+                ? "0 12px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)" 
+                : "0 12px 32px -4px rgba(0, 0, 0, 0.12)",
+              backdropFilter: "blur(12px)",
+              transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
             }}
           >
             {isEditingLink ? (
@@ -5600,22 +5603,24 @@ export default function Notepad() {
                   }}
                   autoFocus
                   style={{
-                    height: "28px",
-                    background: effectiveDark ? "#1C1C1B" : "#F2EEDF",
-                    border: effectiveDark ? "1px solid #2E2E2C" : "1px solid rgba(0,0,0,0.15)",
-                    borderRadius: "4px",
-                    padding: "0 8px",
-                    color: effectiveDark ? "#F0EDE8" : "#0D1117",
-                    fontSize: "12px",
+                    height: "32px",
+                    background: effectiveDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.03)",
+                    border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.1)",
+                    borderRadius: "6px",
+                    padding: "0 10px",
+                    color: effectiveDark ? "#F0EDE8" : "#1F1B16",
+                    fontSize: "12.5px",
                     outline: "none",
-                    width: "180px",
-                    transition: "border-color 0.15s ease"
+                    width: "190px",
+                    transition: "all 0.15s ease-out"
                   }}
                   onFocus={(e) => {
                     e.target.style.borderColor = surfAccent;
+                    e.target.style.boxShadow = `0 0 0 3px ${surfAccent}20`;
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = effectiveDark ? "#2E2E2C" : "rgba(0,0,0,0.15)";
+                    e.target.style.borderColor = effectiveDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
+                    e.target.style.boxShadow = "none";
                   }}
                 />
                 <button
@@ -5624,17 +5629,21 @@ export default function Notepad() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: "28px",
-                    height: "28px",
+                    width: "32px",
+                    height: "32px",
                     background: surfAccent,
                     border: "none",
-                    borderRadius: "4px",
+                    borderRadius: "6px",
                     color: isLightHex(surfAccent) ? "#000000" : "#FFFFFF",
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+                    transition: "all 0.15s ease"
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.filter = "brightness(1.06)"}
+                  onMouseLeave={(e) => e.currentTarget.style.filter = "none"}
                   title="Save Link"
                 >
-                  <Check size={14} />
+                  <Check size={15} />
                 </button>
                 <button
                   onClick={closeLinkPopover}
@@ -5642,17 +5651,20 @@ export default function Notepad() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: "28px",
-                    height: "28px",
-                    background: effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+                    width: "32px",
+                    height: "32px",
+                    background: effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)",
                     border: "none",
-                    borderRadius: "4px",
-                    color: effectiveDark ? "#A5A29B" : "rgba(0,0,0,0.54)",
-                    cursor: "pointer"
+                    borderRadius: "6px",
+                    color: effectiveDark ? "#A5A29B" : "rgba(0, 0, 0, 0.54)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)"}
                   title="Cancel"
                 >
-                  <X size={14} />
+                  <X size={15} />
                 </button>
               </>
             ) : (
@@ -5664,29 +5676,33 @@ export default function Notepad() {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "4px",
+                    gap: "6px",
                     color: surfAccent,
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    fontSize: "12px",
+                    fontSize: "12.5px",
                     textDecoration: "underline",
                     maxWidth: "200px",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
-                    padding: "0"
+                    padding: "2px 4px",
+                    borderRadius: "4px",
+                    transition: "all 0.15s ease"
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                   title="Open link in new tab"
                 >
-                  <LinkIcon size={12} style={{ flexShrink: 0 }} />
+                  <LinkIcon size={13} style={{ flexShrink: 0 }} />
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {editor.getAttributes("link").href}
                   </span>
-                  <ExternalLink size={10} style={{ flexShrink: 0 }} />
+                  <ExternalLink size={11} style={{ flexShrink: 0 }} />
                 </a>
 
-                <div style={{ width: "1px", height: "14px", background: effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)", margin: "0 4px" }} />
+                <div style={{ width: "1px", height: "16px", background: effectiveDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)", margin: "0 6px" }} />
 
                 <button
                   onClick={() => {
@@ -5697,17 +5713,20 @@ export default function Notepad() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: "24px",
-                    height: "24px",
+                    width: "28px",
+                    height: "28px",
                     background: "none",
                     border: "none",
-                    borderRadius: "4px",
-                    color: effectiveDark ? "#A5A29B" : "rgba(0,0,0,0.54)",
-                    cursor: "pointer"
+                    borderRadius: "6px",
+                    color: effectiveDark ? "#A5A29B" : "rgba(0, 0, 0, 0.54)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                   title="Edit Link"
                 >
-                  <Edit size={12} />
+                  <Edit size={14} style={{ opacity: 0.8 }} />
                 </button>
 
                 <button
@@ -5719,17 +5738,20 @@ export default function Notepad() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: "24px",
-                    height: "24px",
+                    width: "28px",
+                    height: "28px",
                     background: "none",
                     border: "none",
-                    borderRadius: "4px",
-                    color: "var(--err)",
-                    cursor: "pointer"
+                    borderRadius: "6px",
+                    color: effectiveDark ? "#EC7063" : "#C0392B",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = effectiveDark ? "rgba(236, 112, 99, 0.15)" : "rgba(192, 57, 43, 0.1)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "none"}
                   title="Remove Link"
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={14} />
                 </button>
               </>
             )}
