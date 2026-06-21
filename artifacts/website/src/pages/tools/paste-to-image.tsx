@@ -2001,10 +2001,9 @@ export default function PasteToImage() {
                       ))}
                     </div>
 
-                    <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
-
-                    <div className="w-[270px] flex items-center justify-center shrink-0">
-                      {currentTool !== "text" && (
+                    {currentTool !== "text" && currentTool !== "crop" && (
+                      <>
+                        <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
                         <div className="flex gap-0.5 shrink-0" title="Stroke Width">
                           {([2, 4, 6] as StrokeWidth[]).map((w) => (
                             <button
@@ -2024,8 +2023,8 @@ export default function PasteToImage() {
                             </button>
                           ))}
                         </div>
-                      )}
-                    </div>
+                      </>
+                    )}
 
                     <div className="w-px h-4 shrink-0" style={{ background: "#252523" }} />
 
