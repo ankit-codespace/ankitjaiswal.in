@@ -1589,7 +1589,7 @@ export default function Notepad() {
     const hasTables = html.includes("<table") || html.includes("<tr") || html.includes("<td");
     const hasHighlight = html.includes("<mark");
     if (hasImages || hasTables || hasHighlight) return "html";
-    const hasRichFormatting = html.includes("<strong") || html.includes("<em") || html.includes("<u") || html.includes("<s") || html.includes("<h1") || html.includes("<h2") || html.includes("<h3") || html.includes("<ul") || html.includes("<ol");
+    const hasRichFormatting = html.includes("<a ") || html.includes("<strong") || html.includes("<em") || html.includes("<u") || html.includes("<s") || html.includes("<h1") || html.includes("<h2") || html.includes("<h3") || html.includes("<ul") || html.includes("<ol");
     if (hasRichFormatting) return "md";
     return "txt";
   };
