@@ -47,6 +47,30 @@
         "name": "Text Document",
         "description": "Text Document",
         "role": "Editor"
+      },
+      {
+        "ext": "md",
+        "name": "Markdown Document",
+        "description": "Markdown Document",
+        "role": "Editor"
+      },
+      {
+        "ext": "html",
+        "name": "HTML Document",
+        "description": "HTML Document",
+        "role": "Editor"
+      },
+      {
+        "ext": "htm",
+        "name": "HTML Document",
+        "description": "HTML Document",
+        "role": "Editor"
+      },
+      {
+        "ext": "json",
+        "name": "JSON Document",
+        "description": "JSON Document",
+        "role": "Editor"
       }
     ],
     "files": [

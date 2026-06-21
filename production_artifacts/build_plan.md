@@ -1,30 +1,11 @@
-# Build Plan: Image Annotation Hardening
+# Build Plan: Desktop File Association Hardening
 
-## Phase 1: Stabilize Toolbar Layout (Prevent CLS)
-Wrap the conditional rendering inside a static-width `w-[270px]` flex container:
-```tsx
-<div className="w-[270px] flex items-center justify-center shrink-0">
-  {currentTool === "text" ? (...) : (...)}
-</div>
-```
+## Phase 1: Builder Configuration
+Add file formats (`.txt`, `.md`, `.html`, `.htm`, `.json`) under `"build.fileAssociations"` inside `notepad-win/package.json`.
 
-## Phase 2: Calibrate Canvas Display Text Centering
-Update `redrawCanvas` display rendering for `type === "text"` to compute and add `halfLeading` when placing text lines:
-```typescript
-const halfLeading = (lineHeight - displayFontSize) / 2;
-lines.forEach((line, i) => {
-  ctx.fillText(line, sx, sy + i * lineHeight + halfLeading);
-});
-```
+## Phase 2: NSIS Context Menu Scripting
+Create `notepad-win/build/installer.nsh` with custom `customInstall` and `customUninstall` macros to write/delete the `"Edit with I Love Notepad"` registry key under `HKCU\Software\Classes\*\shell`.
 
-## Phase 3: Calibrate Canvas Export Text Centering
-Update export rendering for `type === "text"` to compute and add `halfLeading` when placing text lines:
-```typescript
-const halfLeading = (lineHeight - fs) / 2;
-lines.forEach((line, i) => {
-  ctx.fillText(line, px, py + i * lineHeight + halfLeading);
-});
-```
-
-## Phase 4: Verification
-Build the web assets and verify type safety.
+## Phase 3: Packaging & Verification
+Run renderer and electron build scripts inside `notepad-win` to compile and output installers.
+Verify the output exe and appx.
