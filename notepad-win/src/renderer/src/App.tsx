@@ -1123,6 +1123,20 @@ const NotepadEditor = ({
     },
     onSelectionUpdate() {
       onSelectionUpdate();
+    },
+    onTransaction({ transaction }) {
+      // Prevent link mark from leaking to subsequent typed characters at boundary
+      if (transaction.selection.empty) {
+        const { $from } = transaction.selection;
+        const hasLinkBefore = $from.nodeBefore && $from.nodeBefore.marks.some(m => m.type.name === "link");
+        const hasLinkAfter = $from.nodeAfter && $from.nodeAfter.marks.some(m => m.type.name === "link");
+        if (hasLinkBefore && !hasLinkAfter) {
+          const linkType = transaction.doc.type.schema.marks.link;
+          if (linkType) {
+            transaction.removeStoredMark(linkType);
+          }
+        }
+      }
     }
   }, []);
 
@@ -4339,7 +4353,6 @@ export default function App() {
       {/* ── Link Bubble Menu & Popover ── */}
       {editor && (
         <BubbleMenu
-          key={isLinkPopoverOpen ? "open" : "closed"}
           editor={editor}
           tippyOptions={{
             duration: 150,

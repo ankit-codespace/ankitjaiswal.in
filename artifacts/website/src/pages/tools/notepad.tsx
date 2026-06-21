@@ -1218,11 +1218,24 @@ export default function Notepad() {
     onSelectionUpdate() {
       setEditorVersion((v) => v + 1);
     },
-    onTransaction({ editor }) {
+    onTransaction({ editor, transaction }) {
       const storage = editor?.storage as any;
       if (storage?.searchAndReplace) {
         setFindResultsCount(storage.searchAndReplace.results.length);
         setFindActiveIndex(storage.searchAndReplace.activeIndex);
+      }
+
+      // Prevent link mark from leaking to subsequent typed characters at boundary
+      if (transaction && transaction.selection.empty) {
+        const { $from } = transaction.selection;
+        const hasLinkBefore = $from.nodeBefore && $from.nodeBefore.marks.some(m => m.type.name === "link");
+        const hasLinkAfter = $from.nodeAfter && $from.nodeAfter.marks.some(m => m.type.name === "link");
+        if (hasLinkBefore && !hasLinkAfter) {
+          const linkType = transaction.doc.type.schema.marks.link;
+          if (linkType) {
+            transaction.removeStoredMark(linkType);
+          }
+        }
       }
     },
   });
@@ -5479,7 +5492,6 @@ export default function Notepad() {
       {/* ── Link Bubble Menu & Popover ── */}
       {editor && (
         <BubbleMenu
-          key={isLinkPopoverOpen ? "open" : "closed"}
           editor={editor}
           options={{
             placement: "bottom",
