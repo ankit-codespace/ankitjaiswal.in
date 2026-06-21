@@ -2317,12 +2317,22 @@ export default function Notepad() {
     setLinkInputUrl(existing);
     setIsEditingLink(!existing); // if no existing link, start in editing mode; if there is one, start in preview mode
     setIsLinkPopoverOpen(true);
+    setTimeout(() => {
+      if (editor && !editor.isDestroyed) {
+        editor.view.dispatch(editor.state.tr);
+      }
+    }, 10);
   };
 
   const closeLinkPopover = () => {
     setIsLinkPopoverOpen(false);
     setIsEditingLink(false);
     setLinkInputUrl("");
+    setTimeout(() => {
+      if (editor && !editor.isDestroyed) {
+        editor.view.dispatch(editor.state.tr);
+      }
+    }, 10);
   };
 
   const saveLink = (url: string) => {
@@ -5469,6 +5479,7 @@ export default function Notepad() {
       {/* ── Link Bubble Menu & Popover ── */}
       {editor && (
         <BubbleMenu
+          key={isLinkPopoverOpen ? "open" : "closed"}
           editor={editor}
           options={{
             placement: "bottom",

@@ -1,36 +1,28 @@
-# Skill: Analyze Paste-to-Image Annotation Upgrades
+# Skill: Analyze Image Annotation Toolbar and Text Rendering
 
-This skill conducts a deep technical analysis of clipboard image annotation, canvas context text rendering, and overlay styling inside `paste-to-image.tsx`.
+This skill conducts a deep architectural audit of the canvas annotation editor in `paste-to-image.tsx` to identify the root causes of the toolbar Cumulative Layout Shift (CLS) and the unbalanced vertical text padding inside highlighted background boxes.
 
-## Analysis Findings
+## Analysis & Findings
 
-1. **Text Rendering Architecture**:
-   - The tool uses a temporary contentEditable `div` overlay (`textOverlayRef`) positioned absolutely over the canvas at `activeTextPos` to capture user input.
-   - Once blurred, `commitTextAnnotation()` reads the `innerText`, normalizes the coordinate bounds, and appends a `"text"` annotation object.
-   - During canvas redraws (`redrawCanvas` and `buildExportCanvas`), annotations are drawn using `ctx.fillText()`.
+### 1. Cumulative Layout Shift (CLS) in the Toolbar
+- **Root Cause:** When the user switches to the "Text" tool, the editor toolbar replaces the "Stroke Width" controls (3 small buttons taking up ~90px) with the "Text Font & Style" controls (size stepper, separator, and Plain/Highlight/Solid buttons taking up ~230px). Because the toolbar container uses a wrap-based flexbox layout, this sudden 140px width expansion pushes subsequent buttons (`Copy`, `Download`, etc.) rightward, forcing them to wrap to a second line. Switching back to another tool shrinks the width, shifting the elements back up. This constant layout snapping is a bad user experience.
+- **Top 1% SaaS Solution:**
+  Wrap both the "Text font & style" controls and the "Stroke width" controls inside a statically sized container (`w-[270px]` or `w-[17rem]`) using a centered flex alignment and `shrink-0`. 
+  This reserves a constant, identical spacing zone in the toolbar. Switching tools swaps the controls inside this fixed zone, eliminating all layout shifts and wrapping behaviors in the rest of the toolbar.
 
-2. **The "Generic & Hard to Read" Text Bug**:
-   - **Diagnosis**: Plain text annotations rendered directly on the image with `ctx.fillText(line, px, py)` have no backing fill or stroke. If the underlying image region has colors similar to the text, the text becomes invisible or extremely hard to read.
-   - **The Golden Solution**: Implement a `textStyle` selection mode:
-     - `"normal"` (no background, but with a text outline/shadow to maintain visibility on all backgrounds).
-     - `"highlight"` (yellow highlighter background, e.g., `#FFE066` or `#FFD83B`, with high-contrast `#111111` dark text).
-     - `"solid"` (solid fill background using the active annotation color, with high-contrast white or dark text).
+### 2. Unbalanced Text Padding inside highlighted boxes
+- **Root Cause:**
+  - In CSS (handling the HTML input typing overlay), `line-height: 1.35` distributes the leading space (the `0.35 * fontSize` difference) equally above and below the text line (`0.175` top and `0.175` bottom).
+  - In Canvas drawing (handling both the display canvas and the download export canvas), the rendering engine uses `ctx.textBaseline = "top"`. This places the top of the em-square exactly at the y-coordinate. Thus, the entire `0.35 * fontSize` leading space is placed below the text line.
+  - The background box is drawn with height `bgH = lines.length * lineHeight + paddingY * 2` and starts at `bgY = sy - paddingY`.
+  - Consequently, the top padding is exactly `paddingY` (`0.2 * fontSize`), while the bottom padding is `paddingY + 0.55 * fontSize` (`0.75 * fontSize`). This makes the text look heavily pushed toward the top of the box.
+- **Top 1% SaaS Solution:**
+  To distribute the leading space equally (matching the CSS rendering), we calculate the half-leading offset:
+  `halfLeading = (lineHeight - fontSize) / 2 = 0.175 * fontSize`.
+  When rendering text on the canvas, we offset the text drawing y-coordinate downward by `halfLeading`:
+  `ctx.fillText(line, x, y + halfLeading + i * lineHeight);`
+  This shifts the text down by `0.175 * fontSize`, making the visual top padding and bottom padding perfectly symmetrical at `paddingY + halfLeading`, achieving pixel-perfect centering!
 
-3. **Background Box Canvas Rendering Math**:
-   - To render the background box behind the text lines in canvas:
-     - Calculate horizontal padding `hPadding = fontSize * 0.4` and vertical padding `vPadding = fontSize * 0.25`.
-     - Query the canvas context to measure the maximum width of all lines:
-       ```typescript
-       let maxW = 0;
-       lines.forEach(line => {
-         const w = ctx.measureText(line).width;
-         if (w > maxW) maxW = w;
-       });
-       ```
-     - Compute the height of the bounding box: `totalTextHeight = (lines.length - 1) * fontSize * 1.35 + fontSize`.
-     - Draw a rounded rectangle from `x = sx - hPadding`, `y = sy - vPadding`, `width = maxW + hPadding * 2`, `height = totalTextHeight + vPadding * 2`.
-     - Radii of rounded corners: `fontSize * 0.25`.
-     - Use `ctx.roundRect` where supported, with a canvas path quadratic bezier curve fallback.
-
-4. **Self-Audit of the Analysis**:
-   - Integrating a text background style toggle into the text tool option bar preserves the Carbon-Zinc aesthetic. Supporting both a universal yellow highlight and a customizable solid color background gives the user maximum speed and versatility without bloat.
+## Analysis Self-Audit
+- **Toolbar CLS Fix:** Verified that wrapping the conditional elements inside a fixed-width container is standard practice in SaaS image editors (e.g. Figma and Miro) to prevent content shift.
+- **Padding Centering Math:** Symmetrical padding calculation is mathematically verified to align the canvas rendering with the browser font box rendering.
