@@ -5629,7 +5629,7 @@ export default function Notepad() {
                     background: surfAccent,
                     border: "none",
                     borderRadius: "4px",
-                    color: "#FFFFFF",
+                    color: isLightHex(surfAccent) ? "#000000" : "#FFFFFF",
                     cursor: "pointer"
                   }}
                   title="Save Link"
