@@ -20,13 +20,10 @@ import {
   ToolRelatedTools,
   ToolAuthorCard,
   buildToolJsonLd,
-  ToolStatusBar,
   type ToolFAQItem,
   type ToolFeature,
   type ToolHowToStep,
   type RelatedTool,
-  type ToolStatusStat,
-  type ToolShortcutGroup,
 } from "@/components/tool";
 import { tokens } from "@/components/tool/tokens";
 import { FeedbackInlineCard } from "@/components/FeedbackWidget";
@@ -2438,37 +2435,6 @@ export default function PasteToImage() {
         )}
       </AnimatePresence>
 
-      <ToolStatusBar
-        stats={[
-          image
-            ? { key: "size", label: `${image.naturalWidth}×${image.naturalHeight}` }
-            : { key: "status", label: "Paste an image to begin", accent: "muted" },
-          { key: "fmt", label: format.toUpperCase() },
-          ...(image && format !== "pdf"
-            ? [{ key: "q", label: `Quality ${Math.round(quality * 100)}` } as ToolStatusStat]
-            : []),
-          ...(annotations.length > 0
-            ? [{ key: "ann", label: `${annotations.length} annotation${annotations.length === 1 ? "" : "s"}`, accent: "success" } as ToolStatusStat]
-            : []),
-        ]}
-        shortcuts={[
-          {
-            group: "Capture",
-            items: [
-              { key: "Ctrl+V", label: "Paste image from clipboard" },
-            ],
-          },
-          {
-            group: "Edit",
-            items: [
-              { key: "Ctrl+Z", label: "Undo annotation" },
-              { key: "Ctrl+C", label: "Copy result to clipboard" },
-              { key: "Esc", label: "Deselect / cancel" },
-            ],
-          },
-        ]}
-        hideBelowRef={mainRef}
-      />
     </ToolPage>
   );
 }
