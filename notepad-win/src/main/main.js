@@ -201,7 +201,45 @@ function createWindow() {
   });
 }
 
+function isFileSafe(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return { safe: false, reason: 'File does not exist.' };
+    }
+    const stats = fs.statSync(filePath);
+    if (!stats.isFile()) {
+      return { safe: false, reason: 'Path is not a file.' };
+    }
+    // 1.5MB = 1,572,864 bytes
+    const MAX_SIZE = 1.5 * 1024 * 1024;
+    if (stats.size > MAX_SIZE) {
+      return { safe: false, reason: 'File size exceeds the 1.5MB limit.' };
+    }
+
+    // Binary check: read the first 1024 bytes
+    const fd = fs.openSync(filePath, 'r');
+    const buffer = Buffer.alloc(1024);
+    const bytesRead = fs.readSync(fd, buffer, 0, 1024, 0);
+    fs.closeSync(fd);
+
+    for (let i = 0; i < bytesRead; i++) {
+      if (buffer[i] === 0) {
+        return { safe: false, reason: 'Binary files are not supported.' };
+      }
+    }
+
+    return { safe: true };
+  } catch (err) {
+    return { safe: false, reason: `Failed to inspect file: ${err.message}` };
+  }
+}
+
 function openFileInWindow(filePath) {
+  const safetyCheck = isFileSafe(filePath);
+  if (!safetyCheck.safe) {
+    dialog.showErrorBox('Unsupported File', `Could not open file: ${safetyCheck.reason}`);
+    return;
+  }
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     mainWindow.webContents.send('open-file-channel', {
@@ -252,6 +290,11 @@ ipcMain.handle('native-open-file', async () => {
 
   if (!result.canceled && result.filePaths.length > 0) {
     const filePath = result.filePaths[0];
+    const safetyCheck = isFileSafe(filePath);
+    if (!safetyCheck.safe) {
+      dialog.showErrorBox('Unsupported File', `Could not open file: ${safetyCheck.reason}`);
+      return null;
+    }
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       return {

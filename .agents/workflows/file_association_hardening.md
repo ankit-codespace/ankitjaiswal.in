@@ -7,7 +7,7 @@ description: Register file associations, add right-click context menu "Edit with
 ## Trigger
 User types: `/file_association_hardening`
 
-This workflow runs autonomously to configure OS file associations (`.txt`, `.md`, `.html`, `.htm`, `.json`) and implement the right-click explorer context menu handler using NSIS custom macros.
+This workflow runs autonomously to configure OS file associations (`.txt`, `.md`, `.html`, `.htm`, `.json`), implement the right-click explorer context menu handler using NSIS custom macros, and add file size/binary loading safety filters.
 
 ---
 
@@ -30,8 +30,8 @@ This workflow runs autonomously to configure OS file associations (`.txt`, `.md`
 
 ### Step 1 — Run Analysis
 Execute skill: `.agents/skills/analyze_file_association.md`
-- Audits the startup arg parsing inside `main.js` and builder targets inside `package.json`.
-- Creates a status overview and writes it to `production_artifacts/file_association_analysis_report.md`.
+- Audits startup args, package.json builder configs, and binary file import issues.
+- Creates report at `production_artifacts/file_association_analysis_report.md`.
 
 ### Step 2 — Run Planning
 Execute skill: `.agents/skills/plan_file_association.md`
@@ -41,10 +41,20 @@ Execute skill: `.agents/skills/plan_file_association.md`
 ### Step 3 — Phase 1: Builder File Association Configuration
 - Add file formats (`.txt`, `.md`, `.html`, `.htm`, `.json`) under `"build.fileAssociations"` inside `notepad-win/package.json`.
 
-### Step 4 — Phase 2: NSIS Right-Click Context Menu Scripting
+### Step 4 — Phase 2: Main Process File size and Binary filtering
+- Open `notepad-win/src/main/main.js`.
+- Add size limit check (> 1.5MB) and null-byte binary checks in `openFileInWindow` and the `native-open-file` handler.
+- Block unsupported files and display native `dialog.showErrorBox`.
+
+### Step 5 — Phase 3: LocalStorage Sanitization & Recovery
+- Open `notepad-win/src/renderer/src/App.tsx` and `artifacts/website/src/pages/tools/notepad.tsx`.
+- Declare `sanitizeDocContent` to catch corrupt binary contents or files > 1.5MB length.
+- Map and sanitize docs inside `loadDocs()` on application boot.
+
+### Step 6 — Phase 4: NSIS Right-Click Context Menu Scripting
 - Create `notepad-win/build/installer.nsh` and add custom install/uninstall macros to write/delete the `"Edit with I Love Notepad"` registry key inside `HKCU\Software\Classes\*\shell`.
 
-### Step 5 — Phase 3: Dev Verification & Packaging
+### Step 7 — Phase 5: Dev Verification & Packaging
 - Run renderer and electron build scripts inside `notepad-win` to compile and output installers.
 - Commit all changes and push to GitHub.
 
@@ -56,14 +66,19 @@ Upon successful execution, present a summary:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Desktop File Association Hardening — Success
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Status: File Associations Configured & Context Menu Registry Keys Wired
+Status: File Associations Configured & Sizing Safety Controls Wired
 Files modified:
   - notepad-win/package.json
+  - notepad-win/src/main/main.js
+  - notepad-win/src/renderer/src/App.tsx
+  - artifacts/website/src/pages/tools/notepad.tsx
   - notepad-win/build/installer.nsh
 
 Checklist:
   ✅ Created pre-flight backup branch for safety
   ✅ Registered .txt, .md, .html, .htm, and .json associations in package.json
+  ✅ Implemented Early Main Process size limit (1.5MB) and Binary File Blockers
+  ✅ Added startup localStorage recovery sanitizer to prevent black-screen crash loops
   ✅ Implemented UAC-safe custom registry installer script in installer.nsh
   ✅ Compiled renderer and main electron-builder installers successfully
   ✅ Committed and pushed changes to GitHub main branch

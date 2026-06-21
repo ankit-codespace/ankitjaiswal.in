@@ -292,6 +292,7 @@ interface NotepadDoc {
   driveFileId?: string;
   isPinned?: boolean;
   color?: string;
+  isUnsaved?: boolean;
 }
 
 
@@ -387,12 +388,48 @@ function newDoc(title = "Untitled"): NotepadDoc {
   return { id: genId(), title, content: "", createdAt: Date.now(), updatedAt: Date.now() };
 }
 
+function sanitizeDocContent(doc: NotepadDoc): NotepadDoc {
+  if (!doc || !doc.content) return doc;
+  
+  const contentStr = typeof doc.content === "string" ? doc.content : "";
+  const isPdf = contentStr.startsWith("%PDF");
+  const hasNullByte = contentStr.includes("\x00") || contentStr.includes("\u0000");
+  const isTooLarge = contentStr.length > 1572864; // 1.5MB character length
+  
+  if (isPdf || hasNullByte || isTooLarge) {
+    let errorReason = "Unsupported Format";
+    if (isTooLarge) errorReason = "File Too Large (> 1.5MB)";
+    else if (isPdf) errorReason = "PDF File Blocked";
+    else if (hasNullByte) errorReason = "Binary Content Blocked";
+    
+    return {
+      ...doc,
+      content: `<p>[Error: ${errorReason}]</p>`,
+      title: `${doc.title.replace(/\s*\(Unsupported Format\)/g, "")} (${errorReason})`,
+      isUnsaved: true,
+      updatedAt: Date.now()
+    };
+  }
+  return doc;
+}
+
 function loadDocs(): NotepadDoc[] {
   try {
     const raw = localStorage.getItem(LS_DOCS);
     if (raw) {
       const docs = JSON.parse(raw) as NotepadDoc[];
-      if (docs.length > 0) return docs;
+      if (docs.length > 0) {
+        let sanitized = false;
+        const processed = docs.map(d => {
+          const s = sanitizeDocContent(d);
+          if (s !== d) sanitized = true;
+          return s;
+        });
+        if (sanitized) {
+          saveDocs(processed);
+        }
+        return processed;
+      }
     }
   } catch {}
   const d = newDoc();
