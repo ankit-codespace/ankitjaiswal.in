@@ -10,16 +10,18 @@ This skill conducts a deep architectural audit of the Electron application packa
 - **Second Instance Handling:** If the app is already running, a new instance is launched but immediately exits because of `app.requestSingleInstanceLock()`. It passes its command-line arguments to the primary instance via the `second-instance` event. The primary instance parses these arguments, reads the file, and sends it to the renderer via IPC.
 
 ### 2. File Sizing and Binary Content Safety Checks
-- **The Issue:** Opening non-text binary files (like PDFs, EXEs, images) or very large text files (> 1.5MB) causes the Tiptap/ProseMirror rendering parser in the renderer thread to freeze. The blocked main thread triggers an "Application Unresponsive" crash dialog. Even worse, because this document is saved as the active note in localStorage, the application gets locked in an infinite crash/black-screen loop upon restart.
-- **Root Cause Prevention (Main Process):**
-  We must intercept unsupported file loading early in `src/main/main.js` (both inside `openFileInWindow` and the `native-open-file` dialog handler):
-  - **Size Limit:** Check `fs.statSync(filePath).size`. If it exceeds **1.5MB** (1,572,864 bytes), block opening and display a standard native error dialog via `dialog.showErrorBox`.
-  - **Binary Content Check:** Read the first 1024 bytes of the file. If it contains null bytes (`\x00` / `\u0000`), treat it as a binary file. Block it and display a standard native error dialog.
-- **Fail-Safe Recovery (Renderer Process):**
-  To rescue users from the infinite black-screen loop (if corrupt/huge notes are already stored in localStorage):
-  - Implement a `sanitizeDocContent(doc)` function inside `loadDocs()` in both `notepad-win/src/renderer/src/App.tsx` and `artifacts/website/src/pages/tools/notepad.tsx`.
-  - If a stored document starts with `%PDF`, contains null bytes, or is > 1.5MB in length, replace its content with an informative error message: `[Error: Unsupported Format]`.
-  - Update the note's title to `[Filename] (Unsupported Format)` and set the unsaved flag to true. This allows the app to boot up in under a second and lets the user close/delete the broken tab safely.
+- **The Issue:** PDF is a compiled vector layout format, not a editable plain text format. Opening non-text binary files (like PDFs, EXEs, images) or very large text files (> 1.5MB) causes the Tiptap/ProseMirror rendering parser in the renderer thread to freeze. The blocked main thread triggers an "Application Unresponsive" crash dialog. Even worse, because this document is saved as the active note in localStorage, the application gets locked in an infinite crash/black-screen loop upon restart.
+- **Top 1% SaaS Solution:**
+  Instead of presenting crude system error dialog boxes from the main process, we route file safety states to the renderer so we can render an **Interactive Guidance Modal** matching the premium visual design of the app:
+  - **Early Verification (Main Process):**
+    Intercept unsupported files in `main.js` (both inside `openFileInWindow` and the `native-open-file` dialog handler). Check size (> 1.5MB) and inspect the first 1024 bytes for null bytes (`\x00`) or `%PDF` header. If unsupported, return a payload carrying `{ error: "unsupported", name: filename, reason: "pdf" | "large" | "binary" }` instead of raw file text content.
+  - **Educational Guidance Modal (Renderer Process):**
+    If the renderer receives an `"unsupported"` error payload, set the React state `unsupportedFile` carrying the file details. Show a beautiful custom modal matching the styling tokens of the app's standard dialogs.
+    - If the reason is `"pdf"`, explain that PDF is a read-only export format, point out that their original note is still open in their tabs list, and recommend using Markdown (`.md`) or HTML (`.html`) for editing files offline.
+    - If the reason is `"large"`, explain the 1.5MB size constraint to prevent editor lag.
+    - If the reason is `"binary"`, explain that only plain text formats are editable.
+  - **Fail-Safe Recovery (Renderer Process):**
+    Implement a `sanitizeDocContent(doc)` function inside `loadDocs()` in both `App.tsx` and `notepad.tsx`. If a stored document starts with `%PDF`, contains null bytes, or is > 1.5MB in length, replace its content with an `[Error: Unsupported Format]` page to resolve startup crash loops automatically.
 
 ### 3. Windows Default Application Policies & Registry Safety
 - **Anti-Hijacking Policy:** Windows 10 and 11 prevent installers from programmatically forcing file associations as the default.

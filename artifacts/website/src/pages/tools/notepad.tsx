@@ -365,12 +365,12 @@ const THEMES = [
 ] as const;
 
 const TAB_COLORS = [
-  { id: "red", name: "Coral Red", value: "#EC7063" },
-  { id: "orange", name: "Amber Orange", value: "#E59866" },
-  { id: "yellow", name: "Warm Yellow", value: "#F4D03F" },
-  { id: "green", name: "Sage Green", value: "#58D68D" },
-  { id: "blue", name: "Slate Blue", value: "#5DADE2" },
-  { id: "purple", name: "Lavender", value: "#AF7AC5" },
+  { id: "red", name: "Coral Red", darkValue: "#F25F5C", lightValue: "#D14949" },
+  { id: "orange", name: "Amber Orange", darkValue: "#F28F3B", lightValue: "#D9721E" },
+  { id: "yellow", name: "Warm Yellow", darkValue: "#FFE066", lightValue: "#C99A16" },
+  { id: "green", name: "Sage Green", darkValue: "#40C057", lightValue: "#2B8A3E" },
+  { id: "blue", name: "Slate Blue", darkValue: "#339AF0", lightValue: "#1C7ED6" },
+  { id: "purple", name: "Lavender", darkValue: "#BE4BDB", lightValue: "#862E9C" },
 ];
 
 /** Returns true if the hex colour is perceptually light (>128 brightness). */
@@ -3264,9 +3264,12 @@ export default function Notepad() {
                 const isNextActive = idx + 1 < sortedDocs.length && sortedDocs[idx + 1].id === activeId;
                 const showDivider = !isActive && !isNextActive && idx < sortedDocs.length - 1;
                 const activeTabSurface = effectiveDark ? "#202124" : surfBg;
-                const activeTabStroke = effectiveDark
-                  ? blendColors("dark", "#202124", 0.78)
-                  : blendColors("light", activeTabSurface, 0.42);
+                const tabColorObj = doc.color ? TAB_COLORS.find(c => c.id === doc.color) : null;
+                const activeTabStroke = tabColorObj
+                  ? (effectiveDark ? tabColorObj.darkValue : tabColorObj.lightValue)
+                  : (effectiveDark
+                    ? blendColors("dark", "#202124", 0.78)
+                    : blendColors("light", activeTabSurface, 0.42));
                 const activeTabShadow = effectiveDark
                   ? "0 -1px 0 rgba(255,255,255,0.20) inset, 0 8px 18px rgba(0,0,0,0.34)"
                   : "0 -1px 0 rgba(255,255,255,0.72) inset, 0 8px 18px rgba(13,17,23,0.12)";
@@ -3394,21 +3397,7 @@ export default function Notepad() {
                           zIndex: 1,
                         }}
                       >
-                        {doc.color && (
-                          <div 
-                            style={{ 
-                              position: "absolute",
-                              top: 4,
-                              right: 4,
-                              width: 5, 
-                              height: 5, 
-                              borderRadius: "50%", 
-                              background: TAB_COLORS.find(c => c.id === doc.color)?.value
-                            }} 
-                            title={`${TAB_COLORS.find(c => c.id === doc.color)?.name} Category`}
-                          />
-                        )}
-                        <Pin size={10} style={{ transform: "rotate(30deg)", opacity: 0.8 }} />
+                        <Pin size={10} style={{ transform: "rotate(30deg)", opacity: 0.8, color: doc.color ? (TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue']) : undefined }} />
                         <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
                           {doc.title ? doc.title.charAt(0).toUpperCase() : "U"}
                         </span>
@@ -3421,7 +3410,7 @@ export default function Notepad() {
                               width: 6, 
                               height: 6, 
                               borderRadius: "50%", 
-                              background: TAB_COLORS.find(c => c.id === doc.color)?.value, 
+                              background: TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'], 
                               marginRight: 2, 
                               flexShrink: 0,
                               position: "relative",
@@ -6363,6 +6352,7 @@ export default function Notepad() {
                     
                     {TAB_COLORS.map((color) => {
                       const isSelected = targetDoc.color === color.id;
+                      const displayColor = effectiveDark ? color.darkValue : color.lightValue;
                       return (
                         <button
                           key={color.id}
@@ -6371,7 +6361,7 @@ export default function Notepad() {
                             setContextMenu(null);
                           }}
                           style={{
-                            width: 16, height: 16, borderRadius: "50%", border: "none", background: color.value,
+                            width: 16, height: 16, borderRadius: "50%", border: "none", background: displayColor,
                             cursor: "pointer", 
                             outline: isSelected ? (effectiveDark ? "2px solid #FFFFFF" : "2px solid #000000") : "none",
                             outlineOffset: 1,
