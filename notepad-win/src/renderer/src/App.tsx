@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, Fragment } from "react";
 import { Editor, useEditor, EditorContent, BubbleMenu, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent, Extension } from "@tiptap/react";
 
 // Global Error Overlay for Debugging
@@ -1467,6 +1467,7 @@ export default function App() {
   const [findActiveIndex, setFindActiveIndex] = useState(0);
   const [showDocMenu, setShowDocMenu] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [hoveredTabId, setHoveredTabId] = useState<string | null>(null);
   const [closedDocsHistory, setClosedDocsHistory] = useState<NotepadDoc[]>([]);
   const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; docId: string } | null>(null);
   const [imageContextMenu, setImageContextMenu] = useState<{ x: number; y: number; src: string } | null>(null);
@@ -1555,6 +1556,21 @@ export default function App() {
     }
 
     return `${total} ${total === 1 ? "word" : "words"}`;
+  }, [editor, activeId, _editorVersion]);
+
+  const cursorPosition = useMemo(() => {
+    if (!editor || editor.isDestroyed) return "Ln 1, Col 1";
+    const { selection } = editor.state;
+    const { $from } = selection;
+    try {
+      const textBefore = editor.state.doc.textBetween(0, $from.pos, "\n");
+      const lines = textBefore.split("\n");
+      const line = lines.length;
+      const col = lines[lines.length - 1].length + 1;
+      return `Ln ${line}, Col ${col}`;
+    } catch (e) {
+      return "Ln 1, Col 1";
+    }
   }, [editor, activeId, _editorVersion]);
 
   const handleEditorCreated = useCallback((id: string, instance: Editor) => {
@@ -2794,7 +2810,7 @@ export default function App() {
   })();
 
   return (
-    <div className={effectiveDark ? "surface-dark" : "surface-light"} style={{ background: surfBg, minHeight: "100vh" }}>
+    <div className={effectiveDark ? "surface-dark" : "surface-light"} style={{ background: surfBg, height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <Toaster position="bottom-right" theme={effectiveDark ? "dark" : "light"} />
 
       {/* ── ROW 1: Tabs & File Dialogs ── */}
@@ -2804,7 +2820,7 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: `1px solid ${sepColor}`, padding: "0 0 0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg, WebkitAppRegion: "drag", userSelect: "none" } as any}>
           
           {/* Left Zone: Tabs */}
-          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0, position: "relative" }}>
             
             {/* Open File / File Menu Button */}
             <button
@@ -2834,17 +2850,17 @@ export default function App() {
             <div className="notepad-tabs-container" role="tablist" style={{ display: "flex", alignItems: "flex-end", gap: 0, overflowX: "auto", height: "calc(100% + 4px)", marginBottom: -4, paddingBottom: 4, boxSizing: "border-box", flex: 1, paddingLeft: 18, paddingRight: 24, scrollbarWidth: "none" }}>
               {sortedDocs.map((doc, idx) => {
                 const isActive = doc.id === activeId;
-                const isNextActive = idx + 1 < sortedDocs.length && sortedDocs[idx + 1].id === activeId;
-                const showDivider = !isActive && !isNextActive && idx < sortedDocs.length - 1;
-                const activeTabSurface = effectiveDark ? "#202124" : surfBg;
+                const showDivider = false;
+                const activeTabSurface = effectiveDark ? "#202020" : surfBg;
                 const tabColorObj = doc.color ? TAB_COLORS.find(c => c.id === doc.color) : null;
-                const activeTabStroke = tabColorObj ? (effectiveDark ? tabColorObj.darkValue : tabColorObj.lightValue) : (effectiveDark ? blendColors("dark", "#202124", 0.78) : blendColors("light", activeTabSurface, 0.42));
+                const activeTabStroke = tabColorObj ? (effectiveDark ? tabColorObj.darkValue : tabColorObj.lightValue) : (effectiveDark ? blendColors("dark", "#202020", 0.78) : blendColors("light", activeTabSurface, 0.42));
                 const activeTabShadow = effectiveDark ? "0 8px 18px rgba(0,0,0,0.34)" : "0 8px 18px rgba(13,17,23,0.12)";
+                const isPrevActive = idx > 0 && sortedDocs[idx - 1].id === activeId;
 
                 return (
-                  <div
-                    key={doc.id}
-                    className={`notepad-tab-item ${isActive ? "active" : ""}`}
+                  <Fragment key={doc.id}>
+                    <div
+                      className={`notepad-tab-item ${isActive ? "active" : ""}`}
                     role="tab"
                     aria-selected={isActive}
                     onClick={() => {
@@ -2852,6 +2868,8 @@ export default function App() {
                         changeTab(doc.id);
                       }
                     }}
+                    onMouseEnter={() => setHoveredTabId(doc.id)}
+                    onMouseLeave={() => setHoveredTabId(null)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -2865,129 +2883,293 @@ export default function App() {
                     title={doc.filePath || (doc.isPinned ? `${doc.title} (Pinned)` : doc.title)}
                     style={{
                       display: "flex", alignItems: "center", justifyContent: doc.isPinned ? "center" : "flex-start",
-                      gap: doc.isPinned ? 0 : 6, height: 34, padding: doc.isPinned ? "0" : (isActive ? "0 10px 0 16px" : "0 10px"),
-                      borderRadius: "12px 12px 0 0", border: "none",
-                      background: isActive ? activeTabSurface : (effectiveDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"),
-                      color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
+                      gap: doc.isPinned ? 0 : 6, 
+                      height: 36, 
+                      padding: isActive ? (doc.isPinned ? "0" : "0 14px") : "0 2px",
+                      borderRadius: "12px 12px 0 0", 
+                      border: "none",
+                      background: isActive ? activeTabSurface : "transparent",
+                      color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
                       cursor: "pointer", position: "relative",
-                      flex: doc.isPinned ? "0 0 44px" : "0 1 150px",
-                      width: doc.isPinned ? 44 : undefined,
-                      minWidth: doc.isPinned ? 44 : (isActive ? 80 : 36),
-                      maxWidth: doc.isPinned ? 44 : 150,
-                      marginBottom: isActive ? -1 : -2, zIndex: isActive ? 3 : 1,
+                      flex: doc.isPinned ? "0 0 64px" : "0 1 150px",
+                      width: doc.isPinned ? 64 : undefined,
+                      minWidth: doc.isPinned ? 64 : (isActive ? 80 : 64),
+                      maxWidth: doc.isPinned ? 64 : 150,
+                      marginBottom: isActive ? -1 : 0, 
+                      marginLeft: isActive ? (idx > 0 ? (sortedDocs[idx - 1].isPinned ? 4 : 7) : 0) : (isPrevActive ? (doc.isPinned ? 4 : 7) : 0),
+                      zIndex: isActive ? 3 : (hoveredTabId === doc.id ? 2 : 1),
                       boxShadow: isActive ? activeTabShadow : "none",
-                      transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease",
+                      transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease, border-color 140ms ease",
                       WebkitAppRegion: "no-drag"
                     } as any}
                   >
                     {/* SVG Chrome tab borders */}
                     {isActive && (
                       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-                        <svg width="30" height="36" viewBox="-1 -1 30 36" fill="none" style={{ position: "absolute", left: -17, top: -1, overflow: "visible", pointerEvents: "none" }}>
-                          <path d="M 28 34 L 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 Z" fill={activeTabSurface} />
-                          <path d="M 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 L 30 0" stroke={activeTabStroke} strokeWidth="2" fill="none" />
+                        <svg width="30" height="38" viewBox="-1 -1 30 38" fill="none" style={{ position: "absolute", left: -17, top: -1, overflow: "visible", pointerEvents: "none" }}>
+                          <path d="M 28 36 L 0 36 L 8 36 A 8 8 0 0 0 16 28 L 16 12 A 12 12 0 0 1 28 0 Z" fill={activeTabSurface} />
+                          <path d="M 0 36 L 8 36 A 8 8 0 0 0 16 28 L 16 12 A 12 12 0 0 1 28 0 L 30 0" stroke={activeTabStroke} strokeWidth="2" fill="none" />
                         </svg>
-                        <svg width="30" height="36" viewBox="-1 -1 30 36" fill="none" style={{ position: "absolute", right: -17, top: -1, overflow: "visible", pointerEvents: "none" }}>
-                          <path d="M 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34 L 2 34 Z" fill={activeTabSurface} />
-                          <path d="M 0 0 L 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34" stroke={activeTabStroke} strokeWidth="2" fill="none" />
+                        <svg width="30" height="38" viewBox="-1 -1 30 38" fill="none" style={{ position: "absolute", right: -17, top: -1, overflow: "visible", pointerEvents: "none" }}>
+                          <path d="M 2 0 A 12 12 0 0 1 14 12 L 14 28 A 8 8 0 0 0 22 36 L 30 36 L 2 36 Z" fill={activeTabSurface} />
+                          <path d="M 0 0 L 2 0 A 12 12 0 0 1 14 12 L 14 28 A 8 8 0 0 0 22 36 L 30 36" stroke={activeTabStroke} strokeWidth="2" fill="none" />
                         </svg>
                         {/* Connecting top border line to bridge the middle gap */}
-                        <svg viewBox="0 -1 100 36" preserveAspectRatio="none" style={{ position: "absolute", left: 13, width: "calc(100% - 24px)", top: -1, height: 36, pointerEvents: "none" }}>
+                        <svg viewBox="0 -1 100 38" preserveAspectRatio="none" style={{ position: "absolute", left: 13, width: "calc(100% - 24px)", top: -1, height: 38, pointerEvents: "none" }}>
                           <line x1="0" y1="0" x2="100" y2="0" stroke={activeTabStroke} strokeWidth="2" />
                         </svg>
                       </div>
                     )}
                     
                     {doc.isPinned ? (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3, width: "100%", height: "100%", position: "relative", zIndex: 1 }}>
-                        <Pin size={10} style={{ transform: "rotate(30deg)", opacity: 0.8, color: doc.color ? (TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue']) : undefined }} />
-                        <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
-                          {doc.title ? doc.title.charAt(0).toUpperCase() : "U"}
+                      <div
+                        onMouseEnter={() => setHoveredTabId(doc.id)}
+                        onMouseLeave={() => setHoveredTabId(null)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-start",
+                          gap: 4,
+                          width: 58,
+                          height: 26,
+                          borderRadius: 6,
+                          background: effectiveDark ? "#202020" : "#e6e2d8",
+                          border: "none",
+                          boxSizing: "border-box",
+                          paddingLeft: 6,
+                          paddingRight: 4,
+                          transition: "background 140ms ease",
+                        }}
+                      >
+                        {/* Pin Icon */}
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke={doc.color
+                            ? (TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'])
+                            : (effectiveDark ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.55)")}
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ transform: "rotate(45deg)", flexShrink: 0 }}
+                        >
+                          <line x1="12" y1="17" x2="12" y2="22" />
+                          <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.26V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.26a2 2 0 0 1-.78 1.24l-2.78 3.5a2 2 0 0 0-.44 1.24Z" />
+                        </svg>
+
+                        {/* Title text with right-side fading mask to show truncation/hiding */}
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 500,
+                            fontFamily: "'Sora', sans-serif",
+                            color: doc.color
+                              ? (TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'])
+                              : (effectiveDark ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.7)"),
+                            lineHeight: 1,
+                            textTransform: "uppercase",
+                            marginTop: 1.5,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            flex: 1,
+                            WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 95%)",
+                            maskImage: "linear-gradient(to right, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 95%)",
+                          }}
+                        >
+                          {doc.title || "UNT"}
                         </span>
                       </div>
                     ) : (
-                      <>
-                        {doc.color && (
-                          <div 
-                            style={{ 
-                              width: 6, 
-                              height: 6, 
-                              borderRadius: "50%", 
-                              background: TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'], 
-                              marginRight: 2, 
-                              flexShrink: 0,
-                              position: "relative",
-                              zIndex: 1
-                            }} 
-                            title={`${TAB_COLORS.find(c => c.id === doc.color)?.name} Category`}
-                          />
-                        )}
-                        {editingTabId === doc.id ? (
-                          <input
-                            ref={titleInputRef}
-                            value={doc.title}
-                            onChange={(e) => updateTitle(e.target.value)}
-                            onBlur={() => setEditingTabId(null)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === "Escape") setEditingTabId(null);
-                            }}
-                            autoFocus
-                            style={{
-                              background: "transparent", border: "none", outline: "none", color: surfTxt,
-                              fontFamily: "'Sora', sans-serif", fontSize: 12, fontWeight: 600, width: "100%",
-                              padding: 0, margin: 0, position: "relative", zIndex: 1,
-                            }}
-                            spellCheck={false}
-                          />
-                        ) : (
+                      // Non-pinned tab
+                      isActive ? (
+                        <>
+                          {doc.color && (
+                            <div 
+                              style={{ 
+                                width: 6, 
+                                height: 6, 
+                                borderRadius: "50%", 
+                                background: TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'], 
+                                marginRight: 2, 
+                                flexShrink: 0,
+                                position: "relative",
+                                zIndex: 1
+                              }} 
+                              title={`${TAB_COLORS.find(c => c.id === doc.color)?.name} Category`}
+                            />
+                          )}
+                          {editingTabId === doc.id ? (
+                            <input
+                              ref={titleInputRef}
+                              value={doc.title}
+                              onChange={(e) => updateTitle(e.target.value)}
+                              onBlur={() => setEditingTabId(null)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === "Escape") setEditingTabId(null);
+                              }}
+                              autoFocus
+                              style={{
+                                background: "transparent", border: "none", outline: "none", color: surfTxt,
+                                fontFamily: "'Sora', sans-serif", fontSize: 12, fontWeight: 600, width: "100%",
+                                padding: 0, margin: 0, position: "relative", zIndex: 1,
+                              }}
+                              spellCheck={false}
+                            />
+                          ) : (
+                            <span
+                              onDoubleClick={() => {
+                                if (!doc.isPinned) {
+                                  changeTab(doc.id);
+                                  setEditingTabId(doc.id);
+                                  setTimeout(() => titleInputRef.current?.select(), 80);
+                                }
+                              }}
+                              style={{
+                                fontSize: 12, fontWeight: 600,
+                                fontFamily: "'Sora', sans-serif",
+                                whiteSpace: "nowrap", overflow: "hidden", flex: 1,
+                                WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 98%)",
+                                maskImage: "linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 98%)",
+                                marginRight: 0
+                              }}
+                            >
+                              {doc.title || "Untitled"}
+                              {doc.isUnsaved && <span style={{ color: surfAccent, marginLeft: 3 }}>*</span>}
+                            </span>
+                          )}
+
+                          {docs.length > 1 && (
+                            <button
+                              className="tab-close-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteDoc(doc.id);
+                              }}
+                              style={{
+                                border: "none",
+                                background: activeTabSurface,
+                                color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                cursor: "pointer",
+                                transition: "opacity 0.12s ease-in-out",
+                                position: "absolute",
+                                right: 8,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                zIndex: 2,
+                                opacity: hoveredTabId === doc.id ? 1 : 0,
+                                pointerEvents: hoveredTabId === doc.id ? "auto" : "none",
+                                flexShrink: 0,
+                              }}
+                              title="Close tab"
+                            >
+                              <X size={10} />
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        // Inactive Non-pinned tab rendered as a capsule
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 3,
+                            width: "100%",
+                            height: 26,
+                            borderRadius: 6,
+                            background: effectiveDark ? "#202020" : "#e6e2d8",
+                            border: "none",
+                            boxSizing: "border-box",
+                            paddingLeft: 8,
+                            paddingRight: 4,
+                            transition: "background 140ms ease",
+                            position: "relative",
+                          }}
+                        >
+                          {doc.color && (
+                            <div 
+                              style={{ 
+                                width: 6, 
+                                height: 6, 
+                                borderRadius: "50%", 
+                                background: TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'], 
+                                marginRight: 2, 
+                                flexShrink: 0,
+                                position: "relative",
+                                zIndex: 1
+                              }} 
+                            />
+                          )}
                           <span
-                            onDoubleClick={() => {
-                              if (!doc.isPinned) {
-                                changeTab(doc.id);
-                                setEditingTabId(doc.id);
-                                setTimeout(() => titleInputRef.current?.select(), 80);
-                              }
-                            }}
                             style={{
-                              fontSize: 12, fontWeight: isActive ? 600 : 500,
+                              fontSize: 12,
+                              fontWeight: 500,
                               fontFamily: "'Sora', sans-serif",
-                              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              flex: 1,
+                              WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 98%)",
+                              maskImage: "linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 98%)",
+                              marginRight: 0,
+                              marginTop: 1.5,
+                              color: effectiveDark ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.7)",
                             }}
                           >
                             {doc.title || "Untitled"}
                             {doc.isUnsaved && <span style={{ color: surfAccent, marginLeft: 3 }}>*</span>}
                           </span>
-                        )}
 
-                        {docs.length > 1 && (
-                          <button
-                            className="tab-close-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteDoc(doc.id);
-                            }}
-                            style={{
-                              border: "none", background: "transparent",
-                              color: isActive ? (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)") : (effectiveDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)"),
-                              display: "flex", alignItems: "center", justifyContent: "center", padding: 2, borderRadius: 4, cursor: "pointer",
-                              transition: "all 0.12s", position: "relative", zIndex: 1,
-                              opacity: isActive ? 1 : 0,
-                              flexShrink: 0,
-                            }}
-                            title="Close tab"
-                          >
-                            <X size={10} />
-                          </button>
-                        )}
-                      </>
+                          {docs.length > 1 && (
+                            <button
+                              className="tab-close-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteDoc(doc.id);
+                              }}
+                              style={{
+                                border: "none",
+                                background: effectiveDark ? "#202020" : "#e6e2d8",
+                                color: effectiveDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                cursor: "pointer",
+                                transition: "opacity 0.12s ease-in-out",
+                                position: "absolute",
+                                right: 4,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                zIndex: 2,
+                                opacity: hoveredTabId === doc.id ? 1 : 0,
+                                pointerEvents: hoveredTabId === doc.id ? "auto" : "none",
+                                flexShrink: 0,
+                              }}
+                              title="Close tab"
+                            >
+                              <X size={10} />
+                            </button>
+                          )}
+                        </div>
+                      )
                     )}
 
                     {showDivider && (
-                      <div style={{ position: "absolute", right: 0, top: 9, width: 1, height: 14, background: effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)", pointerEvents: "none" }} />
+                      <div style={{ position: "absolute", right: 0, top: 10, width: 1, height: 14, background: effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)", pointerEvents: "none" }} />
                     )}
                   </div>
-                );
-              })}
+
+                </Fragment>
+              );
+            })}
               
               {/* Plus Button inside tab bar row */}
               <button
@@ -3002,17 +3184,24 @@ export default function App() {
                 <Plus size={16} />
               </button>
             </div>
+            {/* Gradient fade overlay for smooth tab overflow */}
+            <div 
+              style={{
+                position: "absolute",
+                right: 0,
+                bottom: 0,
+                width: 32,
+                height: 38,
+                background: `linear-gradient(to right, transparent, ${tabStripBg})`,
+                pointerEvents: "none",
+                zIndex: 3,
+              }}
+            />
           </div>
 
           {/* Right Zone: Saved status, Note lists & Window Controls */}
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0, height: "100%", WebkitAppRegion: "no-drag" } as any}>
             <div style={{ display: "flex", alignItems: "center", height: "100%", transform: "translateY(2.5px)" }}>
-              <span className="saved-ago-status" style={{ fontSize: 11, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif", paddingBottom: 0, marginRight: 6 }}>
-                {wordCountStatus} · {savedAgoText}
-              </span>
-
-              <div style={{ width: 1, height: 20, background: sepColor, margin: "0 6px", flexShrink: 0, alignSelf: "center", paddingBottom: 0 }} />
-
               {/* Note switcher menu trigger */}
               <button
                 style={{ ...tb(showDocMenu), alignSelf: "center", marginRight: 8 }}
@@ -4079,7 +4268,7 @@ export default function App() {
             display: "flex",
             flexDirection: "column",
             flexShrink: 0,
-            height: "calc(100vh - 78px)",
+            height: "calc(100vh - 102px)",
             position: "sticky",
             top: 78,
             zIndex: 10
@@ -4170,7 +4359,7 @@ export default function App() {
           style={{
             flex: 1,
             minWidth: 0,
-            backgroundColor: surfBg, color: surfTxt, minHeight: "calc(100vh - 78px)", cursor: "text", overflowX: "clip",
+            backgroundColor: surfBg, color: surfTxt, height: "calc(100vh - 102px)", overflowY: "auto", cursor: "text", overflowX: "clip",
             ["--np-accent" as string]: surfAccent,
             ["--code-bg" as string]: codeBlockStyles.bg,
             ["--code-border" as string]: codeBlockStyles.border,
@@ -4924,6 +5113,47 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── Status Bar ── */}
+      <div 
+        className="notepad-status-bar"
+        style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "space-between", 
+          height: 24, 
+          padding: "0 12px", 
+          background: effectiveDark ? "var(--bg1)" : "#FAFAFA", 
+          borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.1)", 
+          color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", 
+          fontFamily: "Inter, sans-serif", 
+          fontSize: 11, 
+          boxSizing: "border-box", 
+          zIndex: 40,
+          flexShrink: 0,
+          userSelect: "none"
+        }}
+      >
+        {/* Left: Cursor coordinates */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span>{cursorPosition}</span>
+        </div>
+
+        {/* Right: Word count, zoom indicator, save status */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span>{wordCountStatus}</span>
+          <span style={{ opacity: 0.3 }}>|</span>
+          <span 
+            onClick={() => updateSetting("zoom", 1.0)} 
+            style={{ cursor: "pointer" }}
+            title="Reset zoom to 100%"
+          >
+            {Math.round((settings.zoom || 1.0) * 100)}%
+          </span>
+          <span style={{ opacity: 0.3 }}>|</span>
+          <span>{savedAgoText}</span>
+        </div>
+      </div>
     </div>
   );
 }

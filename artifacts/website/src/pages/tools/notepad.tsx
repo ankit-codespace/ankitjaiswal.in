@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, memo, Fragment } from "react";
 import { Link, useLocation } from "wouter";
 import { Seo } from "@/components/Seo";
 import { SITE, PERSON_SAME_AS } from "@/lib/site";
@@ -202,7 +202,7 @@ const SearchAndReplace = Extension.create({
           apply(tr, oldState) {
             const docChanged = tr.docChanged;
             const forceUpdate = tr.getMeta("searchAndReplaceUpdate");
-            
+
             if (!docChanged && !forceUpdate) {
               return oldState.map(tr.mapping, tr.doc);
             }
@@ -237,8 +237,8 @@ const SearchAndReplace = Extension.create({
             const decos = matches.map((match, idx) => {
               const isActive = idx === activeIndex;
               return Decoration.inline(match.from, match.to, {
-                class: isActive 
-                  ? "notepad-search-match-active" 
+                class: isActive
+                  ? "notepad-search-match-active"
                   : "notepad-search-match",
               });
             });
@@ -353,15 +353,15 @@ const DEFAULT_SETTINGS: NotepadSettings = {
  */
 const THEMES = [
   // Default for OS dark mode — warm-tinted near-black, emerald accent
-  { label: "Slate",    bg: "#161615", tabStripBg: "#0C0C0C", text: "#F0EDE8", accent: "#52C47A", dark: true },
+  { label: "Slate", bg: "#161615", tabStripBg: "#0C0C0C", text: "#F0EDE8", accent: "#52C47A", dark: true },
   // Default for OS light mode — warm cream, amber gold accent
-  { label: "Paper",    bg: "#FAF8F2", tabStripBg: "#EAE6DF", text: "#1F1B16", accent: "#C8863A", dark: false },
+  { label: "Paper", bg: "#FAF8F2", tabStripBg: "#EAE6DF", text: "#1F1B16", accent: "#C8863A", dark: false },
   // True warm near-black for night-mode purists
   { label: "Midnight", bg: "#0F0F0E", tabStripBg: "#000000", text: "#D4D0C8", accent: "#EDE8DF", dark: true },
   // Warm sepia for long reading sessions
-  { label: "Sepia",    bg: "#F4ECD8", tabStripBg: "#E3DAC2", text: "#3D2B1F", accent: "#C8863A", dark: false },
+  { label: "Sepia", bg: "#F4ECD8", tabStripBg: "#E3DAC2", text: "#3D2B1F", accent: "#C8863A", dark: false },
   // Warm-neutral light grey
-  { label: "Mist",     bg: "#EAE6DF", tabStripBg: "#DAD6CE", text: "#1F1B16", accent: "#7A7874", dark: false },
+  { label: "Mist", bg: "#EAE6DF", tabStripBg: "#DAD6CE", text: "#1F1B16", accent: "#7A7874", dark: false },
 ] as const;
 
 const TAB_COLORS = [
@@ -390,18 +390,18 @@ function newDoc(title = "Untitled"): NotepadDoc {
 
 function sanitizeDocContent(doc: NotepadDoc): NotepadDoc {
   if (!doc || !doc.content) return doc;
-  
+
   const contentStr = typeof doc.content === "string" ? doc.content : "";
   const isPdf = contentStr.startsWith("%PDF");
   const hasNullByte = contentStr.includes("\x00") || contentStr.includes("\u0000");
   const isTooLarge = contentStr.length > 1572864; // 1.5MB character length
-  
+
   if (isPdf || hasNullByte || isTooLarge) {
     let errorReason = "Unsupported Format";
     if (isTooLarge) errorReason = "File Too Large (> 1.5MB)";
     else if (isPdf) errorReason = "PDF File Blocked";
     else if (hasNullByte) errorReason = "Binary Content Blocked";
-    
+
     return {
       ...doc,
       content: `<p>[Error: ${errorReason}]</p>`,
@@ -431,7 +431,7 @@ function loadDocs(): NotepadDoc[] {
         return processed;
       }
     }
-  } catch {}
+  } catch { }
   const d = newDoc();
   localStorage.setItem(LS_DOCS, JSON.stringify([d]));
   return [d];
@@ -456,7 +456,7 @@ function loadSettings(): NotepadSettings {
       if (parsed.lineHeight === 1.5 || parsed.lineHeight === 1.45) parsed.lineHeight = 1.65;
       return { ...DEFAULT_SETTINGS, ...parsed };
     }
-  } catch {}
+  } catch { }
   // First-time visitor: pick Slate (dark) or Paper (light) based on OS preference.
   const prefersDark =
     typeof window !== "undefined" &&
@@ -724,8 +724,8 @@ const NOTEPAD_FAQS: { q: string; a: string }[] = [
 ];
 
 const isElectron = typeof window !== "undefined" && (
-  !!(window as any).electron || 
-  !!(window as any).api || 
+  !!(window as any).electron ||
+  !!(window as any).api ||
   (typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("electron"))
 );
 
@@ -782,27 +782,27 @@ const NOTEPAD_COMPARISON_HEADERS = [
   "Apple Notes",
 ];
 const NOTEPAD_COMPARISON_ROWS: string[][] = [
-  ["Runs in browser",          "Yes",  "No (Windows only)", "Yes",  "Web app + macOS/iOS"],
-  ["Install required",         "No",   "Yes",               "No",   "Built into Apple devices"],
-  ["Account / signup",         "No",   "No",                "Yes (Google)", "Yes (Apple ID)"],
-  ["Notes stay on your device","Yes",  "Yes",               "No (synced to Google)", "Synced to iCloud"],
-  ["Rich text formatting",     "Yes",  "Limited (plugins)", "Yes",  "Yes"],
-  ["Image paste",              "Yes",  "No",                "Yes",  "Yes"],
-  ["Export to PDF",            "Yes (one click)", "Plugin only",   "Yes", "Yes (via Print)"],
-  ["Export to DOCX",           "Yes",  "No",                "Yes",  "No"],
-  ["Export to Markdown",       "Yes",  "Plugin",            "No",   "No"],
-  ["Works offline",            "Yes",  "Yes",               "Limited", "Yes"],
-  ["Free forever",             "Yes",  "Yes (open source)", "Yes (with Google account)", "Yes (Apple devices only)"],
+  ["Runs in browser", "Yes", "No (Windows only)", "Yes", "Web app + macOS/iOS"],
+  ["Install required", "No", "Yes", "No", "Built into Apple devices"],
+  ["Account / signup", "No", "No", "Yes (Google)", "Yes (Apple ID)"],
+  ["Notes stay on your device", "Yes", "Yes", "No (synced to Google)", "Synced to iCloud"],
+  ["Rich text formatting", "Yes", "Limited (plugins)", "Yes", "Yes"],
+  ["Image paste", "Yes", "No", "Yes", "Yes"],
+  ["Export to PDF", "Yes (one click)", "Plugin only", "Yes", "Yes (via Print)"],
+  ["Export to DOCX", "Yes", "No", "Yes", "No"],
+  ["Export to Markdown", "Yes", "Plugin", "No", "No"],
+  ["Works offline", "Yes", "Yes", "Limited", "Yes"],
+  ["Free forever", "Yes", "Yes (open source)", "Yes (with Google account)", "Yes (Apple devices only)"],
 ];
 
 // ── Tips & tricks for power users ────────────────────────────────────────────
 const NOTEPAD_TIPS: { icon: typeof Lightbulb; title: string; body: string }[] = [
-  { icon: Wand2,         title: "Smart paste from anywhere",   body: "Paste from Word, Google Docs, Notion or any webpage and the notepad strips junk styling while keeping headings, lists, links and bold/italic intact." },
-  { icon: ImageIcon,     title: "Resize images on the fly",    body: "Click any pasted image to switch between small, medium, large and full-width — no need to re-upload or edit elsewhere." },
-  { icon: Eye,           title: "Use focus mode for long writing", body: "Toggle focus mode to fade out everything except the paragraph you're editing. Combined with full-screen, it's a distraction-free studio." },
-  { icon: Layers,        title: "Keep separate notes for separate jobs", body: "Open the documents menu and create a note per project. Each one autosaves independently and you can rename or reorder them at will." },
-  { icon: Search,        title: "Find and replace across the whole doc", body: "Cmd/Ctrl + Shift + F opens find-and-replace. Works on huge documents without lag because it runs natively in your browser." },
-  { icon: FileDown,      title: "Pick the right export format",  body: "PDF for sharing or printing. DOCX for sending to people who edit in Word. Markdown for blogs, GitHub or Notion. HTML for the web." },
+  { icon: Wand2, title: "Smart paste from anywhere", body: "Paste from Word, Google Docs, Notion or any webpage and the notepad strips junk styling while keeping headings, lists, links and bold/italic intact." },
+  { icon: ImageIcon, title: "Resize images on the fly", body: "Click any pasted image to switch between small, medium, large and full-width — no need to re-upload or edit elsewhere." },
+  { icon: Eye, title: "Use focus mode for long writing", body: "Toggle focus mode to fade out everything except the paragraph you're editing. Combined with full-screen, it's a distraction-free studio." },
+  { icon: Layers, title: "Keep separate notes for separate jobs", body: "Open the documents menu and create a note per project. Each one autosaves independently and you can rename or reorder them at will." },
+  { icon: Search, title: "Find and replace across the whole doc", body: "Cmd/Ctrl + Shift + F opens find-and-replace. Works on huge documents without lag because it runs natively in your browser." },
+  { icon: FileDown, title: "Pick the right export format", body: "PDF for sharing or printing. DOCX for sending to people who edit in Word. Markdown for blogs, GitHub or Notion. HTML for the web." },
 ];
 
 const RELATED_TOOLS = [
@@ -814,20 +814,20 @@ const RELATED_TOOLS = [
 
 // ── Feature cards shown in the SEO section below the editor ────────────────
 const NOTEPAD_FEATURES: { icon: typeof Lock; title: string; desc: string }[] = [
-  { icon: Lock,       title: "Private by default",   desc: "Your notes never leave your browser. No account, no upload, no analytics inside the editor." },
-  { icon: Save,       title: "Autosave, always",     desc: "Every keystroke is saved to local storage. Refresh, close the tab, come back tomorrow." },
-  { icon: Sparkles,   title: "Rich text formatting", desc: "Headings, lists, quotes, code, tables, highlights, colors and inline images." },
-  { icon: FileDown,   title: "Export to PDF & more", desc: "One-click export to PDF, DOCX, Markdown or HTML. Clean output, ready to share." },
-  { icon: Layers,     title: "Multiple notes",       desc: "Switch between documents with a sidebar. Rename, delete, undo — Cmd/Ctrl + Z restores." },
-  { icon: Zap,        title: "Fast & offline",       desc: "Loads instantly, runs entirely client-side. Works without an internet connection after first load." },
+  { icon: Lock, title: "Private by default", desc: "Your notes never leave your browser. No account, no upload, no analytics inside the editor." },
+  { icon: Save, title: "Autosave, always", desc: "Every keystroke is saved to local storage. Refresh, close the tab, come back tomorrow." },
+  { icon: Sparkles, title: "Rich text formatting", desc: "Headings, lists, quotes, code, tables, highlights, colors and inline images." },
+  { icon: FileDown, title: "Export to PDF & more", desc: "One-click export to PDF, DOCX, Markdown or HTML. Clean output, ready to share." },
+  { icon: Layers, title: "Multiple notes", desc: "Switch between documents with a sidebar. Rename, delete, undo — Cmd/Ctrl + Z restores." },
+  { icon: Zap, title: "Fast & offline", desc: "Loads instantly, runs entirely client-side. Works without an internet connection after first load." },
 ];
 
 // ── Use-case sections — these double as long-tail SEO and AI-citation units ─
 const NOTEPAD_USE_CASES: { icon: typeof GraduationCap; title: string; desc: string }[] = [
-  { icon: GraduationCap, title: "For students",      desc: "Take lecture notes that survive browser refreshes and tab closes — autosave runs on every keystroke. Paste screenshots from slides, diagrams from textbooks, or photos of the whiteboard directly into your notes. When the semester ends, export each subject as a clean PDF you can submit, print, or archive. No app to install on a school laptop, no Google account to sign into on a shared computer." },
-  { icon: PenLine,       title: "For writers",       desc: "Draft articles, essays and short fiction in a distraction-free editor. Toggle focus mode to fade everything except the paragraph you're working on. The word counter updates live, headings collapse the document into an outline, and when the draft is ready you ship clean Markdown or HTML straight into your blog, Substack, Ghost or any CMS — no copy-paste cleanup required." },
-  { icon: Code2,         title: "For developers",    desc: "Keep code snippets in syntax-aware code blocks that preserve indentation. Drop screenshots of stack traces, terminal output or Figma designs into the same document. Sketch out architecture decisions, write up bugs, draft pull request descriptions, then export everything to Markdown for GitHub, Linear, Jira or Notion. Stays private — no risk of a code snippet ending up in someone's training data." },
-  { icon: Briefcase,     title: "For professionals", desc: "Capture meeting notes during a call without your client wondering what app you're using. Paste screenshots from a deck, a Figma board, or a spreadsheet. Build a quick brief, an internal memo, or a proposal with proper formatting and export to PDF or DOCX in one click. Everything stays on your laptop — useful when you're working with confidential or pre-release information." },
+  { icon: GraduationCap, title: "For students", desc: "Take lecture notes that survive browser refreshes and tab closes — autosave runs on every keystroke. Paste screenshots from slides, diagrams from textbooks, or photos of the whiteboard directly into your notes. When the semester ends, export each subject as a clean PDF you can submit, print, or archive. No app to install on a school laptop, no Google account to sign into on a shared computer." },
+  { icon: PenLine, title: "For writers", desc: "Draft articles, essays and short fiction in a distraction-free editor. Toggle focus mode to fade everything except the paragraph you're working on. The word counter updates live, headings collapse the document into an outline, and when the draft is ready you ship clean Markdown or HTML straight into your blog, Substack, Ghost or any CMS — no copy-paste cleanup required." },
+  { icon: Code2, title: "For developers", desc: "Keep code snippets in syntax-aware code blocks that preserve indentation. Drop screenshots of stack traces, terminal output or Figma designs into the same document. Sketch out architecture decisions, write up bugs, draft pull request descriptions, then export everything to Markdown for GitHub, Linear, Jira or Notion. Stays private — no risk of a code snippet ending up in someone's training data." },
+  { icon: Briefcase, title: "For professionals", desc: "Capture meeting notes during a call without your client wondering what app you're using. Paste screenshots from a deck, a Figma board, or a spreadsheet. Build a quick brief, an internal memo, or a proposal with proper formatting and export to PDF or DOCX in one click. Everything stays on your laptop — useful when you're working with confidential or pre-release information." },
 ];
 
 const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
@@ -846,15 +846,15 @@ function blendColors(fgType: "dark" | "light", bgHex: string, alpha: number): st
     const bgR = parseInt(hex.slice(0, 2), 16) || 0;
     const bgG = parseInt(hex.slice(2, 4), 16) || 0;
     const bgB = parseInt(hex.slice(4, 6), 16) || 0;
-    
+
     const fgR = fgType === "dark" ? 255 : 13;
     const fgG = fgType === "dark" ? 255 : 17;
     const fgB = fgType === "dark" ? 255 : 23;
-    
+
     const r = Math.round(fgR * alpha + bgR * (1 - alpha));
     const g = Math.round(fgG * alpha + bgG * (1 - alpha));
     const b = Math.round(fgB * alpha + bgB * (1 - alpha));
-    
+
     return `rgb(${r}, ${g}, ${b})`;
   } catch {
     return fgType === "dark" ? "rgb(203, 204, 204)" : "rgb(153, 155, 157)";
@@ -885,6 +885,7 @@ export default function Notepad() {
   const [findActiveIndex, setFindActiveIndex] = useState(0);
   const [showDocMenu, setShowDocMenu] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [hoveredTabId, setHoveredTabId] = useState<string | null>(null);
   // Inline-confirm state for delete actions in the doc switcher
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
@@ -1356,10 +1357,10 @@ export default function Notepad() {
 
       const runAlign = () => {
         if (!editor || editor.isDestroyed || !editor.view || !editor.view.dom) return;
-        const editorEl = document.querySelector(".notepad-editor");
+        const editorEl = editor.view.dom;
         if (!editorEl) return;
 
-        const blocks = editorEl.querySelectorAll("pre, table, blockquote, hr, img, .image-node");
+        const blocks = editorEl.querySelectorAll(".notepad-code-block-wrapper, table, blockquote, hr, img, .image-node");
 
         if (!settings.ruledLines) {
           // Clear snaps if ruled lines are turned off
@@ -1374,27 +1375,31 @@ export default function Notepad() {
         const G = settings.fontSize * settings.lineHeight; // exact grid height in pixels
 
         blocks.forEach((el: any) => {
-          const currentPadding = parseFloat(el.style.paddingBottom) || 0;
-          const currentHeight = el.offsetHeight;
-          if (currentHeight === 0) return;
-
-          // Calculate natural height by subtracting current custom padding
-          const naturalHeight = currentHeight - currentPadding;
-          const remainder = naturalHeight % G;
-          
-          let needed = 0;
-          if (remainder > 0.5) {
-            needed = G - remainder;
-          }
-
-          const neededStr = needed > 0 ? `${needed}px` : "";
-          
-          // Only mutate DOM if value actually changed
-          if (el.style.paddingBottom !== neededStr) {
-            el.style.paddingBottom = neededStr;
-          }
+          if (el.style.paddingBottom) el.style.paddingBottom = "";
           if (el.style.marginTop) el.style.marginTop = "";
-          if (el.style.marginBottom) el.style.marginBottom = "";
+
+          const naturalHeight = el.offsetHeight;
+          if (naturalHeight === 0) return;
+
+          const minGap = G / 2;
+          const targetHeight = Math.ceil((naturalHeight + minGap) / G) * G;
+          const needed = targetHeight - naturalHeight;
+          const neededStr = needed > 0 ? `${needed}px` : "";
+
+          // Snapping uses marginBottom in ruled mode to prevent stretching internal block backgrounds
+          if (el.style.marginBottom !== neededStr) {
+            el.style.marginBottom = neededStr;
+          }
+        });
+
+        // Register onload listeners for all images inside the editor to re-align once loaded
+        const images = editorEl.querySelectorAll("img");
+        images.forEach((img: any) => {
+          if (!img.onload) {
+            img.onload = () => {
+              alignBlocksToGrid();
+            };
+          }
         });
       };
 
@@ -1460,7 +1465,7 @@ export default function Notepad() {
     s.src = "https://accounts.google.com/gsi/client";
     s.async = true;
     document.body.appendChild(s);
-    return () => { try { document.body.removeChild(s); } catch {} };
+    return () => { try { document.body.removeChild(s); } catch { } };
   }, [GCID]);
 
   // ── Find & Replace ─────────────────────────────────────────────────────────
@@ -1704,7 +1709,7 @@ export default function Notepad() {
         const file = await handle.getFile();
         const text = await file.text();
         const title = file.name.replace(/\.[^/.]+$/, "");
-        
+
         const newDoc: NotepadDoc = {
           id: Math.random().toString(36).substring(2, 11),
           title: title,
@@ -1794,7 +1799,7 @@ export default function Notepad() {
 
         const newTitle = file.name.replace(/\.[^/.]+$/, "");
         fileHandlesRef.current[activeDoc.id] = handle;
-        
+
         setDocs(prev => prev.map(d => d.id === activeDoc.id ? { ...d, title: newTitle } : d));
         setLastSaved(new Date());
         setSaveStatus("saved");
@@ -1937,7 +1942,7 @@ export default function Notepad() {
       }
 
       // New Note: Ctrl + Alt + N (Web) / Ctrl + N or Ctrl + T (Electron)
-      const isNewNote = isElectron 
+      const isNewNote = isElectron
         ? (ctrl && !e.shiftKey && (e.key.toLowerCase() === "n" || e.key.toLowerCase() === "t"))
         : (ctrl && e.altKey && e.key.toLowerCase() === "n");
       if (isNewNote) {
@@ -2224,12 +2229,12 @@ export default function Notepad() {
     try {
       let response = await fetch(src);
       let blob = await response.blob();
-      
+
       if (blob.type !== "image/png") {
         const img = new Image();
         img.src = src;
         await new Promise((resolve) => img.onload = resolve);
-        
+
         const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
@@ -2244,7 +2249,7 @@ export default function Notepad() {
           }
         }
       }
-      
+
       await navigator.clipboard.write([
         new ClipboardItem({
           [blob.type]: blob
@@ -2364,8 +2369,8 @@ export default function Notepad() {
   };
 
   const toggleFocus = () => {
-    if (!focusMode) { document.documentElement.requestFullscreen?.().catch(() => {}); setFocusMode(true); }
-    else { document.exitFullscreen?.().catch(() => {}); setFocusMode(false); }
+    if (!focusMode) { document.documentElement.requestFullscreen?.().catch(() => { }); setFocusMode(true); }
+    else { document.exitFullscreen?.().catch(() => { }); setFocusMode(false); }
   };
 
   // ── Insert helpers ─────────────────────────────────────────────────────────
@@ -2416,14 +2421,14 @@ export default function Notepad() {
       const { selection } = editor.state;
       const fromCoords = editor.view.coordsAtPos(selection.from);
       const toCoords = editor.view.coordsAtPos(selection.to);
-      
+
       const left = (fromCoords.left + toCoords.left) / 2;
       const top = Math.max(fromCoords.bottom, toCoords.bottom) + 14;
-      
+
       const popoverWidth = 340;
       const viewportWidth = window.innerWidth;
       const adjustedLeft = Math.max(12, Math.min(left - popoverWidth / 2, viewportWidth - popoverWidth - 12));
-      
+
       setLinkPopoverCoords({
         top,
         left: adjustedLeft
@@ -2435,7 +2440,7 @@ export default function Notepad() {
           top: domRect.top + 80,
           left: domRect.left + (domRect.width - 340) / 2
         });
-      } catch (err) {}
+      } catch (err) { }
     }
   };
 
@@ -2834,7 +2839,7 @@ export default function Notepad() {
       if (NavClipboard && typeof NavClipboard.write === "function" && CI) {
         await NavClipboard.write([
           new CI({
-            "text/html":  new Blob([html], { type: "text/html" }),
+            "text/html": new Blob([html], { type: "text/html" }),
             "text/plain": new Blob([text], { type: "text/plain" }),
           }),
         ]);
@@ -2915,7 +2920,7 @@ export default function Notepad() {
     finally { setDriveSaving(false); }
   };
 
-  const surfBg  = settings.bgColor   || (settings.lightSurface ? "#FAF8F2" : "#161615");
+  const surfBg = settings.bgColor || (settings.lightSurface ? "#FAF8F2" : "#161615");
   const surfTxt = settings.textColor || (settings.lightSurface ? "#1F1B16" : "#F0EDE8");
   // Derive light/dark for marker colors etc. based on effective bg
   const effectiveDark = settings.bgColor ? !isLightHex(settings.bgColor) : !settings.lightSurface;
@@ -2984,11 +2989,11 @@ export default function Notepad() {
 
   // ── Toolbar helpers ────────────────────────────────────────────────────────
   const tb = (active?: boolean): React.CSSProperties => {
-    const fg = effectiveDark 
-      ? (active ? "var(--t1)" : "var(--t2)") 
+    const fg = effectiveDark
+      ? (active ? "var(--t1)" : "var(--t2)")
       : (active ? "#111111" : "rgba(0, 0, 0, 0.54)");
-    const bg = active 
-      ? (effectiveDark ? "var(--bg2)" : "rgba(0, 0, 0, 0.08)") 
+    const bg = active
+      ? (effectiveDark ? "var(--bg2)" : "rgba(0, 0, 0, 0.08)")
       : "transparent";
     return {
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -3012,8 +3017,8 @@ export default function Notepad() {
       border: "none",
       cursor: "pointer",
       background: "transparent",
-      color: isErr 
-        ? "var(--err)" 
+      color: isErr
+        ? "var(--err)"
         : (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.72)"),
       transition: "background 0.12s, color 0.12s",
     };
@@ -3027,7 +3032,7 @@ export default function Notepad() {
     if (match) return match.accent;
     return effectiveDark ? "#10B981" : "#5D4FB8";
   })();
-  
+
   // Look up the tabStripBg for the current theme; fall back per light/dark.
   const tabStripBg = (() => {
     const match = THEMES.find((t) => t.bg === settings.bgColor && t.text === settings.textColor);
@@ -3050,6 +3055,26 @@ export default function Notepad() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Trigger Lenis resize when the SEO guide is expanded/collapsed to prevent scroll lock
+  useEffect(() => {
+    const lenis = (window as any).__lenis;
+    if (!lenis) return;
+
+    if (typeof lenis.resize === "function") {
+      lenis.resize();
+    }
+
+    const timers = [
+      setTimeout(() => { if (typeof lenis.resize === "function") lenis.resize(); }, 150),
+      setTimeout(() => { if (typeof lenis.resize === "function") lenis.resize(); }, 300),
+      setTimeout(() => { if (typeof lenis.resize === "function") lenis.resize(); }, 600),
+    ];
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+  }, [isSeoUnlocked]);
 
 
   /** Apply a preset theme: sets bgColor, textColor, lightSurface in one shot. */
@@ -3076,6 +3101,21 @@ export default function Notepad() {
     }
 
     return `${total} ${total === 1 ? "word" : "words"}`;
+  }, [editor, activeId, editorVersion]);
+
+  const cursorPosition = useMemo(() => {
+    if (!editor || editor.isDestroyed) return "Ln 1, Col 1";
+    const { selection } = editor.state;
+    const { $from } = selection;
+    try {
+      const textBefore = editor.state.doc.textBetween(0, $from.pos, "\n");
+      const lines = textBefore.split("\n");
+      const line = lines.length;
+      const col = lines[lines.length - 1].length + 1;
+      return `Ln ${line}, Col ${col}`;
+    } catch (e) {
+      return "Ln 1, Col 1";
+    }
   }, [editor, activeId, editorVersion]);
 
   const savedAgo = (() => {
@@ -3161,12 +3201,12 @@ export default function Notepad() {
         • ROW 2 (Formatting Tools)   — height 38px, displays rich-text formatting buttons and view controls
       */}
       <div style={{ position: "sticky", top: 0, zIndex: 40, display: "flex", flexDirection: "column" }}>
-        
+
         {/* ── ROW 1: Window header, file tabs, and file action buttons ── */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: `1px solid ${sepColor}`, padding: "0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg }}>
-          
+
           {/* Left Zone: Back and Tabs */}
-          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0, position: "relative" }}>
             {/* Back Button — same height (34px) and bottom offset (-2) as tab items
                 so the arrow icon always sits on the same optical baseline as tab text. */}
             <Link
@@ -3177,7 +3217,7 @@ export default function Notepad() {
                 alignItems: "center",
                 justifyContent: "center",
                 width: 30,
-                height: 34,
+                height: 36,
                 borderRadius: "6px 6px 0 0",
                 color: effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)",
                 textDecoration: "none",
@@ -3217,9 +3257,9 @@ export default function Notepad() {
                 alignItems: "center",
                 justifyContent: "center",
                 width: 30,
-                height: 34,
+                height: 36,
                 borderRadius: "6px 6px 0 0",
-                background: showFileMenu ? (effectiveDark ? "#202124" : surfBg) : "transparent",
+                background: showFileMenu ? (effectiveDark ? "#202020" : surfBg) : "transparent",
                 color: effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)",
                 border: "none",
                 cursor: "pointer",
@@ -3240,7 +3280,7 @@ export default function Notepad() {
                 margin: "0 8px",
                 flexShrink: 0,
                 alignSelf: "flex-end",
-                marginBottom: 5,
+                marginBottom: 8,
               }}
             />
 
@@ -3261,275 +3301,417 @@ export default function Notepad() {
               {sortedDocs.map((doc, idx) => {
                 const isActive = doc.id === activeId;
                 const isArmed = confirmDeleteId === doc.id;
-                const isNextActive = idx + 1 < sortedDocs.length && sortedDocs[idx + 1].id === activeId;
-                const showDivider = !isActive && !isNextActive && idx < sortedDocs.length - 1;
-                const activeTabSurface = effectiveDark ? "#202124" : surfBg;
+                const showDivider = false;
+                const activeTabSurface = effectiveDark ? "#202020" : surfBg;
                 const tabColorObj = doc.color ? TAB_COLORS.find(c => c.id === doc.color) : null;
                 const activeTabStroke = tabColorObj
                   ? (effectiveDark ? tabColorObj.darkValue : tabColorObj.lightValue)
                   : (effectiveDark
-                    ? blendColors("dark", "#202124", 0.78)
+                    ? blendColors("dark", "#202020", 0.78)
                     : blendColors("light", activeTabSurface, 0.42));
                 const activeTabShadow = effectiveDark
                   ? "0 -1px 0 rgba(255,255,255,0.20) inset, 0 8px 18px rgba(0,0,0,0.34)"
                   : "0 -1px 0 rgba(255,255,255,0.72) inset, 0 8px 18px rgba(13,17,23,0.12)";
+                const isPrevActive = idx > 0 && sortedDocs[idx - 1].id === activeId;
 
                 return (
-                  <div
-                    key={doc.id}
-                    className={`notepad-tab-item ${isActive ? "active" : ""}`}
-                    onClick={() => {
-                      if (!isActive) {
-                        setActiveId(doc.id);
-                        cancelConfirm();
-                      }
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      contextMenuOpenTimeRef.current = Date.now();
-                      setContextMenu({
-                        tabId: doc.id,
-                        x: e.clientX,
-                        y: e.clientY,
-                      });
-                    }}
-                    title={doc.isPinned ? (doc.title || "Untitled Note") : undefined}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: doc.isPinned ? "center" : "flex-start",
-                      gap: doc.isPinned ? 0 : 8,
-                      height: 34,
-                      padding: doc.isPinned ? "0" : "0 14px",
-                      borderRadius: "12px 12px 0 0",
-                      border: "none",
-                      background: isActive ? activeTabSurface : "transparent",
-                      color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
-                      cursor: "pointer",
-                      position: "relative",
-                      flex: doc.isPinned ? "0 0 44px" : "0 1 150px",
-                      width: doc.isPinned ? 44 : undefined,
-                      minWidth: doc.isPinned ? 44 : (isActive ? 80 : 36),
-                      maxWidth: doc.isPinned ? 44 : 150,
-                      marginBottom: -2,
-                      zIndex: isActive ? 3 : 1,
-                      boxShadow: isActive ? activeTabShadow : "none",
-                      ["--active-tab-bg" as any]: activeTabSurface,
-                      ["--active-border-color" as any]: activeTabStroke,
-                      transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease",
-                    }}
-                  >
-                    {/* SVG Vector Background & Outline with Chrome-like flaring tails */}
-                    {isActive && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          pointerEvents: "none",
-                          zIndex: 0,
-                        }}
-                      >
-                        {/* Left Curve SVG */}
-                        <svg
-                          width="30"
-                          height="36"
-                          viewBox="-1 -1 30 36"
-                          fill="none"
-                          style={{ position: "absolute", left: -17, top: -1, overflow: "visible" }}
-                        >
-                          <path
-                            d="M 28 34 L 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 Z"
-                            fill={activeTabSurface}
-                          />
-                          <path
-                            d="M 0 34 L 8 34 A 8 8 0 0 0 16 26 L 16 12 A 12 12 0 0 1 28 0 L 30 0"
-                            stroke={activeTabStroke}
-                            strokeWidth="2"
-                            fill="none"
-                          />
-                        </svg>
-
-                        {/* Middle Top Border */}
+                  <Fragment key={doc.id}>
+                    <div
+                      className={`notepad-tab-item ${isActive ? "active" : ""}`}
+                      onClick={() => {
+                        if (!isActive) {
+                          setActiveId(doc.id);
+                          cancelConfirm();
+                        }
+                      }}
+                      onMouseEnter={() => setHoveredTabId(doc.id)}
+                      onMouseLeave={() => setHoveredTabId(null)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        contextMenuOpenTimeRef.current = Date.now();
+                        setContextMenu({
+                          tabId: doc.id,
+                          x: e.clientX,
+                          y: e.clientY,
+                        });
+                      }}
+                      title={doc.isPinned ? (doc.title || "Untitled Note") : undefined}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: doc.isPinned ? "center" : "flex-start",
+                        gap: doc.isPinned ? 0 : 6,
+                        height: 36,
+                        padding: isActive ? (doc.isPinned ? "0" : "0 14px") : "0 2px",
+                        borderRadius: "12px 12px 0 0",
+                        border: "none",
+                        background: isActive ? activeTabSurface : "transparent",
+                        color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
+                        cursor: "pointer",
+                        position: "relative",
+                        flex: doc.isPinned ? "0 0 64px" : "0 1 150px",
+                        width: doc.isPinned ? 64 : undefined,
+                        minWidth: doc.isPinned ? 64 : (isActive ? 80 : 64),
+                        maxWidth: doc.isPinned ? 64 : 150,
+                        marginBottom: isActive ? -2 : 0,
+                        marginLeft: isActive ? (idx > 0 ? (sortedDocs[idx - 1].isPinned ? 4 : 7) : 0) : (isPrevActive ? (doc.isPinned ? 4 : 7) : 0),
+                        zIndex: isActive ? 3 : (hoveredTabId === doc.id ? 2 : 1),
+                        boxShadow: isActive ? activeTabShadow : "none",
+                        ["--active-tab-bg" as any]: activeTabSurface,
+                        ["--active-border-color" as any]: activeTabStroke,
+                        transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease",
+                      }}
+                    >
+                      {/* SVG Vector Background & Outline with Chrome-like flaring tails */}
+                      {isActive && (
                         <div
                           style={{
                             position: "absolute",
-                            left: 11,
-                            right: 11,
-                            top: -1,
-                            height: 2,
-                            background: activeTabStroke,
+                            inset: 0,
+                            pointerEvents: "none",
+                            zIndex: 0,
                           }}
-                        />
-
-                        {/* Right Curve SVG */}
-                        <svg
-                          width="30"
-                          height="36"
-                          viewBox="-1 -1 30 36"
-                          fill="none"
-                          style={{ position: "absolute", right: -17, top: -1, overflow: "visible" }}
                         >
-                          <path
-                            d="M 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34 L 2 34 Z"
-                            fill={activeTabSurface}
-                          />
-                          <path
-                            d="M 0 0 L 2 0 A 12 12 0 0 1 14 12 L 14 26 A 8 8 0 0 0 22 34 L 30 34"
-                            stroke={activeTabStroke}
-                            strokeWidth="2"
+                          {/* Left Curve SVG */}
+                          <svg
+                            width="30"
+                            height="38"
+                            viewBox="-1 -1 30 38"
                             fill="none"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                    
-                    {doc.isPinned ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 3,
-                          width: "100%",
-                          height: "100%",
-                          position: "relative",
-                          zIndex: 1,
-                        }}
-                      >
-                        <Pin size={10} style={{ transform: "rotate(30deg)", opacity: 0.8, color: doc.color ? (TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue']) : undefined }} />
-                        <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
-                          {doc.title ? doc.title.charAt(0).toUpperCase() : "U"}
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        {doc.color && (
-                          <div 
-                            style={{ 
-                              width: 6, 
-                              height: 6, 
-                              borderRadius: "50%", 
-                              background: TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'], 
-                              marginRight: 2, 
-                              flexShrink: 0,
-                              position: "relative",
-                              zIndex: 1
-                            }} 
-                            title={`${TAB_COLORS.find(c => c.id === doc.color)?.name} Category`}
-                          />
-                        )}
-                        {editingTabId === doc.id ? (
-                          <input
-                            ref={titleInputRef}
-                            value={doc.title}
-                            onChange={(e) => updateTitle(e.target.value)}
-                            onBlur={() => setEditingTabId(null)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === "Escape") {
-                                setEditingTabId(null);
-                              }
-                            }}
-                            autoFocus
+                            style={{ position: "absolute", left: -17, top: -1, overflow: "visible" }}
+                          >
+                            <path
+                              d="M 28 36 L 0 36 L 8 36 A 8 8 0 0 0 16 28 L 16 12 A 12 12 0 0 1 28 0 Z"
+                              fill={activeTabSurface}
+                            />
+                            <path
+                              d="M 0 36 L 8 36 A 8 8 0 0 0 16 28 L 16 12 A 12 12 0 0 1 28 0 L 30 0"
+                              stroke={activeTabStroke}
+                              strokeWidth="2"
+                              fill="none"
+                            />
+                          </svg>
+
+                          {/* Middle Top Border */}
+                          <div
                             style={{
-                              background: "transparent",
-                              border: "none",
-                              outline: "none",
-                              color: surfTxt,
-                              fontFamily: "'Sora', sans-serif",
-                              fontSize: 12,
-                              fontWeight: 600,
-                              width: "100%",
-                              padding: 0,
-                              margin: 0,
-                              letterSpacing: "-0.01em",
-                              position: "relative",
-                              zIndex: 1,
+                              position: "absolute",
+                              left: 11,
+                              right: 11,
+                              top: -1,
+                              height: 2,
+                              background: activeTabStroke,
                             }}
-                            spellCheck={false}
-                            title="Rename note"
                           />
-                        ) : (
+
+                          {/* Right Curve SVG */}
+                          <svg
+                            width="30"
+                            height="38"
+                            viewBox="-1 -1 30 38"
+                            fill="none"
+                            style={{ position: "absolute", right: -17, top: -1, overflow: "visible" }}
+                          >
+                            <path
+                              d="M 2 0 A 12 12 0 0 1 14 12 L 14 28 A 8 8 0 0 0 22 36 L 30 36 L 2 36 Z"
+                              fill={activeTabSurface}
+                            />
+                            <path
+                              d="M 0 0 L 2 0 A 12 12 0 0 1 14 12 L 14 28 A 8 8 0 0 0 22 36 L 30 36"
+                              stroke={activeTabStroke}
+                              strokeWidth="2"
+                              fill="none"
+                            />
+                          </svg>
+                        </div>
+                      )}
+
+                      {doc.isPinned ? (
+                        <div
+                          onMouseEnter={() => setHoveredTabId(doc.id)}
+                          onMouseLeave={() => setHoveredTabId(null)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "flex-start",
+                            gap: 4,
+                            width: 58,
+                            height: 26,
+                            borderRadius: 6,
+                            background: effectiveDark ? "#202020" : "#e6e2d8",
+                            border: "none",
+                            boxSizing: "border-box",
+                            paddingLeft: 6,
+                            paddingRight: 4,
+                            transition: "background 140ms ease",
+                          }}
+                        >
+                          {/* Pin Icon */}
+                          <svg
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke={doc.color
+                              ? (TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'])
+                              : (effectiveDark ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.55)")}
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{ transform: "rotate(45deg)", flexShrink: 0 }}
+                          >
+                            <line x1="12" y1="17" x2="12" y2="22" />
+                            <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.26V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.26a2 2 0 0 1-.78 1.24l-2.78 3.5a2 2 0 0 0-.44 1.24Z" />
+                          </svg>
+
+                          {/* Title text with right-side fading mask to show truncation/hiding */}
                           <span
-                            onDoubleClick={() => {
-                              if (!doc.isPinned) {
-                                setActiveId(doc.id);
-                                setEditingTabId(doc.id);
-                                setTimeout(() => titleInputRef.current?.select(), 80);
-                              }
-                            }}
                             style={{
-                              fontSize: 12,
-                              fontWeight: isActive ? 600 : 500,
-                              fontFamily: isActive ? "'Sora', sans-serif" : "Inter, sans-serif",
+                              fontSize: 10,
+                              fontWeight: 500,
+                              fontFamily: "'Sora', sans-serif",
+                              color: doc.color
+                                ? (TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'])
+                                : (effectiveDark ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.7)"),
+                              lineHeight: 1,
+                              textTransform: "uppercase",
+                              marginTop: 1.5,
                               whiteSpace: "nowrap",
                               overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              width: "100%",
+                              flex: 1,
+                              WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 95%)",
+                              maskImage: "linear-gradient(to right, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 95%)",
                             }}
                           >
-                            {doc.title || "Untitled"}
+                            {doc.title || "UNT"}
                           </span>
-                        )}
+                        </div>
+                      ) : (
+                        // Non-pinned tab
+                        isActive ? (
+                          <>
+                            {doc.color && (
+                              <div
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  background: TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'],
+                                  marginRight: 2,
+                                  flexShrink: 0,
+                                  position: "relative",
+                                  zIndex: 1
+                                }}
+                                title={`${TAB_COLORS.find(c => c.id === doc.color)?.name} Category`}
+                              />
+                            )}
+                            {editingTabId === doc.id ? (
+                              <input
+                                ref={titleInputRef}
+                                value={doc.title}
+                                onChange={(e) => updateTitle(e.target.value)}
+                                onBlur={() => setEditingTabId(null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === "Escape") {
+                                    setEditingTabId(null);
+                                  }
+                                }}
+                                autoFocus
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  outline: "none",
+                                  color: surfTxt,
+                                  fontFamily: "'Sora', sans-serif",
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  width: "100%",
+                                  padding: 0,
+                                  margin: 0,
+                                  letterSpacing: "-0.01em",
+                                  position: "relative",
+                                  zIndex: 1,
+                                }}
+                                spellCheck={false}
+                                title="Rename note"
+                              />
+                            ) : (
+                              <span
+                                onDoubleClick={() => {
+                                  if (!doc.isPinned) {
+                                    setActiveId(doc.id);
+                                    setEditingTabId(doc.id);
+                                    setTimeout(() => titleInputRef.current?.select(), 80);
+                                  }
+                                }}
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  fontFamily: "'Sora', sans-serif",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  flex: 1,
+                                  WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 98%)",
+                                  maskImage: "linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 98%)",
+                                  marginRight: 0
+                                }}
+                              >
+                                {doc.title || "Untitled"}
+                              </span>
+                            )}
 
-                        {docs.length > 1 && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setDeleteConfirm({
-                                docId: doc.id,
-                                source: "tab",
-                                x: rect.left + rect.width / 2,
-                                y: rect.bottom,
-                              });
-                            }}
+                            {docs.length > 1 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setDeleteConfirm({
+                                    docId: doc.id,
+                                    source: "tab",
+                                    x: rect.left + rect.width / 2,
+                                    y: rect.bottom,
+                                  });
+                                }}
+                                style={{
+                                  border: "none",
+                                  background: activeTabSurface,
+                                  color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  cursor: "pointer",
+                                  transition: "opacity 0.12s ease-in-out",
+                                  position: "absolute",
+                                  right: 8,
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  zIndex: 2,
+                                  opacity: hoveredTabId === doc.id ? 1 : 0,
+                                  pointerEvents: hoveredTabId === doc.id ? "auto" : "none",
+                                  flexShrink: 0,
+                                }}
+                                title="Delete note"
+                              >
+                                <X size={10} />
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          // Inactive Non-pinned tab rendered as a capsule
+                          <div
                             style={{
-                              border: "none",
-                              background: "transparent",
-                              color: isActive ? (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)") : (effectiveDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)"),
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              padding: 2,
-                              borderRadius: 4,
-                              cursor: "pointer",
-                              transition: "all 0.12s",
+                              justifyContent: "space-between",
+                              gap: 3,
+                              width: "100%",
+                              height: 26,
+                              borderRadius: 6,
+                              background: effectiveDark ? "#202020" : "#e6e2d8",
+                              border: "none",
+                              boxSizing: "border-box",
+                              paddingLeft: 8,
+                              paddingRight: 4,
+                              transition: "background 140ms ease",
                               position: "relative",
-                              zIndex: 1,
                             }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.color = "var(--err)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.color = isActive ? (effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)") : (effectiveDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)");
-                            }}
-                            title="Delete note"
                           >
-                            <X size={10} />
-                          </button>
-                        )}
-                      </>
-                    )}
+                            {doc.color && (
+                              <div
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  background: TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue'],
+                                  marginRight: 2,
+                                  flexShrink: 0,
+                                  position: "relative",
+                                  zIndex: 1
+                                }}
+                              />
+                            )}
+                            <span
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 500,
+                                fontFamily: "'Sora', sans-serif",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                flex: 1,
+                                WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 98%)",
+                                maskImage: "linear-gradient(to right, rgba(0,0,0,1) 88%, rgba(0,0,0,0) 98%)",
+                                marginRight: 0,
+                                marginTop: 1.5,
+                                color: effectiveDark ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.7)",
+                              }}
+                            >
+                              {doc.title || "Untitled"}
+                            </span>
 
-                    {/* Vertical tab divider lines (Chrome aesthetic) */}
-                    {showDivider && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          right: 0,
-                          top: 9,
-                          width: 1,
-                          height: 14,
-                          background: effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)",
-                          pointerEvents: "none",
-                        }}
-                      />
-                    )}
-                  </div>
+                            {docs.length > 1 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setDeleteConfirm({
+                                    docId: doc.id,
+                                    source: "tab",
+                                    x: rect.left + rect.width / 2,
+                                    y: rect.bottom,
+                                  });
+                                }}
+                                style={{
+                                  border: "none",
+                                  background: effectiveDark ? "#202020" : "#e6e2d8",
+                                  color: effectiveDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  cursor: "pointer",
+                                  transition: "opacity 0.12s ease-in-out",
+                                  position: "absolute",
+                                  right: 4,
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  zIndex: 2,
+                                  opacity: hoveredTabId === doc.id ? 1 : 0,
+                                  pointerEvents: hoveredTabId === doc.id ? "auto" : "none",
+                                  flexShrink: 0,
+                                }}
+                                title="Delete note"
+                              >
+                                <X size={10} />
+                              </button>
+                            )}
+                          </div>
+                        )
+                      )}
+
+                      {/* Vertical tab divider lines (Chrome aesthetic) */}
+                      {showDivider && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            right: 0,
+                            top: 10,
+                            width: 1,
+                            height: 14,
+                            background: effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)",
+                            pointerEvents: "none",
+                          }}
+                        />
+                      )}
+                    </div>
+
+                  </Fragment>
                 );
               })}
-              
+
               {/* Plus Button inside tab bar row */}
               <button
                 onClick={createDoc}
@@ -3549,13 +3731,23 @@ export default function Notepad() {
                 <Plus size={13} />
               </button>
             </div>
+            {/* Gradient fade overlay for smooth tab overflow */}
+            <div 
+              style={{
+                position: "absolute",
+                right: 0,
+                bottom: 0,
+                width: 32,
+                height: 38,
+                background: `linear-gradient(to right, transparent, ${tabStripBg})`,
+                pointerEvents: "none",
+                zIndex: 3,
+              }}
+            />
           </div>
 
           {/* Right Zone: Status, Cloud, Settings, Feedback */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>
-            <span style={{ fontSize: 11, color: effectiveDark ? "var(--t3)" : "rgba(0, 0, 0, 0.45)", fontFamily: "Inter, sans-serif" }} className="notepad-shortcuts-btn">
-              {wordCountStatus} · {savedAgo}
-            </span>
 
             {GCID && (
               <button style={tb(driveConnected)} onClick={driveConnected ? () => syncToDrive() : connectDrive} title={driveConnected ? "Sync to Drive now" : "Connect Google Drive"}>
@@ -3598,7 +3790,7 @@ export default function Notepad() {
 
         {/* ── ROW 2: Rich-text formatting tools and view/export options ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 38, padding: "0 10px", boxSizing: "border-box", width: "100%", background: surfBg, borderBottom: `1px solid ${sepColor}`, transition: "background 0.3s" }}>
-          
+
           {/* Row 2 Left Zone: Formatting buttons (scrollable) */}
           <div className="notepad-toolbar" style={{ display: "flex", alignItems: "center", height: "100%", gap: 2, overflowX: "auto", flex: 1, minWidth: 0 }}>
             {/* Table of Contents / Outline Sidebar Toggle */}
@@ -3633,7 +3825,7 @@ export default function Notepad() {
             >
               <Eraser size={14} />
             </button>
-            
+
             {/* Text Color Dropdown */}
             <div className="notepad-color-picker-trigger" style={{ position: "relative", display: "inline-block" }}>
               <button
@@ -3849,7 +4041,7 @@ export default function Notepad() {
               <Table2 size={14} />
             </button>
             <button title={getTooltip("Insert Divider")} style={tb()} onClick={() => editor?.chain().focus().setHorizontalRule().run()}><Minus size={13} /></button>
-            
+
             {/* CONTEXTUAL TABLE ACTIONS */}
             {editor?.isActive("table") && (
               <>
@@ -3914,9 +4106,9 @@ export default function Notepad() {
                       >
                         Delete Row
                       </button>
-                      
+
                       <div style={{ borderTop: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
-                      
+
                       <button
                         style={ddBtnStyle()}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
@@ -3941,9 +4133,9 @@ export default function Notepad() {
                       >
                         Delete Column
                       </button>
-                      
+
                       <div style={{ borderTop: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
-                      
+
                       <button
                         style={{ ...ddBtnStyle(true), fontWeight: 600 }}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "rgba(196,72,62,0.15)" : "rgba(196,72,62,0.12)"; }}
@@ -4010,8 +4202,8 @@ export default function Notepad() {
                 color: copyState === "copied"
                   ? (effectiveDark ? "rgba(140, 230, 170, 0.95)" : "#0E7A3E")
                   : copyState === "error"
-                  ? (effectiveDark ? "rgba(255, 150, 150, 0.95)" : "#A8201A")
-                  : (effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)"),
+                    ? (effectiveDark ? "rgba(255, 150, 150, 0.95)" : "#A8201A")
+                    : (effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)"),
                 background: effectiveDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
                 border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
                 borderRadius: 6,
@@ -4020,8 +4212,8 @@ export default function Notepad() {
               onClick={handleCopy}
               aria-label={
                 copyState === "copied" ? "Note copied to clipboard"
-                : copyState === "error" ? "Copy failed"
-                : "Copy note to clipboard"
+                  : copyState === "error" ? "Copy failed"
+                    : "Copy note to clipboard"
               }
               aria-live="polite"
             >
@@ -4065,591 +4257,591 @@ export default function Notepad() {
       {/* ── MORE MENU PANEL — position: fixed, escapes all overflow contexts ── */}
 
 
-        {/* ── DOC MENU PANEL — position: fixed so it escapes the overflow context ── */}
-        {showDocMenu && (
-          <div style={{
+      {/* ── DOC MENU PANEL — position: fixed so it escapes the overflow context ── */}
+      {showDocMenu && (
+        <div style={{
+          position: "fixed",
+          top: 80,
+          left: docMenuLeft,
+          background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+          border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
+          borderRadius: "var(--r)",
+          minWidth: 240,
+          padding: "6px 0",
+          zIndex: 200,
+          boxShadow: effectiveDark ? "0 16px 48px rgba(0,0,0,0.65)" : "0 16px 48px rgba(0,0,0,0.1)",
+        }}>
+          {sortedDocs.map((d) => {
+            return (
+              <div
+                key={d.id}
+                style={{
+                  display: "flex", alignItems: "center", padding: "7px 12px",
+                  cursor: "pointer",
+                  background: d.id === activeId
+                    ? (effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.06)")
+                    : "transparent",
+                  transition: "background 140ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (d.id !== activeId) {
+                    e.currentTarget.style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.04)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (d.id !== activeId) {
+                    e.currentTarget.style.background = "transparent";
+                  }
+                }}
+              >
+                <span
+                  style={{ flex: 1, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center" }}
+                  onClick={() => { setActiveId(d.id); setShowDocMenu(false); }}
+                >
+                  {d.title || "Untitled"}
+                  {d.isPinned && (
+                    <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)" }} />
+                  )}
+                </span>
+                {d.id === activeId && (
+                  <Check size={12} style={{ color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", flexShrink: 0 }} />
+                )}
+                {docs.length > 1 && (
+                  <button
+                    style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setDeleteConfirm({
+                        docId: d.id,
+                        source: "switcher",
+                        x: rect.left,
+                        y: rect.top + rect.height / 2,
+                      });
+                    }}
+                    onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "1"; el.style.color = "var(--err)"; el.style.background = "color-mix(in srgb, var(--err) 12%, transparent)"; }}
+                    onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.55"; el.style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)"; el.style.background = "transparent"; }}
+                    title="Delete note"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+          <button
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", fontSize: 12, transition: "background 0.12s, color 0.12s" }}
+            onClick={createDoc}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"; }}
+          >
+            <Plus size={12} /> New document
+          </button>
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+          {confirmClearAll ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", background: "color-mix(in srgb, var(--err) 8%, transparent)" }}>
+              <span style={{ fontSize: 11.5, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontFamily: "Inter,sans-serif", flex: 1 }}>
+                {docs.length === 1 ? "Delete this note?" : `Delete all ${docs.length} notes?`}
+              </span>
+              <button
+                autoFocus
+                onClick={(e) => { e.stopPropagation(); clearAllDocs(); }}
+                style={{
+                  fontSize: 11, fontWeight: 600, padding: "3px 11px", borderRadius: 999,
+                  background: "var(--err)", color: "#fff",
+                  border: "1px solid var(--err)", cursor: "pointer",
+                  fontFamily: "Inter,sans-serif", letterSpacing: "0.01em",
+                  boxShadow: "0 1px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+                }}
+              >{docs.length === 1 ? "Delete" : "Delete all"}</button>
+              <button
+                onClick={(e) => { e.stopPropagation(); cancelConfirm(); }}
+                style={{
+                  fontSize: 11, fontFamily: "Inter,sans-serif", fontWeight: 500,
+                  padding: "3px 9px", borderRadius: 999,
+                  background: "transparent", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)",
+                  border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.15)", cursor: "pointer",
+                }}
+                title="Cancel"
+              >No</button>
+            </div>
+          ) : (
+            <button
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", fontSize: 11.5, fontFamily: "Inter,sans-serif", transition: "background 0.12s, color 0.12s" }}
+              onClick={() => armConfirm(null, true)}
+              title={docs.length === 1 ? "Clear this note" : "Clear all notes"}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--err)"; (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"; (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <Trash2 size={11} /> {docs.length === 1 ? "Clear note" : "Clear all"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── TABLE CREATOR DYNAMIC GRID POPOVER ── */}
+      {showTableGrid && (
+        <div
+          style={{
             position: "fixed",
             top: 80,
-            left: docMenuLeft,
+            left: tableMenuLeft,
             background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
             border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
             borderRadius: "var(--r)",
-            minWidth: 240,
-            padding: "6px 0",
+            padding: 12,
             zIndex: 200,
             boxShadow: effectiveDark ? "0 16px 48px rgba(0,0,0,0.65)" : "0 16px 48px rgba(0,0,0,0.1)",
-          }}>
-            {sortedDocs.map((d) => {
-              return (
-                <div
-                  key={d.id}
-                  style={{
-                    display: "flex", alignItems: "center", padding: "7px 12px",
-                    cursor: "pointer",
-                    background: d.id === activeId 
-                      ? (effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.06)") 
-                      : "transparent",
-                    transition: "background 140ms ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (d.id !== activeId) {
-                      e.currentTarget.style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.04)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (d.id !== activeId) {
-                      e.currentTarget.style.background = "transparent";
-                    }
-                  }}
-                >
-                  <span
-                    style={{ flex: 1, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center" }}
-                    onClick={() => { setActiveId(d.id); setShowDocMenu(false); }}
-                  >
-                    {d.title || "Untitled"}
-                    {d.isPinned && (
-                      <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)" }} />
-                    )}
-                  </span>
-                  {d.id === activeId && (
-                    <Check size={12} style={{ color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", flexShrink: 0 }} />
-                  )}
-                  {docs.length > 1 && (
-                    <button
-                      style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setDeleteConfirm({
-                          docId: d.id,
-                          source: "switcher",
-                          x: rect.left,
-                          y: rect.top + rect.height / 2,
-                        });
-                      }}
-                      onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "1"; el.style.color = "var(--err)"; el.style.background = "color-mix(in srgb, var(--err) 12%, transparent)"; }}
-                      onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.55"; el.style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)"; el.style.background = "transparent"; }}
-                      title="Delete note"
-                    >
-                      <X size={10} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
-            <button
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", fontSize: 12, transition: "background 0.12s, color 0.12s" }}
-              onClick={createDoc}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"; }}
-            >
-              <Plus size={12} /> New document
-            </button>
-            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
-            {confirmClearAll ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", background: "color-mix(in srgb, var(--err) 8%, transparent)" }}>
-                <span style={{ fontSize: 11.5, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontFamily: "Inter,sans-serif", flex: 1 }}>
-                  {docs.length === 1 ? "Delete this note?" : `Delete all ${docs.length} notes?`}
-                </span>
-                <button
-                  autoFocus
-                  onClick={(e) => { e.stopPropagation(); clearAllDocs(); }}
-                  style={{
-                    fontSize: 11, fontWeight: 600, padding: "3px 11px", borderRadius: 999,
-                    background: "var(--err)", color: "#fff",
-                    border: "1px solid var(--err)", cursor: "pointer",
-                    fontFamily: "Inter,sans-serif", letterSpacing: "0.01em",
-                    boxShadow: "0 1px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-                  }}
-                >{docs.length === 1 ? "Delete" : "Delete all"}</button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); cancelConfirm(); }}
-                  style={{
-                    fontSize: 11, fontFamily: "Inter,sans-serif", fontWeight: 500,
-                    padding: "3px 9px", borderRadius: 999,
-                    background: "transparent", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)",
-                    border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.15)", cursor: "pointer",
-                  }}
-                  title="Cancel"
-                >No</button>
-              </div>
-            ) : (
-              <button
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", fontSize: 11.5, fontFamily: "Inter,sans-serif", transition: "background 0.12s, color 0.12s" }}
-                onClick={() => armConfirm(null, true)}
-                title={docs.length === 1 ? "Clear this note" : "Clear all notes"}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--err)"; (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"; (e.currentTarget as HTMLElement).style.background = "none"; }}
-              >
-                <Trash2 size={11} /> {docs.length === 1 ? "Clear note" : "Clear all"}
-              </button>
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            userSelect: "none"
+          }}
+          onMouseLeave={() => {
+            setHoveredRows(0);
+            setHoveredCols(0);
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 12, fontFamily: "Inter, sans-serif", fontWeight: 600, paddingBottom: 4 }}>
+            <span>Insert Table</span>
+            <span style={{ color: hoveredCols > 0 ? surfAccent : (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)") }}>
+              {hoveredCols > 0 ? `${hoveredCols} × ${hoveredRows}` : "0 × 0"}
+            </span>
+          </div>
+
+          {/* Grid container (10x10) */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 16px)", gap: 3 }}>
+            {Array.from({ length: 10 }).map((_, r) =>
+              Array.from({ length: 10 }).map((_, c) => {
+                const isHighlighted = (r < hoveredRows) && (c < hoveredCols);
+                return (
+                  <div
+                    key={`${r}-${c}`}
+                    onMouseEnter={() => {
+                      setHoveredRows(r + 1);
+                      setHoveredCols(c + 1);
+                    }}
+                    onClick={() => {
+                      const rows = r + 1;
+                      const cols = c + 1;
+                      editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+                      setShowTableGrid(false);
+                      setHoveredRows(0);
+                      setHoveredCols(0);
+                    }}
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 3,
+                      background: isHighlighted
+                        ? surfAccent
+                        : (effectiveDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"),
+                      border: isHighlighted
+                        ? `1px solid ${surfAccent}`
+                        : (effectiveDark ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid rgba(0, 0, 0, 0.1)"),
+                      cursor: "pointer",
+                      transition: "background 100ms ease, border-color 100ms ease"
+                    }}
+                  />
+                );
+              })
             )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── TABLE CREATOR DYNAMIC GRID POPOVER ── */}
-        {showTableGrid && (
-          <div
+      {/* ── SETTINGS PANEL — position: fixed centered modal ── */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             style={{
               position: "fixed",
-              top: 80,
-              left: tableMenuLeft,
-              background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
-              border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
-              borderRadius: "var(--r)",
-              padding: 12,
-              zIndex: 200,
-              boxShadow: effectiveDark ? "0 16px 48px rgba(0,0,0,0.65)" : "0 16px 48px rgba(0,0,0,0.1)",
+              inset: 0,
+              background: effectiveDark ? "rgba(0, 0, 0, 0.45)" : "rgba(0, 0, 0, 0.15)",
+              backdropFilter: "blur(6px)",
+              zIndex: 1000,
               display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              userSelect: "none"
+              alignItems: "center",
+              justifyContent: "center",
             }}
-            onMouseLeave={() => {
-              setHoveredRows(0);
-              setHoveredCols(0);
-            }}
+            onClick={() => setShowSettings(false)}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 12, fontFamily: "Inter, sans-serif", fontWeight: 600, paddingBottom: 4 }}>
-              <span>Insert Table</span>
-              <span style={{ color: hoveredCols > 0 ? surfAccent : (effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)") }}>
-                {hoveredCols > 0 ? `${hoveredCols} × ${hoveredRows}` : "0 × 0"}
-              </span>
-            </div>
-
-            {/* Grid container (10x10) */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 16px)", gap: 3 }}>
-              {Array.from({ length: 10 }).map((_, r) =>
-                Array.from({ length: 10 }).map((_, c) => {
-                  const isHighlighted = (r < hoveredRows) && (c < hoveredCols);
-                  return (
-                    <div
-                      key={`${r}-${c}`}
-                      onMouseEnter={() => {
-                        setHoveredRows(r + 1);
-                        setHoveredCols(c + 1);
-                      }}
-                      onClick={() => {
-                        const rows = r + 1;
-                        const cols = c + 1;
-                        editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
-                        setShowTableGrid(false);
-                        setHoveredRows(0);
-                        setHoveredCols(0);
-                      }}
-                      style={{
-                        width: 16,
-                        height: 16,
-                        borderRadius: 3,
-                        background: isHighlighted
-                          ? surfAccent
-                          : (effectiveDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"),
-                        border: isHighlighted
-                          ? `1px solid ${surfAccent}`
-                          : (effectiveDark ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid rgba(0, 0, 0, 0.1)"),
-                        cursor: "pointer",
-                        transition: "background 100ms ease, border-color 100ms ease"
-                      }}
-                    />
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── SETTINGS PANEL — position: fixed centered modal ── */}
-        <AnimatePresence>
-          {showSettings && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.15 }}
+              className="notepad-settings-panel"
+              onClick={(e) => e.stopPropagation()}
+              data-lenis-prevent
               style={{
-                position: "fixed",
-                inset: 0,
-                background: effectiveDark ? "rgba(0, 0, 0, 0.45)" : "rgba(0, 0, 0, 0.15)",
-                backdropFilter: "blur(6px)",
-                zIndex: 1000,
+                background: "var(--bg1)",
+                border: "1px solid var(--b0)",
+                borderRadius: "16px",
+                width: 440,
+                padding: "20px",
+                boxShadow: effectiveDark ? "0 24px 64px rgba(0,0,0,0.65)" : "0 24px 64px rgba(0,0,0,0.15)",
+                maxHeight: "85vh",
+                overflowY: "auto",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                flexDirection: "column",
+                scrollbarWidth: "none",
               }}
-              onClick={() => setShowSettings(false)}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="notepad-settings-panel"
-                onClick={(e) => e.stopPropagation()}
-                data-lenis-prevent
-                style={{
-                  background: "var(--bg1)",
-                  border: "1px solid var(--b0)",
-                  borderRadius: "16px",
-                  width: 440,
-                  padding: "20px",
-                  boxShadow: effectiveDark ? "0 24px 64px rgba(0,0,0,0.65)" : "0 24px 64px rgba(0,0,0,0.15)",
-                  maxHeight: "85vh",
-                  overflowY: "auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  scrollbarWidth: "none",
-                }}
-              >
-                {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <span style={{ color: "var(--t1)", fontSize: 13, fontWeight: 600, fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Editor Settings</span>
-                  <button style={{ ...tb(), width: 24, height: 24 }} onClick={() => setShowSettings(false)}><X size={12} /></button>
-                </div>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <span style={{ color: "var(--t1)", fontSize: 13, fontWeight: 600, fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Editor Settings</span>
+                <button style={{ ...tb(), width: 24, height: 24 }} onClick={() => setShowSettings(false)}><X size={12} /></button>
+              </div>
 
-                {/* Font size — preset pills + inline stepper on a single row */}
-                <div style={{ paddingTop: 14, marginBottom: 4 }}>
-                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Font size</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ display: "flex", gap: 6, flex: 1, minWidth: 0, justifyContent: "flex-start" }}>
-                      {[12, 14, 16, 18, 22].map((s) => {
-                        const active = settings.fontSize === s;
-                        return (
-                          <button
-                            key={s}
-                            onClick={() => updateSetting("fontSize", s)}
-                            style={{
-                              display: "inline-flex", alignItems: "center", justifyContent: "center",
-                              height: 26, minWidth: 30, padding: "0 6px",
-                              borderRadius: 6, border: "1px solid",
-                              borderColor: active ? "var(--b1)" : "var(--b0)",
-                              background: active ? "var(--bg3)" : "transparent",
-                              color: active ? "var(--t1)" : "var(--t2)",
-                              fontSize: 12, lineHeight: 1, cursor: "pointer", fontFamily: "Inter, sans-serif",
-                              transition: "all 0.12s",
-                            }}
-                          >{s}</button>
-                        );
-                      })}
-                    </div>
-                    <div aria-hidden style={{ width: 1, height: 18, background: "var(--b0)", flexShrink: 0 }} />
-                    <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--b0)", borderRadius: 6, overflow: "hidden", flexShrink: 0, height: 26, boxSizing: "border-box" }}>
-                      <button onClick={() => updateSetting("fontSize", Math.max(10, settings.fontSize - 1))} style={{ width: 22, height: "100%", background: "transparent", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>−</button>
-                      <input type="number" min={10} max={72} step={1} value={settings.fontSize} onChange={(e) => { const v = Math.min(72, Math.max(10, parseInt(e.target.value) || 10)); updateSetting("fontSize", v); }} style={{ width: 32, height: "100%", background: "transparent", border: "none", outline: "none", textAlign: "center", color: "var(--t1)", fontSize: 12, fontFamily: "Inter,sans-serif", padding: 0 } as React.CSSProperties} />
-                      <button onClick={() => updateSetting("fontSize", Math.min(72, settings.fontSize + 1))} style={{ width: 22, height: "100%", background: "transparent", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>+</button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Writing width */}
-                <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
-                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Writing width</div>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {(["wide", "focused", "narrow"] as const).map((w) => pill(settings.writingWidth === w, () => updateSetting("writingWidth", w), w.charAt(0).toUpperCase() + w.slice(1)))}
-                  </div>
-                </div>
-
-                {/* Line height */}
-                <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
-                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Line height</div>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {[{ v: 1.65, l: "Compact" }, { v: 2.15, l: "Normal" }, { v: 2.65, l: "Relaxed" }].map(({ v, l }) => pill(settings.lineHeight === v, () => updateSetting("lineHeight", v), l))}
-                  </div>
-                </div>
-
-                {/* Theme presets — all 5 swatches in ONE row at 28×28px */}
-                <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
-                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Themes</div>
-                  <div style={{ display: "flex", gap: 5 }}>
-                    {THEMES.map((t) => {
-                      const isActive = settings.bgColor === t.bg && settings.textColor === t.text;
+              {/* Font size — preset pills + inline stepper on a single row */}
+              <div style={{ paddingTop: 14, marginBottom: 4 }}>
+                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Font size</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 6, flex: 1, minWidth: 0, justifyContent: "flex-start" }}>
+                    {[12, 14, 16, 18, 22].map((s) => {
+                      const active = settings.fontSize === s;
                       return (
                         <button
-                          key={t.label}
-                          title={t.label}
-                          onClick={() => applyTheme(t.bg, t.text)}
+                          key={s}
+                          onClick={() => updateSetting("fontSize", s)}
                           style={{
-                            width: 28, height: 28, borderRadius: 7, border: "none", flexShrink: 0,
-                            background: t.bg, cursor: "pointer", position: "relative",
-                            outline: isActive ? "2px solid var(--t1)" : "2px solid var(--b0)",
-                            outlineOffset: 1,
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            height: 26, minWidth: 30, padding: "0 6px",
+                            borderRadius: 6, border: "1px solid",
+                            borderColor: active ? "var(--b1)" : "var(--b0)",
+                            background: active ? "var(--bg3)" : "transparent",
+                            color: active ? "var(--t1)" : "var(--t2)",
+                            fontSize: 12, lineHeight: 1, cursor: "pointer", fontFamily: "Inter, sans-serif",
+                            transition: "all 0.12s",
                           }}
-                        >
-                          <span style={{ position: "absolute", bottom: 3, right: 3, width: 7, height: 7, borderRadius: "50%", background: t.text, display: "block" }} />
-                          {isActive && <Check size={9} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "var(--t1)" }} />}
-                        </button>
+                        >{s}</button>
                       );
                     })}
                   </div>
-                </div>
-
-                {/* Custom colours */}
-                <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
-                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Custom colours</div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--bg2)", borderRadius: 7, padding: "5px 9px", cursor: "pointer", border: "1px solid var(--b0)" }}>
-                      <div style={{ width: 14, height: 14, borderRadius: 3, background: surfBg, border: "1px solid var(--b0)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
-                        <input type="color" value={surfBg.startsWith("#") ? surfBg : "#111318"} onChange={(e) => { updateSetting("bgColor", e.target.value); updateSetting("lightSurface", isLightHex(e.target.value)); }} style={{ position: "absolute", opacity: 0, width: "200%", height: "200%", top: "-50%", left: "-50%", cursor: "pointer" }} />
-                      </div>
-                      <span style={{ fontSize: 12, color: "var(--t2)", fontFamily: "Inter,sans-serif" }}>Background</span>
-                    </label>
-                    <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--bg2)", borderRadius: 7, padding: "5px 9px", cursor: "pointer", border: "1px solid var(--b0)" }}>
-                      <div style={{ width: 14, height: 14, borderRadius: 3, background: surfTxt.startsWith("rgba") ? "#c9d1d9" : surfTxt, border: "1px solid var(--b0)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
-                        <input type="color" value={surfTxt.startsWith("#") ? surfTxt : "#c9d1d9"} onChange={(e) => updateSetting("textColor", e.target.value)} style={{ position: "absolute", opacity: 0, width: "200%", height: "200%", top: "-50%", left: "-50%", cursor: "pointer" }} />
-                      </div>
-                      <span style={{ fontSize: 12, color: "var(--t2)", fontFamily: "Inter,sans-serif" }}>Text</span>
-                    </label>
+                  <div aria-hidden style={{ width: 1, height: 18, background: "var(--b0)", flexShrink: 0 }} />
+                  <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--b0)", borderRadius: 6, overflow: "hidden", flexShrink: 0, height: 26, boxSizing: "border-box" }}>
+                    <button onClick={() => updateSetting("fontSize", Math.max(10, settings.fontSize - 1))} style={{ width: 22, height: "100%", background: "transparent", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>−</button>
+                    <input type="number" min={10} max={72} step={1} value={settings.fontSize} onChange={(e) => { const v = Math.min(72, Math.max(10, parseInt(e.target.value) || 10)); updateSetting("fontSize", v); }} style={{ width: 32, height: "100%", background: "transparent", border: "none", outline: "none", textAlign: "center", color: "var(--t1)", fontSize: 12, fontFamily: "Inter,sans-serif", padding: 0 } as React.CSSProperties} />
+                    <button onClick={() => updateSetting("fontSize", Math.min(72, settings.fontSize + 1))} style={{ width: 22, height: "100%", background: "transparent", border: "none", cursor: "pointer", color: "var(--t2)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>+</button>
                   </div>
                 </div>
-
-                {/* Binary toggles arranged in a 2×2 grid — visually grouped, with
-                    generous row spacing so each setting reads as its own block. */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 14, rowGap: 22, paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)" }}>
-                  <div>
-                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Lines</div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {pill(!settings.ruledLines, () => updateSetting("ruledLines", false), "None")}
-                      {pill(settings.ruledLines, () => updateSetting("ruledLines", true), "Ruled")}
-                    </div>
-                  </div>
-                  {settings.ruledLines ? (
-                    <div>
-                      <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Line Intensity</div>
-                      <div style={{ display: "flex", gap: 4 }}>
-                        {pill(settings.rulerOpacity === "less", () => updateSetting("rulerOpacity", "less"), "Faint", "0 8px")}
-                        {pill(settings.rulerOpacity === "normal" || !settings.rulerOpacity, () => updateSetting("rulerOpacity", "normal"), "Normal", "0 8px")}
-                        {pill(settings.rulerOpacity === "more", () => updateSetting("rulerOpacity", "more"), "Distinct", "0 8px")}
-                      </div>
-                    </div>
-                  ) : (
-                    <div />
-                  )}
-                  <div>
-                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Underline typos as you write">Spell check</div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {pill(settings.spellCheck, () => updateSetting("spellCheck", true), "On")}
-                      {pill(!settings.spellCheck, () => updateSetting("spellCheck", false), "Off")}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Subtle paper-fiber texture overlay on the canvas">Paper grain</div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {pill(!settings.paperGrain, () => updateSetting("paperGrain", false), "Off")}
-                      {pill(settings.paperGrain, () => updateSetting("paperGrain", true), "On")}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Soft hairline frame around inline images">Image border</div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {pill(settings.imageBorder, () => updateSetting("imageBorder", true), "On")}
-                      {pill(!settings.imageBorder, () => updateSetting("imageBorder", false), "Off")}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── FILE MENU PANEL — position: fixed anchored top-left ── */}
-        {showFileMenu && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: "fixed",
-              top: 78,
-              left: fileMenuLeft,
-              background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
-              border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
-              borderRadius: "var(--r)",
-              minWidth: 220,
-              padding: "6px",
-              zIndex: 200,
-              boxShadow: effectiveDark 
-                ? "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)" 
-                : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 2
-            }}
-          >
-            <button
-              onClick={() => { createDoc(); setShowFileMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
-              className="notepad-file-menu-item"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-            >
-              <Plus size={13} style={{ opacity: 0.7 }} />
-              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>New Tab</span>
-              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+N</span>
-            </button>
-            
-            <button
-              onClick={() => { handleOpenFileAccess(); setShowFileMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
-              className="notepad-file-menu-item"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-            >
-              <FileText size={13} style={{ opacity: 0.7 }} />
-              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Open File...</span>
-              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+O</span>
-            </button>
-
-            <button
-              onClick={() => { setShowSettings(true); setShowFileMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
-              className="notepad-file-menu-item"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-            >
-              <Settings size={13} style={{ opacity: 0.7 }} />
-              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Editor Settings...</span>
-              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+,</span>
-            </button>
-
-            {/* Interface Zoom Control */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}>
-              <Maximize2 size={13} style={{ opacity: 0.7, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)" }} />
-              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif", fontSize: 13, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)" }}>Interface Zoom</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, background: effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", borderRadius: 6, padding: "2px 4px" }}>
-                <button
-                  disabled={(settings.zoom || 1.0) <= 0.8}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const current = settings.zoom || 1.0;
-                    const next = Math.max(0.8, parseFloat((current - 0.1).toFixed(1)));
-                    updateSetting("zoom", next);
-                  }}
-                  style={{
-                    background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
-                    cursor: "pointer", fontSize: 13, fontWeight: 700, width: 18, height: 18,
-                    display: "flex", alignItems: "center", justifyContent: "center", opacity: (settings.zoom || 1.0) <= 0.8 ? 0.3 : 1
-                  }}
-                  title="Zoom Out (Ctrl+-)"
-                >
-                  −
-                </button>
-                <span style={{ fontSize: 11, fontWeight: 600, minWidth: 32, textAlign: "center", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontFamily: "Inter,sans-serif" }}>
-                  {Math.round((settings.zoom || 1.0) * 100)}%
-                </span>
-                <button
-                  disabled={(settings.zoom || 1.0) >= 1.5}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const current = settings.zoom || 1.0;
-                    const next = Math.min(1.5, parseFloat((current + 0.1).toFixed(1)));
-                    updateSetting("zoom", next);
-                  }}
-                  style={{
-                    background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
-                    cursor: "pointer", fontSize: 13, fontWeight: 700, width: 18, height: 18,
-                    display: "flex", alignItems: "center", justifyContent: "center", opacity: (settings.zoom || 1.0) >= 1.5 ? 0.3 : 1
-                  }}
-                  title="Zoom In (Ctrl++)"
-                >
-                  +
-                </button>
               </div>
-            </div>
 
-            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+              {/* Writing width */}
+              <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
+                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Writing width</div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {(["wide", "focused", "narrow"] as const).map((w) => pill(settings.writingWidth === w, () => updateSetting("writingWidth", w), w.charAt(0).toUpperCase() + w.slice(1)))}
+                </div>
+              </div>
 
-            <button
-              onClick={() => { handleSaveFileAccess(false); setShowFileMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
-              className="notepad-file-menu-item"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-            >
-              <Save size={13} style={{ opacity: 0.7 }} />
-              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Save</span>
-              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+S</span>
-            </button>
+              {/* Line height */}
+              <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
+                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Line height</div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[{ v: 1.65, l: "Compact" }, { v: 2.15, l: "Normal" }, { v: 2.65, l: "Relaxed" }].map(({ v, l }) => pill(settings.lineHeight === v, () => updateSetting("lineHeight", v), l))}
+                </div>
+              </div>
 
-            <button
-              onClick={() => { handleSaveFileAccess(true); setShowFileMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
-              className="notepad-file-menu-item"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-            >
-              <Save size={13} style={{ opacity: 0.7 }} />
-              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Save As...</span>
-              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+Shift+S</span>
-            </button>
+              {/* Theme presets — all 5 swatches in ONE row at 28×28px */}
+              <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
+                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Themes</div>
+                <div style={{ display: "flex", gap: 5 }}>
+                  {THEMES.map((t) => {
+                    const isActive = settings.bgColor === t.bg && settings.textColor === t.text;
+                    return (
+                      <button
+                        key={t.label}
+                        title={t.label}
+                        onClick={() => applyTheme(t.bg, t.text)}
+                        style={{
+                          width: 28, height: 28, borderRadius: 7, border: "none", flexShrink: 0,
+                          background: t.bg, cursor: "pointer", position: "relative",
+                          outline: isActive ? "2px solid var(--t1)" : "2px solid var(--b0)",
+                          outlineOffset: 1,
+                        }}
+                      >
+                        <span style={{ position: "absolute", bottom: 3, right: 3, width: 7, height: 7, borderRadius: "50%", background: t.text, display: "block" }} />
+                        {isActive && <Check size={9} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "var(--t1)" }} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+              {/* Custom colours */}
+              <div style={{ paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)", marginBottom: 4 }}>
+                <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Custom colours</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--bg2)", borderRadius: 7, padding: "5px 9px", cursor: "pointer", border: "1px solid var(--b0)" }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 3, background: surfBg, border: "1px solid var(--b0)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
+                      <input type="color" value={surfBg.startsWith("#") ? surfBg : "#111318"} onChange={(e) => { updateSetting("bgColor", e.target.value); updateSetting("lightSurface", isLightHex(e.target.value)); }} style={{ position: "absolute", opacity: 0, width: "200%", height: "200%", top: "-50%", left: "-50%", cursor: "pointer" }} />
+                    </div>
+                    <span style={{ fontSize: 12, color: "var(--t2)", fontFamily: "Inter,sans-serif" }}>Background</span>
+                  </label>
+                  <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--bg2)", borderRadius: 7, padding: "5px 9px", cursor: "pointer", border: "1px solid var(--b0)" }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 3, background: surfTxt.startsWith("rgba") ? "#c9d1d9" : surfTxt, border: "1px solid var(--b0)", flexShrink: 0, position: "relative", overflow: "hidden" }}>
+                      <input type="color" value={surfTxt.startsWith("#") ? surfTxt : "#c9d1d9"} onChange={(e) => updateSetting("textColor", e.target.value)} style={{ position: "absolute", opacity: 0, width: "200%", height: "200%", top: "-50%", left: "-50%", cursor: "pointer" }} />
+                    </div>
+                    <span style={{ fontSize: 12, color: "var(--t2)", fontFamily: "Inter,sans-serif" }}>Text</span>
+                  </label>
+                </div>
+              </div>
 
-            <button
-              onClick={() => { setDeleteConfirm({ docId: activeId, source: "menu", x: fileMenuLeft + 20, y: 320 }); setShowFileMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
-              className="notepad-file-menu-item"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-            >
-              <X size={13} style={{ opacity: 0.7 }} />
-              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Close Tab</span>
-              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+W</span>
-            </button>
-            <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
-
-            <button
-              onClick={() => { setShowShortcuts(true); setShowFileMenu(false); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
-              className="notepad-file-menu-item"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
-              <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Keyboard Shortcuts</span>
-              <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+/</span>
-            </button>
-          </div>
+              {/* Binary toggles arranged in a 2×2 grid — visually grouped, with
+                    generous row spacing so each setting reads as its own block. */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 14, rowGap: 22, paddingTop: 22, marginTop: 18, borderTop: "1px solid var(--b0)" }}>
+                <div>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Lines</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {pill(!settings.ruledLines, () => updateSetting("ruledLines", false), "None")}
+                    {pill(settings.ruledLines, () => updateSetting("ruledLines", true), "Ruled")}
+                  </div>
+                </div>
+                {settings.ruledLines ? (
+                  <div>
+                    <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Line Intensity</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {pill(settings.rulerOpacity === "less", () => updateSetting("rulerOpacity", "less"), "Faint", "0 8px")}
+                      {pill(settings.rulerOpacity === "normal" || !settings.rulerOpacity, () => updateSetting("rulerOpacity", "normal"), "Normal", "0 8px")}
+                      {pill(settings.rulerOpacity === "more", () => updateSetting("rulerOpacity", "more"), "Distinct", "0 8px")}
+                    </div>
+                  </div>
+                ) : (
+                  <div />
+                )}
+                <div>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Underline typos as you write">Spell check</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {pill(settings.spellCheck, () => updateSetting("spellCheck", true), "On")}
+                    {pill(!settings.spellCheck, () => updateSetting("spellCheck", false), "Off")}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Subtle paper-fiber texture overlay on the canvas">Paper grain</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {pill(!settings.paperGrain, () => updateSetting("paperGrain", false), "Off")}
+                    {pill(settings.paperGrain, () => updateSetting("paperGrain", true), "On")}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: "var(--t3)", fontSize: 10, marginBottom: 10, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }} title="Soft hairline frame around inline images">Image border</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {pill(settings.imageBorder, () => updateSetting("imageBorder", true), "On")}
+                    {pill(!settings.imageBorder, () => updateSetting("imageBorder", false), "Off")}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* ── EXPORT PANEL — position: fixed anchored top-right ── */}
-        {showExportMenu && (
-          <div style={{
+      {/* ── FILE MENU PANEL — position: fixed anchored top-left ── */}
+      {showFileMenu && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
             position: "fixed",
-            top: 82,
-            right: 10,
+            top: 78,
+            left: fileMenuLeft,
             background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
             border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
             borderRadius: "var(--r)",
-            minWidth: 216,
-            padding: "6px 0",
+            minWidth: 220,
+            padding: "6px",
             zIndex: 200,
-            boxShadow: effectiveDark 
-              ? "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)" 
+            boxShadow: effectiveDark
+              ? "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)"
               : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02)",
-          }}>
-            {[
-              { label: "Smart Export", sub: "Ctrl+D · auto-detect format", fn: handleSmartExport, accent: true },
-              null,
-              { label: "Plain Text (.txt)", sub: "No formatting preserved", fn: exportTxt, accent: false },
-              { label: "Markdown (.md)", sub: "Headings, lists, bold, links", fn: exportMd, accent: false },
-              { label: "PDF (.pdf)", sub: "Includes images & layout", fn: exportPdf, accent: false },
-              { label: "HTML (.html)", sub: "Full web-ready format", fn: exportHtml, accent: false },
-            ].map((item, i) =>
-              item === null ? (
-                <div key={i} style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
-              ) : (
-                <button
-                  key={item.label}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", padding: "8px 14px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.12s" }}
-                  onClick={item.fn}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-                >
-                  <span style={{ color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, fontWeight: item.accent ? 600 : 400, fontFamily: "Inter,sans-serif" }}>{item.label}</span>
-                  <span style={{ color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)", fontSize: 11, marginTop: 1, fontFamily: "Inter,sans-serif" }}>{item.sub}</span>
-                </button>
-              )
-            )}
+            display: "flex",
+            flexDirection: "column",
+            gap: 2
+          }}
+        >
+          <button
+            onClick={() => { createDoc(); setShowFileMenu(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+            className="notepad-file-menu-item"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <Plus size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>New Tab</span>
+            <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+N</span>
+          </button>
+
+          <button
+            onClick={() => { handleOpenFileAccess(); setShowFileMenu(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+            className="notepad-file-menu-item"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <FileText size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Open File...</span>
+            <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+O</span>
+          </button>
+
+          <button
+            onClick={() => { setShowSettings(true); setShowFileMenu(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+            className="notepad-file-menu-item"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <Settings size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Editor Settings...</span>
+            <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+,</span>
+          </button>
+
+          {/* Interface Zoom Control */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}>
+            <Maximize2 size={13} style={{ opacity: 0.7, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)" }} />
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif", fontSize: 13, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)" }}>Interface Zoom</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, background: effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", borderRadius: 6, padding: "2px 4px" }}>
+              <button
+                disabled={(settings.zoom || 1.0) <= 0.8}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const current = settings.zoom || 1.0;
+                  const next = Math.max(0.8, parseFloat((current - 0.1).toFixed(1)));
+                  updateSetting("zoom", next);
+                }}
+                style={{
+                  background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
+                  cursor: "pointer", fontSize: 13, fontWeight: 700, width: 18, height: 18,
+                  display: "flex", alignItems: "center", justifyContent: "center", opacity: (settings.zoom || 1.0) <= 0.8 ? 0.3 : 1
+                }}
+                title="Zoom Out (Ctrl+-)"
+              >
+                −
+              </button>
+              <span style={{ fontSize: 11, fontWeight: 600, minWidth: 32, textAlign: "center", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontFamily: "Inter,sans-serif" }}>
+                {Math.round((settings.zoom || 1.0) * 100)}%
+              </span>
+              <button
+                disabled={(settings.zoom || 1.0) >= 1.5}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const current = settings.zoom || 1.0;
+                  const next = Math.min(1.5, parseFloat((current + 0.1).toFixed(1)));
+                  updateSetting("zoom", next);
+                }}
+                style={{
+                  background: "none", border: "none", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)",
+                  cursor: "pointer", fontSize: 13, fontWeight: 700, width: 18, height: 18,
+                  display: "flex", alignItems: "center", justifyContent: "center", opacity: (settings.zoom || 1.0) >= 1.5 ? 0.3 : 1
+                }}
+                title="Zoom In (Ctrl++)"
+              >
+                +
+              </button>
+            </div>
           </div>
-        )}
+
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+          <button
+            onClick={() => { handleSaveFileAccess(false); setShowFileMenu(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+            className="notepad-file-menu-item"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <Save size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Save</span>
+            <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+S</span>
+          </button>
+
+          <button
+            onClick={() => { handleSaveFileAccess(true); setShowFileMenu(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+            className="notepad-file-menu-item"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <Save size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Save As...</span>
+            <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+Shift+S</span>
+          </button>
+
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+          <button
+            onClick={() => { setDeleteConfirm({ docId: activeId, source: "menu", x: fileMenuLeft + 20, y: 320 }); setShowFileMenu(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+            className="notepad-file-menu-item"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <X size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Close Tab</span>
+            <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+W</span>
+          </button>
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+
+          <button
+            onClick={() => { setShowShortcuts(true); setShowFileMenu(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+            className="notepad-file-menu-item"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" /></svg>
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Keyboard Shortcuts</span>
+            <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+/</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── EXPORT PANEL — position: fixed anchored top-right ── */}
+      {showExportMenu && (
+        <div style={{
+          position: "fixed",
+          top: 82,
+          right: 10,
+          background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+          border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
+          borderRadius: "var(--r)",
+          minWidth: 216,
+          padding: "6px 0",
+          zIndex: 200,
+          boxShadow: effectiveDark
+            ? "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)"
+            : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02)",
+        }}>
+          {[
+            { label: "Smart Export", sub: "Ctrl+D · auto-detect format", fn: handleSmartExport, accent: true },
+            null,
+            { label: "Plain Text (.txt)", sub: "No formatting preserved", fn: exportTxt, accent: false },
+            { label: "Markdown (.md)", sub: "Headings, lists, bold, links", fn: exportMd, accent: false },
+            { label: "PDF (.pdf)", sub: "Includes images & layout", fn: exportPdf, accent: false },
+            { label: "HTML (.html)", sub: "Full web-ready format", fn: exportHtml, accent: false },
+          ].map((item, i) =>
+            item === null ? (
+              <div key={i} style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+            ) : (
+              <button
+                key={item.label}
+                style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", padding: "8px 14px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.12s" }}
+                onClick={item.fn}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+              >
+                <span style={{ color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, fontWeight: item.accent ? 600 : 400, fontFamily: "Inter,sans-serif" }}>{item.label}</span>
+                <span style={{ color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)", fontSize: 11, marginTop: 1, fontFamily: "Inter,sans-serif" }}>{item.sub}</span>
+              </button>
+            )
+          )}
+        </div>
+      )}
 
       {showFind && (
         <div
@@ -4662,8 +4854,8 @@ export default function Notepad() {
             background: effectiveDark ? "rgba(30, 30, 30, 0.88)" : "rgba(255, 255, 255, 0.94)",
             border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.1)",
             borderRadius: 12,
-            boxShadow: effectiveDark 
-              ? "0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03)" 
+            boxShadow: effectiveDark
+              ? "0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03)"
               : "0 10px 30px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
@@ -5296,6 +5488,14 @@ export default function Notepad() {
         initial={{ height: 0, opacity: 0 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         style={{ overflow: "hidden" }}
+        onUpdate={() => {
+          const lenis = (window as any).__lenis;
+          if (lenis && typeof lenis.resize === "function") lenis.resize();
+        }}
+        onAnimationComplete={() => {
+          const lenis = (window as any).__lenis;
+          if (lenis && typeof lenis.resize === "function") lenis.resize();
+        }}
       >
         <NotepadSeoContent seo={seo} onScrolledPastEditor={setScrolledPastEditor} />
       </motion.div>
@@ -5336,7 +5536,7 @@ export default function Notepad() {
           >
             Explore Notepad Guide
           </span>
-          
+
           <div
             style={{
               display: "flex",
@@ -5361,7 +5561,7 @@ export default function Notepad() {
         const targetDoc = docs.find((d) => d.id === contextMenu.tabId);
         if (!targetDoc) return null;
         const isPinned = !!targetDoc.isPinned;
-        
+
         return (
           <div
             style={{
@@ -5622,8 +5822,8 @@ export default function Notepad() {
               background: effectiveDark ? "rgba(22, 22, 21, 0.96)" : "rgba(250, 248, 242, 0.96)",
               border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
               borderRadius: "12px",
-              boxShadow: effectiveDark 
-                ? "0 12px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)" 
+              boxShadow: effectiveDark
+                ? "0 12px 32px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
                 : "0 12px 32px -4px rgba(0, 0, 0, 0.12)",
               backdropFilter: "blur(12px)",
               transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
@@ -6332,7 +6532,7 @@ export default function Notepad() {
                 </button>
 
                 <div style={{ height: 1, background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "4px 0" }} />
-                
+
                 <div style={{ padding: "6px 14px 4px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: 9.5, textTransform: "uppercase", fontWeight: 700, color: "var(--t3)", letterSpacing: "0.5px" }}>Tab Highlight Color</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 0" }}>
@@ -6349,7 +6549,7 @@ export default function Notepad() {
                     >
                       <div style={{ width: 1, height: 10, background: effectiveDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.55)", transform: "rotate(45deg)" }} />
                     </button>
-                    
+
                     {TAB_COLORS.map((color) => {
                       const isSelected = targetDoc.color === color.id;
                       const displayColor = effectiveDark ? color.darkValue : color.lightValue;
@@ -6362,7 +6562,7 @@ export default function Notepad() {
                           }}
                           style={{
                             width: 16, height: 16, borderRadius: "50%", border: "none", background: displayColor,
-                            cursor: "pointer", 
+                            cursor: "pointer",
                             outline: isSelected ? (effectiveDark ? "2px solid #FFFFFF" : "2px solid #000000") : "none",
                             outlineOffset: 1,
                             boxShadow: "inset 0 1px 2px rgba(0,0,0,0.2)",
@@ -6500,7 +6700,7 @@ export default function Notepad() {
                 </button>
 
                 <div style={{ height: 1, background: effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "4px 0" }} />
-                
+
                 <div style={{ padding: "6px 14px 4px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: 9.5, textTransform: "uppercase", fontWeight: 700, color: "var(--t3)", letterSpacing: "0.5px" }}>Image Size</span>
                   <div style={{ display: "flex", gap: 4 }}>
@@ -6703,7 +6903,7 @@ const NotepadSeoContent = memo(function NotepadSeoContent({
                   <tr key={row[0]}>
                     {row.map((cell, ci) => {
                       const isYes = ci > 0 && /^Yes(\b|$)/.test(cell);
-                      const isNo  = ci > 0 && /^No(\b|$)/.test(cell);
+                      const isNo = ci > 0 && /^No(\b|$)/.test(cell);
                       return (
                         <td key={ci} className={isYes ? "tool-compare-yes" : isNo ? "tool-compare-no" : undefined}>
                           {cell}

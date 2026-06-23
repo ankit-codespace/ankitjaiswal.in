@@ -1,20 +1,19 @@
-# Skill: Execute Phase Sub-step
+# Skill: Execute Phase
 
-This skill manages the execution loop of a single sub-step within a plan, ensuring small, safe, and fully audited changes.
+This skill drives the active code modifications in a safe, incremental manner.
 
-## Execution Loop Steps
+## Execution Rules
 
-1. **Pre-edit Check**:
-   - Re-read the specific step in `production_artifacts/build_plan.md`.
-   - Read the exact file(s) to be modified before making any changes.
-2. **Execute Change**:
-   - Apply the change. Keep it minimal and targeted. Do not edit unrelated code.
-3. **Post-edit Check**:
-   - Re-read the changed file(s) to check syntax correctness and logic.
-4. **Verify**:
-   - Build or compile the project.
-   - Run tests if applicable.
-5. **Log & Audit**:
-   - Log the progress to `build_log.md`.
-   - Verify if the sub-step has successfully moved the high-level goal forward.
-   - If a visual or functional regression is found, roll back immediately and analyze.
+For each sub-step defined in `production_artifacts/build_plan.md`:
+
+1. **Verify State**: Verify that the previous sub-step is completely verified and logged.
+2. **Re-Read Code**: Read the lines of the target file that are about to be modified to ensure you are editing the correct section.
+3. **Surgical Edits**: Make the smallest possible change. Use targeted replacement commands instead of rewriting large sections of the file.
+4. **Compile check**: Run `pnpm run build` after editing to ensure syntax and type-check correctness.
+5. **Log Entry**: Record a summary in `build_log.md` with:
+   - Phase & Sub-step ID
+   - File(s) modified
+   - Specific change details
+   - Compile status
+6. **Verify Intent**: Compare the output results with the target designs.
+7. **Handle Errors**: If a build fails, immediately revert the change or fix it before moving to the next sub-step. Never pile changes on top of a broken build.

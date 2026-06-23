@@ -1118,7 +1118,7 @@ html, body { overflow-x: clip; max-width: 100%; }
 }
 
 .notepad-tab-item:not(.active):hover {
-  background-color: rgba(255, 255, 255, 0.04) !important;
+  background-color: transparent !important;
   /* No color override here — set per-theme below */
 }
 
@@ -1129,7 +1129,7 @@ html, body { overflow-x: clip; max-width: 100%; }
 
 /* Light theme: darken toward black on hover */
 .surface-light .notepad-tab-item:not(.active):hover {
-  background-color: rgba(0, 0, 0, 0.03) !important;
+  background-color: transparent !important;
   color: rgba(0, 0, 0, 0.8) !important;
 }
 
@@ -1668,7 +1668,7 @@ div:hover > .notepad-guide-trigger-icon {
 
 /* In inactive tab hover styling */
 .notepad-tab-item:not(.active):hover {
-  background: var(--inactive-tab-hover) !important;
+  background: transparent !important;
 }
 
 /* TaskList Checkboxes styling */

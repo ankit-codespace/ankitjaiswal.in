@@ -1,1 +1,0 @@
-# Skill: Plan Proof Gallery

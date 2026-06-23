@@ -833,7 +833,7 @@
 
 /* Inactive tab hover styling */
 .notepad-tab-item:not(.active):hover {
-  background: var(--inactive-tab-hover) !important;
+  background: transparent !important;
 }
 
 /* ── ProseMirror GapCursor styling ── */

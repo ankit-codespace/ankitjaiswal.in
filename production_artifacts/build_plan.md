@@ -1,31 +1,29 @@
-# Pinned Tab & Theme Color Hardening — Build Plan
+# Build Plan: Standardizing Web Notepad Layouts
 
-## Phase 1: Theme-Aware Category Colors
-- Update the static `TAB_COLORS` array in `App.tsx` and `notepad.tsx` to:
-  ```typescript
-  const TAB_COLORS = [
-    { id: "red", name: "Coral Red", darkValue: "#F25F5C", lightValue: "#D14949" },
-    { id: "orange", name: "Amber Orange", darkValue: "#F28F3B", lightValue: "#D9721E" },
-    { id: "yellow", name: "Warm Yellow", darkValue: "#FFE066", lightValue: "#C99A16" },
-    { id: "green", name: "Sage Green", darkValue: "#40C057", lightValue: "#2B8A3E" },
-    { id: "blue", name: "Slate Blue", darkValue: "#339AF0", lightValue: "#1C7ED6" },
-    { id: "purple", name: "Lavender", darkValue: "#BE4BDB", lightValue: "#862E9C" },
-  ];
-  ```
+## Task Summary
+Synchronize the web portfolio notepad implementation's layout behavior (scrollability, tab strip spacing, and notebook ruler lines alignment) with the desktop Electron app.
 
-## Phase 2: Pinned Tab Layout Clean-up
-- Locate the pinned tab rendering blocks in `App.tsx` and `notepad.tsx`.
-- Delete the absolute-positioned dot `div`.
-- Dynamically determine the color for the `Pin` icon based on `effectiveDark`:
-  `const categoryColor = doc.color ? (TAB_COLORS.find(c => c.id === doc.color)?.[effectiveDark ? 'darkValue' : 'lightValue']) : undefined;`
-- Pass this `categoryColor` directly to the `Pin` icon's style (or color property).
+## Success Criteria
+1. The web page scrolling never locks or freezes when toggling the SEO guide contents.
+2. Notebook ruler lines align perfectly with all element types (text paragraphs, code blocks, images, tables, quotes) without stretching their backgrounds.
+3. Tab margin offsets align exactly with the 7px design specs referencing `sortedDocs`.
+4. Workspace compiles cleanly with no typescript errors.
 
-## Phase 3: Indicators and Picker Alignment
-- Update unpinned tab dot indicators to resolve colors using the new theme-based values.
-- Update the context menu color picker buttons to display `color.darkValue` or `color.lightValue` based on `effectiveDark`.
-- Align active tab border stroke selection (`activeTabStroke`) to resolve to the theme-appropriate value.
+---
 
-## Phase 4: Verification & Compilation
-- Compile the website.
-- Compile the Electron renderer and repackage the Windows installers.
-- Commit all changes and push.
+## Phase 1: Scroll Recovery and Layout Sizing
+- **Objective**: Fix page scrolling by syncing Lenis' boundary calculations with the page height toggle.
+- **Sub-step 1.1**: Inject a `useEffect` hook in `notepad.tsx` observing the state changes of `isSeoUnlocked`.
+- **Sub-step 1.2**: Inside this hook, trigger `(window as any).__lenis?.resize()` after a 100ms delay to allow the DOM transition animation to finish.
+- **Sub-step 1.3**: Recalculate editor wrapper height dynamically to ensure layout bounds align.
+
+## Phase 2: Notebook Ruler Line Alignment
+- **Objective**: Port the high-fidelity margin-based alignment calculations from `App.tsx` to `notepad.tsx`.
+- **Sub-step 2.1**: Update the element selector in `alignBlocksToGrid` to target `.notepad-code-block-wrapper, table, blockquote, hr, img, .image-node`.
+- **Sub-step 2.2**: Change snaps to assign `marginBottom` instead of `paddingBottom` to prevent background color stretching.
+- **Sub-step 2.3**: Update snap math: `targetHeight = Math.ceil((naturalHeight + G / 2) / G) * G` and `needed = targetHeight - naturalHeight`. Ensure we clean up custom styling values when `ruledLines` is disabled.
+
+## Phase 3: Active Tab Spacing & Verification
+- **Objective**: Re-align tab margins and verify the entire build structure.
+- **Sub-step 3.1**: Verify active tab margins in `notepad.tsx` and check that margins use `sortedDocs` for spacing calculations.
+- **Sub-step 3.2**: Run `pnpm run build` in the workspace root to confirm zero typescript or asset compile errors.

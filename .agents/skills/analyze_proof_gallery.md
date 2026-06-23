@@ -1,1 +1,0 @@
-# Skill: Analyze Proof Gallery
