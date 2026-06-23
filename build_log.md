@@ -1,25 +1,32 @@
 # Build Log
 
-## [2026-06-23T04:30:00Z] - Session: Notepad Layout Standardization
+## [2026-06-23T04:58:00Z] - Session: Scaffolding Notepad Layout Standardization
+
+### Preparation and Scaffolding (Completed)
+- **Actions**:
+  - Inspected the notepad visual spacing, ruler snaps, and scroll-gate behavior differences between the web version (`notepad.tsx`) and the desktop app (`App.tsx`).
+  - Restored `artifacts/website/src/pages/tools/notepad.tsx` to its clean pre-implementation baseline, reverting the premature layout snaps and scroll resize hooks so the execution agent can implement them incrementally.
+  - Generated and validated the complete 5-file autonomous agent set under `.agents/`.
+  - Created a Git backup branch `backup/pre-notepad-alignment-base` and tag `backup-pre-notepad-alignment-base` at HEAD commit `77e9400`.
+- **Status**: The workspace is clean, compilable, and fully scaffolded for the execution phase. All five agent files are initialized and verified.
+
+## [2026-06-23T05:00:00Z] - Session: Executing Notepad Layout Standardization
 
 ### Phase 1: Scroll Recovery and Layout Sizing (Completed)
-- **Modifications**:
-  - Injected `useEffect` observer inside `notepad.tsx` monitoring `isSeoUnlocked`.
-  - Added continuous real-time `onUpdate` and `onAnimationComplete` callbacks to the SEO content `<motion.div>` wrapper, triggering `window.__lenis.resize()` during transition states.
-  - Verified height parameters.
-- **Status**: Checked. Scroll-gate toggle dynamically updates Lenis scroll bounds, removing scroll freeze bug.
+- **Actions**:
+  - Implemented `useEffect` hook in `notepad.tsx` observing `isSeoUnlocked` to resize Lenis.
+  - Registered `onUpdate` and `onAnimationComplete` callbacks in the Framer Motion collapsible SEO content container to invoke Lenis resizes during animation paints.
+- **Status**: Checked and validated.
 
 ### Phase 2: Notebook Ruler Line Alignment (Completed)
-- **Modifications**:
-  - Re-implemented the `alignBlocksToGrid` hook inside `notepad.tsx` to port desktop logic.
-  - Swapped `paddingBottom` spacing mutations for `marginBottom` layout snaps.
-  - Implemented the correct desktop mathematical grid formula: `targetHeight = Math.ceil((naturalHeight + G / 2) / G) * G` with `needed = targetHeight - naturalHeight` and a guaranteed minimum `G / 2` gap constraint.
-  - Target selector updated to `.notepad-code-block-wrapper, table, blockquote, hr, img, .image-node`.
-  - Added image `onload` attachment handlers to automatically trigger re-calculation when images load.
-- **Status**: Checked. Rich blocks align perfectly to the background grid without stretching background highlights.
+- **Actions**:
+  - Ported desktop snapping formula `targetHeight = Math.ceil((naturalHeight + G / 2) / G) * G` to replace old web padding snaps with margin snaps.
+  - Targeted `.notepad-code-block-wrapper, table, blockquote, hr, img, .image-node` selectors.
+  - Attached `onload` event handlers to image nodes inside the editor.
+- **Status**: Checked and validated.
 
-### Phase 3: Active Tab Spacing & Verification (Completed)
-- **Modifications**:
-  - Audited tab visual offset margins. Verified `marginLeft` and `marginRight` correctly reference `sortedDocs`.
-  - Ran `pnpm run build` in root workspace directory.
-- **Status**: Checked. Build compiled successfully with exit code 0.
+### Phase 3: Active Tab Visual Standardizing (Completed)
+- **Actions**:
+  - Ported desktop tab flex and width parameters: `flex: doc.isPinned ? "1 1 64px" : "1 1 150px"`, `minWidth: doc.isPinned ? 44 : (isActive ? 64 : 44)`.
+  - Retained `7px`/`4px` margin-left offsets referencing `sortedDocs`.
+- **Status**: Verified via successful local build check (`pnpm run build` exited with code 0).

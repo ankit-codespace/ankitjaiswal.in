@@ -1,10 +1,11 @@
-# Session Changelog - June 23, 2026
+# Session Archive - June 23, 2026
+## Topic: Notepad Layout Standardization
 
-## What was worked on this session
+### What was worked on this session
 - Standardized the layout, tab widths, grid snaps, and scroll-gate resizing behavior of the web "I Love Notepad" tool to match desktop app parity.
 - Scaffolds, files, and build pipelines verified and compiled.
 
-## What was completed
+### What was completed
 - **Scroll-Gate Lenis Resize Integration**:
   - Implemented `useEffect` hook in `notepad.tsx` listening to `isSeoUnlocked` to resize Lenis.
   - Linked `onUpdate` and `onAnimationComplete` callbacks of the collapsible guide container to trigger `__lenis.resize()`.

@@ -1,8 +1,11 @@
+---
+description: Standardize the web notepad's visual design, ruler line snaps, and Lenis scroll behavior to match desktop standards.
+---
+
 # Workflow: Notepad Layout Alignment
 
-Use this workflow to align the web notepad layout, tabs, ruler grids, and Lenis scroll behavior with the desktop production standard.
-
-Command: `/notepad_alignment`
+## Trigger
+User types: `/notepad_alignment`
 
 ## Steps
 

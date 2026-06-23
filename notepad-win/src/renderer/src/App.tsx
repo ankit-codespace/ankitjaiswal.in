@@ -2820,7 +2820,7 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: `1px solid ${sepColor}`, padding: "0 0 0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg, WebkitAppRegion: "drag", userSelect: "none" } as any}>
           
           {/* Left Zone: Tabs */}
-          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0, position: "relative" }}>
             
             {/* Open File / File Menu Button */}
             <button
@@ -2847,8 +2847,7 @@ export default function App() {
 
             <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "flex-end", marginBottom: 8 }} />
 
-            <div style={{ display: "flex", alignItems: "flex-end", flex: 1, minWidth: 0, position: "relative", height: "100%" }}>
-              <div className="notepad-tabs-container" role="tablist" style={{ display: "flex", alignItems: "flex-end", gap: 0, overflowX: "auto", height: "calc(100% + 4px)", marginBottom: -4, paddingBottom: 4, boxSizing: "border-box", flex: 1, paddingLeft: 18, paddingRight: 24, scrollbarWidth: "none" }}>
+            <div className="notepad-tabs-container" role="tablist" style={{ display: "flex", alignItems: "flex-end", gap: 0, overflowX: "auto", height: "calc(100% + 4px)", marginBottom: -4, paddingBottom: 4, boxSizing: "border-box", flex: 1, paddingLeft: 18, paddingRight: 24, scrollbarWidth: "none" }}>
               {sortedDocs.map((doc, idx) => {
                 const isActive = doc.id === activeId;
                 const showDivider = false;
@@ -3170,12 +3169,27 @@ export default function App() {
                 </Fragment>
               );
             })}
+              
             </div>
+
+            {/* Plus Button outside scrollable container */}
+            <button
+              onClick={createDoc}
+              style={{
+                ...tb(), width: 30, height: 30, borderRadius: 6,
+                alignSelf: "flex-end", marginBottom: 3, marginLeft: 8, flexShrink: 0, zIndex: 4,
+                WebkitAppRegion: "no-drag"
+              } as any}
+              title="New note"
+            >
+              <Plus size={16} />
+            </button>
+
             {/* Gradient fade overlay for smooth tab overflow */}
             <div 
               style={{
                 position: "absolute",
-                right: 0,
+                right: 38,
                 bottom: 0,
                 width: 32,
                 height: 38,
@@ -3185,20 +3199,6 @@ export default function App() {
               }}
             />
           </div>
-
-          {/* Plus Button inside tab bar row (Sticky) */}
-          <button
-            onClick={createDoc}
-            style={{
-              ...tb(), width: 30, height: 30, borderRadius: 6,
-              alignSelf: "flex-end", marginBottom: 3, marginLeft: 8, marginRight: 8, flexShrink: 0, zIndex: 4,
-              WebkitAppRegion: "no-drag"
-            } as any}
-            title="New note"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
 
           {/* Right Zone: Saved status, Note lists & Window Controls */}
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0, height: "100%", WebkitAppRegion: "no-drag" } as any}>
