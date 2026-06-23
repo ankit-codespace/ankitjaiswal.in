@@ -3720,7 +3720,7 @@ export default function Notepad() {
   };
 
   const sepColor = effectiveDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.08)";
-  const sep = <div style={{ width: 1, height: 24, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "center" }} />;
+  const sep = <div style={{ width: 1, height: 22, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "center" }} />;
   // Look up the accent for the current theme; fall back per light/dark.
   const surfAccent = (() => {
     const match = THEMES.find((t) => t.bg === settings.bgColor && t.text === settings.textColor);
@@ -4134,7 +4134,7 @@ export default function Notepad() {
             <div
               style={{
                 width: 1,
-                height: 26,
+                height: 23,
                 background: sepColor,
                 margin: "0 8px",
                 flexShrink: 0,
@@ -4176,7 +4176,7 @@ export default function Notepad() {
             <div
               style={{
                 width: 1,
-                height: 26,
+                height: 23,
                 background: sepColor,
                 margin: "0 8px",
                 flexShrink: 0,
@@ -4713,7 +4713,7 @@ export default function Notepad() {
               title="All Notes"
               className="notepad-shortcuts-btn"
             >
-              <Files size={15} />
+              <Files size={16} />
             </button>
           </div>
 
