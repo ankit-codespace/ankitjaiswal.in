@@ -2,6 +2,8 @@
 
 ## What was worked on this session
 - Aligned tab close confirmations, Close Other Tabs logic, and restoration behavior across web and desktop notepad platforms.
+- Implemented non-destructive formatting switcher toggles with Markdown-to-HTML parsing and premium Lucide SVG icons.
+- Unified cross-platform keyboard shortcuts for tab restoration.
 
 ## What was completed
 - **Direct Close for Unpinned Tabs**:
@@ -12,5 +14,12 @@
 - **Batch Tab Restoration**:
   - Desktop version (`App.tsx`) now assigns a unique `closeBatchId` metadata field to tabs closed together via mass close.
   - Restoration handler (`restoreLastClosedDoc`) checks for `closeBatchId` and restores the entire batch of closed tabs in a single operation, maintaining alignment with the web version's undo snapshot behavior.
+- **Non-Destructive Formatting Toggling & Markdown Parser**:
+  - Added state retention tracking via `lastRichContent` on `NotepadDoc` to restore exact HTML formats if plain text is unmodified.
+  - Built a custom Markdown-to-HTML parser to reconstruct markdown formatting (headers, bold/italics, lists, links, inline/block code) back into rich content if edited in Plain mode.
+  - Replaced format toolbar emojis with premium Lucide `Type` and `FileText` SVG icons.
+- **Unified Restore Shortcuts**:
+  - Updated key listeners to accept both `Ctrl + Shift + T` and `Ctrl + Alt + T` keys on both clients.
+  - Synchronized dialog warnings and help table overlays.
 - **Verification**:
   - Executed `pnpm run build` from the workspace root. The build succeeded with exit code 0.

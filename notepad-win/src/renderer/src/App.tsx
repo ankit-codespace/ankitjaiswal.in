@@ -66,7 +66,7 @@ import {
   ImageIcon, Link as LinkIcon, Minus, Undo2, Redo2, Search, X, Maximize2,
   Minimize2, Download, ChevronDown, ChevronRight, Plus, FileText, PanelLeft,
   Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Files, Quote, Settings, Eraser,
-  Trash2, Save, Pin, Table2, Code2, Copy, Keyboard, ExternalLink, Edit, Monitor, Shield
+  Trash2, Save, Pin, Table2, Code2, Copy, Keyboard, ExternalLink, Edit, Monitor, Shield, Type
 } from "lucide-react";
 
 // ── ElectronAPI Types ─────────────────────────────────────────────────────────
@@ -684,6 +684,7 @@ interface NotepadDoc {
   color?: string;
   mode?: "rich" | "raw";
   closeBatchId?: string;
+  lastRichContent?: string;
 }
 
 interface NotepadSettings {
@@ -1762,6 +1763,120 @@ export default function App() {
     setEditorVersion((v) => v + 1);
   };
 
+  const inlineMarkdownToHtml = (text: string): string => {
+    let html = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/__(.*?)__/g, "<strong>$1</strong>");
+    html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+    html = html.replace(/_(.*?)_/g, "<em>$1</em>");
+    html = html.replace(/`(.*?)`/g, "<code>$1</code>");
+    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
+    return html;
+  };
+
+  const parseMarkdownToHtml = (md: string): string => {
+    if (!md) return "";
+    const lines = md.split("\n");
+    let htmlResult = [];
+    let inList = false;
+    let listType: "ul" | "ol" | "taskList" | null = null;
+    let inCodeBlock = false;
+    let codeBlockLines = [];
+
+    for (let line of lines) {
+      if (line.startsWith("```")) {
+        if (inCodeBlock) {
+          inCodeBlock = false;
+          htmlResult.push(`<pre><code>${codeBlockLines.join("\n")}</code></pre>`);
+          codeBlockLines = [];
+        } else {
+          inCodeBlock = true;
+        }
+        continue;
+      }
+
+      if (inCodeBlock) {
+        codeBlockLines.push(line);
+        continue;
+      }
+
+      const checklistMatch = line.match(/^-\s+\[([ xX])\]\s+(.*)$/);
+      const bulletMatch = line.match(/^[-*]\s+(.*)$/);
+      const numberMatch = line.match(/^(\d+)\.\s+(.*)$/);
+
+      if (checklistMatch) {
+        if (!inList || listType !== "taskList") {
+          if (inList) htmlResult.push(listType === "ol" ? "</ol>" : "</ul>");
+          htmlResult.push('<ul data-type="taskList">');
+          inList = true;
+          listType = "taskList";
+        }
+        const checked = checklistMatch[1].toLowerCase() === "x";
+        const content = inlineMarkdownToHtml(checklistMatch[2]);
+        htmlResult.push(`<li data-type="taskItem" data-checked="${checked}">${content}</li>`);
+        continue;
+      }
+
+      if (bulletMatch) {
+        if (!inList || listType !== "ul") {
+          if (inList) htmlResult.push(listType === "ol" ? "</ol>" : "</ul>");
+          htmlResult.push("<ul>");
+          inList = true;
+          listType = "ul";
+        }
+        const content = inlineMarkdownToHtml(bulletMatch[1]);
+        htmlResult.push(`<li>${content}</li>`);
+        continue;
+      }
+
+      if (numberMatch) {
+        if (!inList || listType !== "ol") {
+          if (inList) htmlResult.push(listType === "ol" ? "</ol>" : "</ul>");
+          htmlResult.push("<ol>");
+          inList = true;
+          listType = "ol";
+        }
+        const content = inlineMarkdownToHtml(numberMatch[2]);
+        htmlResult.push(`<li>${content}</li>`);
+        continue;
+      }
+
+      if (inList) {
+        htmlResult.push(listType === "ol" ? "</ol>" : "</ul>");
+        inList = false;
+        listType = null;
+      }
+
+      const h3Match = line.match(/^###\s+(.*)$/);
+      const h2Match = line.match(/^##\s+(.*)$/);
+      const h1Match = line.match(/^#\s+(.*)$/);
+
+      if (h3Match) {
+        htmlResult.push(`<h3>${inlineMarkdownToHtml(h3Match[1])}</h3>`);
+      } else if (h2Match) {
+        htmlResult.push(`<h2>${inlineMarkdownToHtml(h2Match[1])}</h2>`);
+      } else if (h1Match) {
+        htmlResult.push(`<h1>${inlineMarkdownToHtml(h1Match[1])}</h1>`);
+      } else if (line.trim() === "") {
+        htmlResult.push("<p></p>");
+      } else {
+        htmlResult.push(`<p>${inlineMarkdownToHtml(line)}</p>`);
+      }
+    }
+
+    if (inList) {
+      htmlResult.push(listType === "ol" ? "</ol>" : "</ul>");
+    }
+    if (inCodeBlock && codeBlockLines.length > 0) {
+      htmlResult.push(`<pre><code>${codeBlockLines.join("\n")}</code></pre>`);
+    }
+
+    return htmlResult.join("");
+  };
+
   const toggleEditorMode = () => {
     if (!activeDoc) return;
     const currentMode = activeDoc.mode === "raw" ? "raw" : "rich";
@@ -1769,9 +1884,23 @@ export default function App() {
     
     if (nextMode === "rich") {
       const text = activeDoc.content || "";
-      const richContent = text.includes("<p>") || text.includes("</div>") 
-        ? text 
-        : text.split("\n").map(l => `<p>${l}</p>`).join("");
+      let richContent = "";
+      
+      if (activeDoc.lastRichContent) {
+        // If the plain text hasn't changed (modulo trimming/newlines), restore the exact rich HTML
+        const strippedLast = htmlToMarkdown(activeDoc.lastRichContent).trim();
+        if (strippedLast === text.trim()) {
+          richContent = activeDoc.lastRichContent;
+        } else {
+          // If the plain text was edited, parse markdown to HTML
+          richContent = parseMarkdownToHtml(text);
+        }
+      } else {
+        // Fallback for new documents without prior HTML
+        richContent = text.includes("<p>") || text.includes("</div>") 
+          ? text 
+          : text.split("\n").map(l => `<p>${l}</p>`).join("");
+      }
       
       setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: richContent, mode: "rich", isUnsaved: d.filePath ? true : undefined } : d));
       const activeInst = editorsRef.current[activeId];
@@ -1780,11 +1909,10 @@ export default function App() {
       }
       toast.success("Switched to Rich Text formatting");
     } else {
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = activeDoc.content;
-      const plainText = tempDiv.textContent || tempDiv.innerText || "";
+      const html = activeDoc.content || "";
+      const markdown = htmlToMarkdown(html);
       
-      setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: plainText, mode: "raw", isUnsaved: d.filePath ? true : undefined } : d));
+      setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: markdown, lastRichContent: html, mode: "raw", isUnsaved: d.filePath ? true : undefined } : d));
       const activeInst = editorsRef.current[activeId];
       if (activeInst) {
         activeInst.commands.setContent("");
@@ -2422,8 +2550,8 @@ export default function App() {
         return;
       }
 
-      // Ctrl + Shift + T (Restore Closed Note)
-      if (isCtrl && e.shiftKey && e.key.toLowerCase() === "t") {
+      // Ctrl + Shift + T or Ctrl + Alt + T (Restore Closed Note)
+      if (isCtrl && (e.shiftKey || e.altKey) && e.key.toLowerCase() === "t") {
         e.preventDefault();
         restoreLastClosedDoc();
         return;
@@ -4014,7 +4142,17 @@ export default function App() {
               }}
               onClick={toggleEditorMode}
             >
-              {activeDoc?.mode === "raw" ? "⚡ Plain" : "📝 Rich"}
+              {activeDoc?.mode === "raw" ? (
+                <>
+                  <FileText size={14} />
+                  <span>Plain</span>
+                </>
+              ) : (
+                <>
+                  <Type size={14} />
+                  <span>Rich</span>
+                </>
+              )}
             </button>
 
 
@@ -5372,7 +5510,7 @@ export default function App() {
               color: effectiveDark ? "rgba(255,100,100,0.85)" : "rgba(160,40,40,0.85)",
               lineHeight: 1.5
             }}>
-              ⚠ You can restore closed notes anytime using Ctrl + Shift + T.
+              ⚠ You can restore closed notes anytime using Ctrl + Shift + T or Ctrl + Alt + T.
             </div>
 
             {/* Buttons */}
@@ -5685,7 +5823,7 @@ export default function App() {
                       { keys: ["Ctrl", "S"], desc: "Save Text File" },
                       { keys: ["Ctrl", "P"], desc: "Export PDF" },
                       { keys: ["Ctrl", "W"], desc: "Close Current Note" },
-                      { keys: ["Ctrl", "Shift", "T"], desc: "Restore Closed Note" },
+                      { keys: ["Ctrl", "Shift", "T", "or", "Ctrl", "Alt", "T"], desc: "Restore Closed Note" },
                       { keys: ["Ctrl", "Shift", "W"], desc: "Close Application" }
                     ].map((item, idx) => (
                       <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
