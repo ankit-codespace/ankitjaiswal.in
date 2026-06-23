@@ -30,3 +30,24 @@
   - Ported desktop tab flex and width parameters: `flex: doc.isPinned ? "1 1 64px" : "1 1 150px"`, `minWidth: doc.isPinned ? 44 : (isActive ? 64 : 44)`.
   - Retained `7px`/`4px` margin-left offsets referencing `sortedDocs`.
 - **Status**: Verified via successful local build check (`pnpm run build` exited with code 0).
+
+## [2026-06-23T12:15:00Z] - Session: Executing Web Tab Reordering & Layout Alignment
+
+### Phase 1: Web-Compatible Tab Drag-and-Drop & Sliding (Completed)
+- **Actions**:
+  - Implemented transient `dragOverIdx` state and refs (`draggedWidthRef`, `draggedIsPinnedRef`) inside `notepad.tsx`.
+  - Configured tab drag start, drag over, and drag end callbacks to capture sizes and indices without mutating array state mid-drag.
+  - Applied CSS `translateX` translations (`transform: translateX()`) with transition transitions to displace adjacent tabs smoothly when dragging a tab.
+  - Added strict type coercions for `isPinned` properties in drag handlers to secure TS checks.
+- **Status**: Checked and validated.
+
+### Phase 2: Tab Bar & Plus Button Layout Parity (Completed)
+- **Actions**:
+  - Changed the note switcher's `"New document"` bottom option string to `"New note"` to align with desktop naming parity.
+- **Status**: Checked and validated.
+
+### Phase 3: Shortcut Conflict Resolution & Modal Help Parity (Completed)
+- **Actions**:
+  - Rewrote keyboard shortcut listeners to conditionally trigger `Ctrl + Alt + T` on Web and `Ctrl + Shift + T` on Electron Desktop for closed note recovery.
+  - Updated shortcuts helper modal and closed-note deletion tooltip warning layouts to display `Ctrl + Alt + T` for Web.
+- **Status**: Verified via successful local build check (`pnpm run build` exited with code 0).

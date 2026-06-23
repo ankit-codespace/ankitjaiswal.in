@@ -268,7 +268,7 @@ import {
   Strikethrough, Heading1, Heading2, Heading3, List, ListOrdered, CheckSquare,
   ImageIcon, Link as LinkIcon, Minus, Undo2, Redo2, Search, X, Maximize2,
   Minimize2, Cloud, CloudOff, Download, ChevronDown, ChevronRight, Plus, FileText,
-  Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Pilcrow, Clock, Loader2, Quote, Settings, Pencil, MoreHorizontal, Eraser,
+  Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Pilcrow, Files, Loader2, Quote, Settings, Pencil, MoreHorizontal, Eraser,
   Trash2,
   Lock, Zap, Layers, Sparkles, GraduationCap, PenLine, Code2, Briefcase,
   ArrowUpRight, FileDown, Eye, Save,
@@ -365,12 +365,11 @@ const THEMES = [
 ] as const;
 
 const TAB_COLORS = [
-  { id: "red", name: "Coral Red", darkValue: "#F25F5C", lightValue: "#D14949" },
-  { id: "orange", name: "Amber Orange", darkValue: "#F28F3B", lightValue: "#D9721E" },
+  { id: "red", name: "Rose Red", darkValue: "#E66B6B", lightValue: "#B24040" },
   { id: "yellow", name: "Warm Yellow", darkValue: "#FFE066", lightValue: "#C99A16" },
-  { id: "green", name: "Sage Green", darkValue: "#40C057", lightValue: "#2B8A3E" },
-  { id: "blue", name: "Slate Blue", darkValue: "#339AF0", lightValue: "#1C7ED6" },
-  { id: "purple", name: "Lavender", darkValue: "#BE4BDB", lightValue: "#862E9C" },
+  { id: "green", name: "Sage Green", darkValue: "#60C988", lightValue: "#246944" },
+  { id: "blue", name: "Slate Blue", darkValue: "#58A3E0", lightValue: "#205D8A" },
+  { id: "purple", name: "Lavender", darkValue: "#9D7FE6", lightValue: "#6C42A1" },
 ];
 
 /** Returns true if the hex colour is perceptually light (>128 brightness). */
@@ -890,6 +889,11 @@ export default function Notepad() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState | null>(null);
+  const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
+  const dragSourceIdxRef = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const draggedWidthRef = useRef<number>(0);
+  const draggedIsPinnedRef = useRef<boolean>(false);
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [fileMenuLeft, setFileMenuLeft] = useState(0);
   const [showOutline, setShowOutline] = useState(false);
@@ -972,6 +976,24 @@ export default function Notepad() {
 
   const contextMenuOpenTimeRef = useRef<number>(0);
   const undoStackRef = useRef<Array<{ docs: NotepadDoc[]; activeId: string }>>([]);
+
+  // Load undo stack from localStorage on startup
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("notepad_undo_stack");
+      if (saved) {
+        undoStackRef.current = JSON.parse(saved);
+      }
+    } catch {}
+  }, []);
+
+  const saveUndoStack = (stack: any[]) => {
+    try {
+      localStorage.setItem("notepad_undo_stack", JSON.stringify(stack));
+    } catch (e) {
+      console.error(e);
+    }
+  };
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
   const [imageContextMenu, setImageContextMenu] = useState<{ x: number; y: number; src: string; pos: number } | null>(null);
 
@@ -1013,6 +1035,7 @@ export default function Notepad() {
     const target = docs.find((d) => d.id === idToKeep);
     if (!target) return;
     undoStackRef.current.push({ docs: [...docs], activeId });
+    saveUndoStack(undoStackRef.current);
     setDocs([target]);
     saveDocs([target]);
     setActiveId(target.id);
@@ -1030,6 +1053,7 @@ export default function Notepad() {
     if (idx === -1) return;
     const idsToKeep = new Set(sortedDocs.slice(0, idx + 1).map((d) => d.id));
     undoStackRef.current.push({ docs: [...docs], activeId });
+    saveUndoStack(undoStackRef.current);
     if (!idsToKeep.has(activeId)) {
       setActiveId(id);
     }
@@ -1961,8 +1985,11 @@ export default function Notepad() {
         return;
       }
 
-      // Restore Closed Note (Ctrl + Shift + T)
-      if (ctrl && e.shiftKey && e.key.toLowerCase() === "t") {
+      // Restore Closed Note: Ctrl + Alt + T (Web) / Ctrl + Shift + T (Electron)
+      const isRestoreNote = isElectron
+        ? (ctrl && e.shiftKey && e.key.toLowerCase() === "t")
+        : (ctrl && e.altKey && e.key.toLowerCase() === "t");
+      if (isRestoreNote) {
         e.preventDefault();
         undoLastDelete();
         return;
@@ -2321,6 +2348,7 @@ export default function Notepad() {
 
   const undoLastDelete = useCallback(() => {
     const snap = undoStackRef.current.pop();
+    saveUndoStack(undoStackRef.current);
     if (!snap) return;
     setDocs(snap.docs);
     saveDocs(snap.docs);
@@ -2332,9 +2360,17 @@ export default function Notepad() {
 
   const deleteDoc = (id: string) => {
     if (docs.length === 1) { toast.error("Need at least one document."); cancelConfirm(); return; }
+
+    const targetDoc = docs.find((d) => d.id === id);
+    if (targetDoc?.isPinned && !deleteConfirm) {
+      const confirmClose = window.confirm(`Note "${targetDoc.title || "Untitled"}" is pinned. Are you sure you want to delete it?`);
+      if (!confirmClose) { cancelConfirm(); return; }
+    }
+
     // Snapshot BEFORE delete so undo restores exact prior state
     undoStackRef.current.push({ docs: [...docs], activeId });
     if (undoStackRef.current.length > 10) undoStackRef.current.shift();
+    saveUndoStack(undoStackRef.current);
 
     const next = docs.filter((d) => d.id !== id);
     setDocs(next); saveDocs(next);
@@ -2352,6 +2388,7 @@ export default function Notepad() {
     const count = docs.length;
     undoStackRef.current.push({ docs: [...docs], activeId });
     if (undoStackRef.current.length > 10) undoStackRef.current.shift();
+    saveUndoStack(undoStackRef.current);
 
     const fresh = newDoc();
     setDocs([fresh]); saveDocs([fresh]);
@@ -3318,6 +3355,35 @@ export default function Notepad() {
                   <Fragment key={doc.id}>
                     <div
                       className={`notepad-tab-item ${isActive ? "active" : ""}`}
+                      draggable={editingTabId !== doc.id}
+                      onDragStart={(e) => {
+                        dragSourceIdxRef.current = idx;
+                        setDraggingTabId(doc.id);
+                        draggedWidthRef.current = e.currentTarget.getBoundingClientRect().width;
+                        draggedIsPinnedRef.current = !!doc.isPinned;
+                        setDragOverIdx(idx);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (dragSourceIdxRef.current === null) return;
+                        if (!!sortedDocs[dragSourceIdxRef.current].isPinned !== !!doc.isPinned) return;
+                        if (dragOverIdx !== idx) {
+                          setDragOverIdx(idx);
+                        }
+                      }}
+                      onDragEnd={() => {
+                        if (dragSourceIdxRef.current !== null && dragOverIdx !== null && dragSourceIdxRef.current !== dragOverIdx) {
+                          const nextSorted = [...sortedDocs];
+                          const [removed] = nextSorted.splice(dragSourceIdxRef.current, 1);
+                          nextSorted.splice(dragOverIdx, 0, removed);
+                          setDocs(nextSorted);
+                          saveDocs(nextSorted);
+                        }
+                        dragSourceIdxRef.current = null;
+                        setDraggingTabId(null);
+                        setDragOverIdx(null);
+                      }}
                       onClick={() => {
                         if (!isActive) {
                           setActiveId(doc.id);
@@ -3338,6 +3404,7 @@ export default function Notepad() {
                       }}
                       title={doc.isPinned ? (doc.title || "Untitled Note") : undefined}
                       style={{
+                        opacity: doc.id === draggingTabId ? 0.35 : 1,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: doc.isPinned ? "center" : "flex-start",
@@ -3360,7 +3427,27 @@ export default function Notepad() {
                         boxShadow: isActive ? activeTabShadow : "none",
                         ["--active-tab-bg" as any]: activeTabSurface,
                         ["--active-border-color" as any]: activeTabStroke,
-                        transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease",
+                        transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                        transform: (() => {
+                          if (dragSourceIdxRef.current === null || dragOverIdx === null) return "none";
+                          if (idx === dragSourceIdxRef.current) return "none";
+                          if (!!sortedDocs[dragSourceIdxRef.current].isPinned !== !!doc.isPinned) return "none";
+
+                          const S = dragSourceIdxRef.current;
+                          const T = dragOverIdx;
+                          const w = draggedWidthRef.current;
+
+                          if (S < T) {
+                            if (idx > S && idx <= T) {
+                              return `translateX(-${w}px)`;
+                            }
+                          } else if (S > T) {
+                            if (idx >= T && idx < S) {
+                              return `translateX(${w}px)`;
+                            }
+                          }
+                          return "none";
+                        })(),
                       }}
                     >
                       {/* SVG Vector Background & Outline with Chrome-like flaring tails */}
@@ -3750,6 +3837,7 @@ export default function Notepad() {
 
           {/* Right Zone: Status, Cloud, Settings, Feedback */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>
+            {sep}
 
             {GCID && (
               <button style={tb(driveConnected)} onClick={driveConnected ? () => syncToDrive() : connectDrive} title={driveConnected ? "Sync to Drive now" : "Connect Google Drive"}>
@@ -3774,7 +3862,7 @@ export default function Notepad() {
               title="All Notes"
               className="notepad-shortcuts-btn"
             >
-              <Clock size={13} />
+              <Files size={13} />
             </button>
 
             {/* Shortcuts */}
@@ -4297,16 +4385,18 @@ export default function Notepad() {
                 }}
               >
                 <span
-                  style={{ flex: 1, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center" }}
+                  style={{ flex: 1, display: "flex", alignItems: "center", minWidth: 0 }}
                   onClick={() => { setActiveId(d.id); setShowDocMenu(false); }}
                 >
-                  {d.title || "Untitled"}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, flex: 1 }}>
+                    {d.title || "Untitled"}
+                  </span>
                   {d.isPinned && (
-                    <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)" }} />
+                    <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, flexShrink: 0, color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)" }} />
                   )}
                 </span>
                 {d.id === activeId && (
-                  <Check size={12} style={{ color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", flexShrink: 0 }} />
+                  <Check size={12} style={{ marginLeft: 8, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)", flexShrink: 0 }} />
                 )}
                 {docs.length > 1 && (
                   <button
@@ -4338,7 +4428,7 @@ export default function Notepad() {
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)"; }}
           >
-            <Plus size={12} /> New document
+            <Plus size={12} /> New note
           </button>
           <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
           {confirmClearAll ? (
@@ -5745,10 +5835,10 @@ export default function Notepad() {
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: effectiveDark ? "#FFFFFF" : "#1A1A1A", fontFamily: "'Sora', sans-serif" }}>
-                  Delete this note?
+                  {docs.find((d) => d.id === deleteConfirm.docId)?.isPinned ? "Delete pinned note?" : "Delete this note?"}
                 </span>
                 <span style={{ fontSize: 11, color: effectiveDark ? "rgba(255, 255, 255, 0.45)" : "rgba(0, 0, 0, 0.45)", lineHeight: "1.4" }}>
-                  This action cannot be undone.
+                  You can restore closed notes anytime using {isElectron ? "Ctrl + Shift + T" : "Ctrl + Alt + T"}.
                 </span>
               </div>
 
@@ -6374,7 +6464,7 @@ export default function Notepad() {
                         { keys: ["Ctrl", "S"], desc: "Save Text File" },
                         { keys: ["Ctrl", "P"], desc: "Export PDF" },
                         { keys: isElectron ? ["Ctrl", "W"] : ["Ctrl", "Alt", "W"], desc: "Close Current Note" },
-                        { keys: ["Ctrl", "Shift", "T"], desc: "Restore Closed Note" },
+                        { keys: isElectron ? ["Ctrl", "Shift", "T"] : ["Ctrl", "Alt", "T"], desc: "Restore Closed Note" },
                       ].map((item, idx) => (
                         <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
                           <span style={{ color: "var(--t2)" }}>{item.desc}</span>

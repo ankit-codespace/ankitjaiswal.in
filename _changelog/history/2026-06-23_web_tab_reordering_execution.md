@@ -1,11 +1,12 @@
-# Session Changelog - June 23, 2026
+# Session Archive - June 23, 2026
+## Topic: Web Tab Reordering & Layout Alignment
 
-## What was worked on this session
+### What was worked on this session
 - Implemented smooth, non-destructive Web Tab Drag-and-Drop and Sliding reordering mechanics in `notepad.tsx`.
 - Standardized layout spacing, note switcher labels, and browser-safe restore shortcuts.
 - Verified build and type checks compile cleanly.
 
-## What was completed
+### What was completed
 - **Web-Compatible Tab Drag-and-Drop & Sliding**:
   - Capped order mutations to execute exclusively on tab drop (`dragend`).
   - Added transient drag state trackers (`dragOverIdx`, `draggedWidthRef`, `draggedIsPinnedRef`) inside `notepad.tsx`.

@@ -65,7 +65,7 @@ import {
   Strikethrough, Heading1, Heading2, Heading3, List, ListOrdered, CheckSquare,
   ImageIcon, Link as LinkIcon, Minus, Undo2, Redo2, Search, X, Maximize2,
   Minimize2, Download, ChevronDown, ChevronRight, Plus, FileText, PanelLeft,
-  Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Clock, Quote, Settings, Eraser,
+  Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Files, Quote, Settings, Eraser,
   Trash2, Save, Pin, Table2, Code2, Copy, Keyboard, ExternalLink, Edit, Monitor
 } from "lucide-react";
 
@@ -720,12 +720,11 @@ const THEMES = [
 ] as const;
 
 const TAB_COLORS = [
-  { id: "red", name: "Coral Red", darkValue: "#F25F5C", lightValue: "#D14949" },
-  { id: "orange", name: "Amber Orange", darkValue: "#F28F3B", lightValue: "#D9721E" },
+  { id: "red", name: "Rose Red", darkValue: "#E66B6B", lightValue: "#B24040" },
   { id: "yellow", name: "Warm Yellow", darkValue: "#FFE066", lightValue: "#C99A16" },
-  { id: "green", name: "Sage Green", darkValue: "#40C057", lightValue: "#2B8A3E" },
-  { id: "blue", name: "Slate Blue", darkValue: "#339AF0", lightValue: "#1C7ED6" },
-  { id: "purple", name: "Lavender", darkValue: "#BE4BDB", lightValue: "#862E9C" },
+  { id: "green", name: "Sage Green", darkValue: "#60C988", lightValue: "#246944" },
+  { id: "blue", name: "Slate Blue", darkValue: "#58A3E0", lightValue: "#205D8A" },
+  { id: "purple", name: "Lavender", darkValue: "#9D7FE6", lightValue: "#6C42A1" },
 ];
 
 function isLightHex(hex: string): boolean {
@@ -1468,7 +1467,22 @@ export default function App() {
   const [showDocMenu, setShowDocMenu] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [hoveredTabId, setHoveredTabId] = useState<string | null>(null);
-  const [closedDocsHistory, setClosedDocsHistory] = useState<NotepadDoc[]>([]);
+  const [closedDocsHistory, setClosedDocsHistory] = useState<NotepadDoc[]>(() => {
+    try {
+      const saved = localStorage.getItem("notepad_closed_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("notepad_closed_history", JSON.stringify(closedDocsHistory));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [closedDocsHistory]);
   const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; docId: string } | null>(null);
   const [imageContextMenu, setImageContextMenu] = useState<{ x: number; y: number; src: string } | null>(null);
 
@@ -1478,6 +1492,9 @@ export default function App() {
   const [fileMenuLeft, setFileMenuLeft] = useState(0);
   const [showOutline, setShowOutline] = useState(false);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
+  const [deleteConfirmDoc, setDeleteConfirmDoc] = useState<{ id: string; title: string } | null>(null);
+  const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
+  const dragSourceIdxRef = useRef<number | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [headings, setHeadings] = useState<{ text: string; level: number; index: number }[]>([]);
   const [activeHeadingIndex, setActiveHeadingIndex] = useState<number | null>(null);
@@ -1846,11 +1863,12 @@ export default function App() {
     toast.success("New note created");
   };
 
-  const deleteDoc = (idToDelete: string) => {
+  const executeDeleteDoc = (idToDelete: string) => {
     if (docs.length <= 1) return;
     
     const index = docs.findIndex((d) => d.id === idToDelete);
     const targetDoc = docs[index];
+    if (!targetDoc) return;
 
     // Push the closed document to history for restore
     setClosedDocsHistory((prev) => [...prev, targetDoc]);
@@ -1867,6 +1885,18 @@ export default function App() {
       changeTab(nextDocs[fallbackIndex].id);
     }
     toast.success(`Note "${targetDoc.title}" closed`);
+  };
+
+  const deleteDoc = (idToDelete: string) => {
+    if (docs.length <= 1) return;
+    const targetDoc = docs.find((d) => d.id === idToDelete);
+    if (!targetDoc) return;
+
+    if (targetDoc.isPinned) {
+      setDeleteConfirmDoc({ id: idToDelete, title: targetDoc.title });
+    } else {
+      executeDeleteDoc(idToDelete);
+    }
   };
 
   const restoreLastClosedDoc = () => {
@@ -2861,46 +2891,71 @@ export default function App() {
                   <Fragment key={doc.id}>
                     <div
                       className={`notepad-tab-item ${isActive ? "active" : ""}`}
-                    role="tab"
-                    aria-selected={isActive}
-                    onClick={() => {
-                      if (!isActive) {
-                        changeTab(doc.id);
-                      }
-                    }}
-                    onMouseEnter={() => setHoveredTabId(doc.id)}
-                    onMouseLeave={() => setHoveredTabId(null)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setImageContextMenu(null);
-                      setTabContextMenu({
-                        x: e.clientX,
-                        y: e.clientY,
-                        docId: doc.id
-                      });
-                    }}
-                    title={doc.filePath || (doc.isPinned ? `${doc.title} (Pinned)` : doc.title)}
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: doc.isPinned ? "center" : "flex-start",
-                      gap: doc.isPinned ? 0 : 6, 
-                      height: 36, 
-                      padding: isActive ? (doc.isPinned ? "0" : "0 14px") : "0 2px",
-                      borderRadius: "12px 12px 0 0", 
-                      border: "none",
-                      background: isActive ? activeTabSurface : "transparent",
-                      color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
-                      cursor: "pointer", position: "relative",
-                      flex: doc.isPinned ? "1 1 64px" : "1 1 150px",
-                      minWidth: doc.isPinned ? 44 : (isActive ? 64 : 44),
-                      maxWidth: doc.isPinned ? 64 : 150,
-                      marginBottom: isActive ? -1 : 0, 
-                      marginLeft: isActive ? (idx > 0 ? (sortedDocs[idx - 1].isPinned ? 4 : 7) : 0) : (isPrevActive ? (doc.isPinned ? 4 : 7) : 0),
-                      zIndex: isActive ? 3 : (hoveredTabId === doc.id ? 2 : 1),
-                      boxShadow: isActive ? activeTabShadow : "none",
-                      transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease, border-color 140ms ease",
-                      WebkitAppRegion: "no-drag"
-                    } as any}
+                      role="tab"
+                      aria-selected={isActive}
+                      draggable={editingTabId !== doc.id}
+                      onDragStart={(e) => {
+                        dragSourceIdxRef.current = idx;
+                        setDraggingTabId(doc.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (dragSourceIdxRef.current === null || dragSourceIdxRef.current === idx) return;
+                        if (sortedDocs[dragSourceIdxRef.current].isPinned !== doc.isPinned) return;
+                        
+                        const nextSorted = [...sortedDocs];
+                        const [removed] = nextSorted.splice(dragSourceIdxRef.current, 1);
+                        nextSorted.splice(idx, 0, removed);
+                        
+                        setDocs(nextSorted);
+                        saveDocs(nextSorted);
+                        dragSourceIdxRef.current = idx;
+                      }}
+                      onDragEnd={() => {
+                        dragSourceIdxRef.current = null;
+                        setDraggingTabId(null);
+                      }}
+                      onClick={() => {
+                        if (!isActive) {
+                          changeTab(doc.id);
+                        }
+                      }}
+                      onMouseEnter={() => setHoveredTabId(doc.id)}
+                      onMouseLeave={() => setHoveredTabId(null)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setImageContextMenu(null);
+                        setTabContextMenu({
+                          x: e.clientX,
+                          y: e.clientY,
+                          docId: doc.id
+                        });
+                      }}
+                      title={doc.filePath || (doc.isPinned ? `${doc.title} (Pinned)` : doc.title)}
+                      style={{
+                        opacity: doc.id === draggingTabId ? 0.35 : 1,
+                        display: "flex", alignItems: "center", justifyContent: doc.isPinned ? "center" : "flex-start",
+                        gap: doc.isPinned ? 0 : 6, 
+                        height: 36, 
+                        padding: isActive ? (doc.isPinned ? "0" : "0 14px") : "0 2px",
+                        borderRadius: "12px 12px 0 0", 
+                        border: "none",
+                        background: isActive ? activeTabSurface : "transparent",
+                        color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
+                        cursor: "pointer", position: "relative",
+                        flex: doc.isPinned ? "0 0 64px" : "1 1 150px",
+                        width: doc.isPinned ? 64 : undefined,
+                        minWidth: doc.isPinned ? 64 : (isActive ? 64 : 44),
+                        maxWidth: doc.isPinned ? 64 : 150,
+                        marginBottom: isActive ? -1 : 0, 
+                        marginLeft: isActive ? (idx > 0 ? (sortedDocs[idx - 1].isPinned ? 4 : 7) : 0) : (isPrevActive ? (doc.isPinned ? 4 : 7) : 0),
+                        zIndex: isActive ? 3 : (hoveredTabId === doc.id ? 2 : 1),
+                        boxShadow: isActive ? activeTabShadow : "none",
+                        transition: "background 140ms ease, color 140ms ease, box-shadow 140ms ease, border-color 140ms ease",
+                        WebkitAppRegion: "no-drag"
+                      } as any}
                   >
                     {/* SVG Chrome tab borders */}
                     {isActive && (
@@ -3203,6 +3258,8 @@ export default function App() {
           {/* Right Zone: Saved status, Note lists & Window Controls */}
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0, height: "100%", WebkitAppRegion: "no-drag" } as any}>
             <div style={{ display: "flex", alignItems: "center", height: "100%", transform: "translateY(2.5px)" }}>
+              {/* Divider between Left Zone (Plus button) and Right Zone (Files switcher) */}
+              <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px 0 4px", flexShrink: 0, alignSelf: "center" }} />
               {/* Note switcher menu trigger */}
               <button
                 style={{ ...tb(showDocMenu), alignSelf: "center", marginRight: 8 }}
@@ -3217,7 +3274,7 @@ export default function App() {
                 }}
                 title="All Notes"
               >
-                <Clock size={13} />
+                <Files size={13} />
               </button>
 
               <div style={{ width: 1, height: 20, background: sepColor, margin: "0 6px", flexShrink: 0, alignSelf: "center" }} />
@@ -3749,11 +3806,15 @@ export default function App() {
                 background: d.id === activeId ? (effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.06)") : "transparent",
               }}
             >
-              <span style={{ flex: 1, color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {d.title || "Untitled"}
-                {d.isPinned && <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6 }} />}
+              <span style={{ flex: 1, display: "flex", alignItems: "center", minWidth: 0 }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, flex: 1 }}>
+                  {d.title || "Untitled"}
+                </span>
+                {d.isPinned && (
+                  <Pin size={10} style={{ transform: "rotate(30deg)", marginLeft: 6, opacity: 0.6, flexShrink: 0, color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.45)" }} />
+                )}
               </span>
-              {d.id === activeId && <Check size={12} />}
+              {d.id === activeId && <Check size={12} style={{ marginLeft: 8, flexShrink: 0, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.65)" }} />}
               {docs.length > 1 && (
                 <button
                   style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55 }}
@@ -4747,6 +4808,98 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* ── Custom Confirm: Delete Pinned Note ── */}
+      {deleteConfirmDoc && (
+        <div
+          onClick={() => setDeleteConfirmDoc(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+              border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.1)",
+              borderRadius: 14,
+              padding: "28px 28px 22px",
+              width: 340,
+              boxShadow: effectiveDark
+                ? "0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)"
+                : "0 24px 64px rgba(0,0,0,0.18)",
+              display: "flex", flexDirection: "column", gap: 16,
+              fontFamily: "Inter, sans-serif"
+            }}
+          >
+            {/* Icon + Title */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: "rgba(214,50,50,0.12)",
+                display: "flex", alignItems: "center", justifyContent: "center"
+              }}>
+                <Pin size={18} style={{ color: "var(--err)", transform: "rotate(30deg)" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: effectiveDark ? "var(--t1)" : "#111", marginBottom: 2 }}>
+                  Delete pinned note?
+                </div>
+                <div style={{ fontSize: 12, color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: 220 }} title={deleteConfirmDoc.title}>
+                  "{deleteConfirmDoc.title || "Untitled"}" is pinned.
+                </div>
+              </div>
+            </div>
+
+            {/* Warning detail */}
+            <div style={{
+              background: "rgba(214,50,50,0.07)",
+              border: "1px solid rgba(214,50,50,0.15)",
+              borderRadius: 8,
+              padding: "10px 12px",
+              fontSize: 12,
+              color: effectiveDark ? "rgba(255,100,100,0.85)" : "rgba(160,40,40,0.85)",
+              lineHeight: 1.5
+            }}>
+              ⚠ You can restore closed notes anytime using Ctrl + Shift + T.
+            </div>
+
+            {/* Buttons */}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setDeleteConfirmDoc(null)}
+                style={{
+                  padding: "7px 16px", fontSize: 13, fontWeight: 500, fontFamily: "Inter, sans-serif",
+                  borderRadius: 8, border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
+                  background: "transparent",
+                  color: effectiveDark ? "var(--t1)" : "#111",
+                  cursor: "pointer", transition: "background 0.12s"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  executeDeleteDoc(deleteConfirmDoc.id);
+                  setDeleteConfirmDoc(null);
+                }}
+                style={{
+                  padding: "7px 16px", fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif",
+                  borderRadius: 8, border: "none",
+                  background: "var(--err)",
+                  color: "#FFFFFF",
+                  cursor: "pointer", transition: "opacity 0.12s"
+                }}
+              >
+                Delete note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* ── Link Bubble Menu & Popover ── */}
       {editor && isLinkPopoverOpen && linkPopoverCoords && (
