@@ -3206,7 +3206,7 @@ export default function Notepad() {
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: `1px solid ${sepColor}`, padding: "0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg }}>
 
           {/* Left Zone: Back and Tabs */}
-          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0, position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
             {/* Back Button — same height (34px) and bottom offset (-2) as tab items
                 so the arrow icon always sits on the same optical baseline as tab text. */}
             <Link
@@ -3284,9 +3284,10 @@ export default function Notepad() {
               }}
             />
 
-            {/* Browser Tabs Scrollable Container */}
-            <div
-              className="notepad-tabs-container"
+            {/* Browser Tabs Scrollable Container Wrapper */}
+            <div style={{ display: "flex", alignItems: "flex-end", flex: 1, minWidth: 0, position: "relative", height: "100%" }}>
+              <div
+                className="notepad-tabs-container"
               style={{
                 display: "flex",
                 alignItems: "flex-end",
@@ -3350,9 +3351,8 @@ export default function Notepad() {
                         color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)"),
                         cursor: "pointer",
                         position: "relative",
-                        flex: doc.isPinned ? "0 0 64px" : "0 1 150px",
-                        width: doc.isPinned ? 64 : undefined,
-                        minWidth: doc.isPinned ? 64 : (isActive ? 80 : 64),
+                        flex: doc.isPinned ? "1 1 64px" : "1 1 150px",
+                        minWidth: doc.isPinned ? 44 : (isActive ? 64 : 44),
                         maxWidth: doc.isPinned ? 64 : 150,
                         marginBottom: isActive ? -2 : 0,
                         marginLeft: isActive ? (idx > 0 ? (sortedDocs[idx - 1].isPinned ? 4 : 7) : 0) : (isPrevActive ? (doc.isPinned ? 4 : 7) : 0),
@@ -3711,25 +3711,6 @@ export default function Notepad() {
                   </Fragment>
                 );
               })}
-
-              {/* Plus Button inside tab bar row */}
-              <button
-                onClick={createDoc}
-                style={{
-                  ...tb(),
-                  width: 24,
-                  height: 24,
-                  borderRadius: 6,
-                  alignSelf: "flex-end",
-                  marginBottom: 5,
-                  marginLeft: 8,
-                  flexShrink: 0,
-                  zIndex: 1,
-                }}
-                title="New note"
-              >
-                <Plus size={13} />
-              </button>
             </div>
             {/* Gradient fade overlay for smooth tab overflow */}
             <div 
@@ -3745,6 +3726,27 @@ export default function Notepad() {
               }}
             />
           </div>
+
+          {/* Plus Button inside tab bar row (Sticky) */}
+          <button
+            onClick={createDoc}
+            style={{
+              ...tb(),
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              alignSelf: "flex-end",
+              marginBottom: 5,
+              marginLeft: 8,
+              marginRight: 8,
+              flexShrink: 0,
+              zIndex: 4,
+            }}
+            title="New note"
+          >
+            <Plus size={13} />
+          </button>
+        </div>
 
           {/* Right Zone: Status, Cloud, Settings, Feedback */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>

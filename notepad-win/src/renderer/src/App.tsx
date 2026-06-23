@@ -2820,7 +2820,7 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: `1px solid ${sepColor}`, padding: "0 0 0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg, WebkitAppRegion: "drag", userSelect: "none" } as any}>
           
           {/* Left Zone: Tabs */}
-          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0, position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0 }}>
             
             {/* Open File / File Menu Button */}
             <button
@@ -2847,7 +2847,8 @@ export default function App() {
 
             <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "flex-end", marginBottom: 8 }} />
 
-            <div className="notepad-tabs-container" role="tablist" style={{ display: "flex", alignItems: "flex-end", gap: 0, overflowX: "auto", height: "calc(100% + 4px)", marginBottom: -4, paddingBottom: 4, boxSizing: "border-box", flex: 1, paddingLeft: 18, paddingRight: 24, scrollbarWidth: "none" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", flex: 1, minWidth: 0, position: "relative", height: "100%" }}>
+              <div className="notepad-tabs-container" role="tablist" style={{ display: "flex", alignItems: "flex-end", gap: 0, overflowX: "auto", height: "calc(100% + 4px)", marginBottom: -4, paddingBottom: 4, boxSizing: "border-box", flex: 1, paddingLeft: 18, paddingRight: 24, scrollbarWidth: "none" }}>
               {sortedDocs.map((doc, idx) => {
                 const isActive = doc.id === activeId;
                 const showDivider = false;
@@ -2891,9 +2892,8 @@ export default function App() {
                       background: isActive ? activeTabSurface : "transparent",
                       color: isActive ? surfTxt : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
                       cursor: "pointer", position: "relative",
-                      flex: doc.isPinned ? "0 0 64px" : "0 1 150px",
-                      width: doc.isPinned ? 64 : undefined,
-                      minWidth: doc.isPinned ? 64 : (isActive ? 80 : 64),
+                      flex: doc.isPinned ? "1 1 64px" : "1 1 150px",
+                      minWidth: doc.isPinned ? 44 : (isActive ? 64 : 44),
                       maxWidth: doc.isPinned ? 64 : 150,
                       marginBottom: isActive ? -1 : 0, 
                       marginLeft: isActive ? (idx > 0 ? (sortedDocs[idx - 1].isPinned ? 4 : 7) : 0) : (isPrevActive ? (doc.isPinned ? 4 : 7) : 0),
@@ -3170,19 +3170,6 @@ export default function App() {
                 </Fragment>
               );
             })}
-              
-              {/* Plus Button inside tab bar row */}
-              <button
-                onClick={createDoc}
-                style={{
-                  ...tb(), width: 30, height: 30, borderRadius: 6,
-                  alignSelf: "flex-end", marginBottom: 3, marginLeft: 8, flexShrink: 0, zIndex: 1,
-                  WebkitAppRegion: "no-drag"
-                } as any}
-                title="New note"
-              >
-                <Plus size={16} />
-              </button>
             </div>
             {/* Gradient fade overlay for smooth tab overflow */}
             <div 
@@ -3198,6 +3185,20 @@ export default function App() {
               }}
             />
           </div>
+
+          {/* Plus Button inside tab bar row (Sticky) */}
+          <button
+            onClick={createDoc}
+            style={{
+              ...tb(), width: 30, height: 30, borderRadius: 6,
+              alignSelf: "flex-end", marginBottom: 3, marginLeft: 8, marginRight: 8, flexShrink: 0, zIndex: 4,
+              WebkitAppRegion: "no-drag"
+            } as any}
+            title="New note"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
 
           {/* Right Zone: Saved status, Note lists & Window Controls */}
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0, height: "100%", WebkitAppRegion: "no-drag" } as any}>
