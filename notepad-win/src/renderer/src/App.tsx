@@ -4125,8 +4125,7 @@ export default function App() {
               <Search size={14} />
             </button>
 
-            {/* Focus mode */}
-            <button title={getTooltip("Focus Mode", "Ctrl+Shift+\\")} style={tb(focusMode)} onClick={() => setFocusMode(!focusMode)}>{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
+
 
             {/* Format Mode Toggle */}
             <button

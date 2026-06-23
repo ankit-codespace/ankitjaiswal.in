@@ -4887,29 +4887,55 @@ export default function Notepad() {
               </span>
             </button>
 
-            {/* EXPORT */}
-            <button
-              className="notepad-export-btn"
-              title={getTooltip("Export", "Ctrl+D")}
-              style={{
-                ...tb(),
-                width: "auto",
-                padding: "0 10px",
-                gap: 5,
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)",
-                background: effectiveDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)",
-                border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
-                borderRadius: 6,
-                flexShrink: 0
-              }}
-              onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); }}
-            >
-              <Download size={12} />
-              <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Export</span>
-              <ChevronDown size={10} />
-            </button>
+            {/* EXPORT SPLIT BUTTON */}
+            <div style={{ display: "flex", alignItems: "stretch", height: 28, flexShrink: 0 }}>
+              <button
+                className="notepad-export-btn"
+                title={getTooltip("Smart Export (Auto-selects best format)", "Ctrl+D")}
+                style={{
+                  ...tb(),
+                  width: "auto",
+                  padding: "0 10px",
+                  gap: 5,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)",
+                  background: effectiveDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)",
+                  border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+                  borderTopLeftRadius: 6,
+                  borderBottomLeftRadius: 6,
+                  borderTopRightRadius: 0,
+                  borderBottomRightRadius: 0,
+                }}
+                onClick={handleSmartExport}
+              >
+                <Download size={12} />
+                <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>Export</span>
+              </button>
+              <button
+                className="notepad-export-dropdown-btn"
+                title={getTooltip("Choose export format")}
+                style={{
+                  ...tb(),
+                  width: "auto",
+                  padding: "0 6px",
+                  color: effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)",
+                  background: effectiveDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)",
+                  border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+                  borderLeft: "none",
+                  borderTopRightRadius: 6,
+                  borderBottomRightRadius: 6,
+                  borderTopLeftRadius: 0,
+                  borderBottomLeftRadius: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onClick={() => { setShowExportMenu(!showExportMenu); setShowSettings(false); }}
+              >
+                <ChevronDown size={10} />
+              </button>
+            </div>
           </div>
 
         </div>
