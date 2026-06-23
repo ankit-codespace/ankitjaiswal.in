@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, memo, Fragment } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, memo, Fragment, Component } from "react";
 import { Link, useLocation } from "wouter";
 import { Seo } from "@/components/Seo";
 import { SITE, PERSON_SAME_AS } from "@/lib/site";
@@ -293,6 +293,7 @@ interface NotepadDoc {
   isPinned?: boolean;
   color?: string;
   isUnsaved?: boolean;
+  mode?: "rich" | "raw";
 }
 
 
@@ -325,6 +326,14 @@ function countWords(text: string): number {
   if (clean === "") return 0;
   const matches = clean.match(/\S+/g);
   return matches ? matches.length : 0;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 const LS_DOCS = "notepad_docs_v2";
@@ -860,6 +869,139 @@ function blendColors(fgType: "dark" | "light", bgHex: string, alpha: number): st
   }
 }
 
+class NotepadErrorBoundary extends Component<
+  {
+    children: React.ReactNode;
+    activeDoc: NotepadDoc | undefined;
+    setDocs: React.Dispatch<React.SetStateAction<NotepadDoc[]>>;
+    setActiveId: React.Dispatch<React.SetStateAction<string>>;
+    setSaveStatus: React.Dispatch<React.SetStateAction<"saved" | "unsaved">>;
+    effectiveDark: boolean;
+    surfAccent: string;
+  },
+  { hasError: boolean; errorMsg: string }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, errorMsg: "" };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, errorMsg: error?.message || "Unknown error" };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Editor Crash Boundary Caught:", error, errorInfo);
+  }
+
+  handleRecoverAsRaw = () => {
+    const { activeDoc, setDocs } = this.props;
+    if (activeDoc) {
+      const div = document.createElement("div");
+      div.innerHTML = activeDoc.content;
+      const plainText = div.textContent || div.innerText || "";
+      
+      setDocs(prev => prev.map(d => d.id === activeDoc.id ? { ...d, content: plainText, mode: "raw", isUnsaved: true } : d));
+      this.setState({ hasError: false, errorMsg: "" });
+    }
+  };
+
+  handleExportBackup = () => {
+    const { activeDoc } = this.props;
+    if (activeDoc) {
+      const blob = new Blob([activeDoc.content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${activeDoc.title || "Note"}_recovery_backup.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  render() {
+    if (this.state.hasError) {
+      const { effectiveDark, surfAccent } = this.props;
+      return (
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px 20px",
+          textAlign: "center",
+          background: effectiveDark ? "rgba(220, 50, 50, 0.05)" : "rgba(220, 50, 50, 0.02)",
+          border: effectiveDark ? "1px dashed rgba(220, 50, 50, 0.3)" : "1px dashed rgba(220, 50, 50, 0.2)",
+          borderRadius: 8,
+          margin: "20px 0",
+          fontFamily: "Inter, sans-serif",
+          color: effectiveDark ? "#FFF" : "#0D1117"
+        }}>
+          <h3 style={{ fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 600, color: "#EF4444", marginBottom: 8 }}>
+            Editor Render Isolated
+          </h3>
+          <p style={{ fontSize: 13, color: effectiveDark ? "rgba(255, 255, 255, 0.6)" : "rgba(0, 0, 0, 0.6)", maxWidth: 420, lineHeight: 1.5, marginBottom: 20 }}>
+            An unexpected error occurred while rendering this document's rich formatting. To protect your session, we've sandboxed this note.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+            <button
+              onClick={this.handleRecoverAsRaw}
+              style={{
+                background: "#EF4444",
+                color: "#FFF",
+                border: "none",
+                borderRadius: 6,
+                padding: "8px 16px",
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "opacity 0.1s"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+            >
+              Open as Plain Text
+            </button>
+            <button
+              onClick={this.handleExportBackup}
+              style={{
+                background: effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.03)",
+                color: effectiveDark ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.85)",
+                border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
+                borderRadius: 6,
+                padding: "8px 16px",
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.06)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.03)"; }}
+            >
+              Download Backup
+            </button>
+            <button
+              onClick={() => this.setState({ hasError: false, errorMsg: "" })}
+              style={{
+                background: "transparent",
+                color: effectiveDark ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.65)",
+                border: "none",
+                borderRadius: 6,
+                padding: "8px 12px",
+                fontSize: 12.5,
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function Notepad() {
   const [location] = useLocation();
   const seo = useMemo<NotepadSeo>(() => NOTEPAD_SEO[location] ?? DEFAULT_NOTEPAD_SEO, [location]);
@@ -894,6 +1036,7 @@ export default function Notepad() {
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const draggedWidthRef = useRef<number>(0);
   const draggedIsPinnedRef = useRef<boolean>(false);
+  const [largeFilePrompt, setLargeFilePrompt] = useState<{ fileName: string; fileSize: number; fileText: string; handle?: FileSystemFileHandle } | null>(null);
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [fileMenuLeft, setFileMenuLeft] = useState(0);
   const [showOutline, setShowOutline] = useState(false);
@@ -1330,7 +1473,11 @@ export default function Notepad() {
     const doc = docs.find((d) => d.id === activeId);
     if (doc) {
       isChangingDocRef.current = true;
-      editor.commands.setContent(doc.content || "");
+      if (doc.mode === "raw") {
+        editor.commands.setContent("");
+      } else {
+        editor.commands.setContent(doc.content || "");
+      }
       setTimeout(() => { isChangingDocRef.current = false; }, 50);
     }
     localStorage.setItem(LS_ACTIVE, activeId);
@@ -1734,6 +1881,16 @@ export default function Notepad() {
         const text = await file.text();
         const title = file.name.replace(/\.[^/.]+$/, "");
 
+        if (file.size > 1.0 * 1024 * 1024) {
+          setLargeFilePrompt({
+            fileName: file.name,
+            fileSize: file.size,
+            fileText: text,
+            handle
+          });
+          return;
+        }
+
         const newDoc: NotepadDoc = {
           id: Math.random().toString(36).substring(2, 11),
           title: title,
@@ -1755,6 +1912,16 @@ export default function Notepad() {
           if (!file) return;
           const text = await file.text();
           const title = file.name.replace(/\.[^/.]+$/, "");
+
+          if (file.size > 1.0 * 1024 * 1024) {
+            setLargeFilePrompt({
+              fileName: file.name,
+              fileSize: file.size,
+              fileText: text
+            });
+            return;
+          }
+
           const newDoc: NotepadDoc = {
             id: Math.random().toString(36).substring(2, 11),
             title: title,
@@ -2857,12 +3024,80 @@ export default function Notepad() {
     setShowExportMenu(false);
   };
 
+  const handleRawChange = (val: string) => {
+    setDocs((prev) => {
+      const next = prev.map((d) => d.id === activeId ? { ...d, content: val, updatedAt: Date.now(), isUnsaved: true } : d);
+      saveDocs(next);
+      return next;
+    });
+    setSaveStatus("unsaved");
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      setDocs((prev) => {
+        const next = prev.map((d) => d.id === activeId ? { ...d, isUnsaved: false } : d);
+        saveDocs(next);
+        return next;
+      });
+      setSaveStatus("saved");
+      setLastSaved(new Date());
+    }, 1200);
+  };
+
+  const toggleEditorMode = () => {
+    if (!activeDoc) return;
+    const currentMode = activeDoc.mode === "raw" ? "raw" : "rich";
+    const nextMode = currentMode === "raw" ? "rich" : "raw";
+    
+    if (nextMode === "rich") {
+      const text = activeDoc.content || "";
+      const richContent = text.includes("<p>") || text.includes("</div>") 
+        ? text 
+        : text.split("\n").map(l => `<p>${l}</p>`).join("");
+      
+      setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: richContent, mode: "rich", isUnsaved: true } : d));
+      if (editor) {
+        editor.commands.setContent(richContent);
+      }
+      toast.success("Switched to Rich Text formatting");
+    } else {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = activeDoc.content;
+      const plainText = tempDiv.textContent || tempDiv.innerText || "";
+      
+      setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: plainText, mode: "raw", isUnsaved: true } : d));
+      if (editor) {
+        editor.commands.setContent("");
+      }
+      toast.success("Switched to Plain Text performance mode");
+    }
+  };
+
   // Copy the entire active note to the clipboard. Writes BOTH text/html
   // (with embedded base64 images preserved) AND text/plain at once via the
   // modern Clipboard API, so pasting into Notion / Word / Gmail keeps the
   // formatting and images, while pasting into a plain text field gets the
   // text only. Falls back to writeText for older browsers.
   const handleCopy = useCallback(async () => {
+    if (activeDoc?.mode === "raw") {
+      const text = activeDoc.content || "";
+      if (!text) {
+        toast.message("Nothing to copy", { description: "This note is empty." });
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopyState("copied");
+        toast.success("Copied to clipboard");
+        if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+        copyResetTimer.current = setTimeout(() => setCopyState("idle"), 1600);
+      } catch (err) {
+        setCopyState("error");
+        toast.error("Failed to copy");
+        if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+        copyResetTimer.current = setTimeout(() => setCopyState("idle"), 2000);
+      }
+      return;
+    }
     if (!editor) return;
     const html = editor.getHTML() ?? "";
     const text = editor.getText() ?? "";
@@ -3124,6 +3359,10 @@ export default function Notepad() {
   };
 
   const wordCountStatus = useMemo(() => {
+    if (activeDoc?.mode === "raw") {
+      const total = countWords(activeDoc.content || "");
+      return `${total} ${total === 1 ? "word" : "words"}`;
+    }
     if (!editor) return "0 words";
     const totalText = editor.state.doc.textContent || "";
     const total = countWords(totalText);
@@ -3138,9 +3377,10 @@ export default function Notepad() {
     }
 
     return `${total} ${total === 1 ? "word" : "words"}`;
-  }, [editor, activeId, editorVersion]);
+  }, [editor, activeId, editorVersion, activeDoc?.content, activeDoc?.mode]);
 
   const cursorPosition = useMemo(() => {
+    if (activeDoc?.mode === "raw") return "Ln 1, Col 1";
     if (!editor || editor.isDestroyed) return "Ln 1, Col 1";
     const { selection } = editor.state;
     const { $from } = selection;
@@ -3223,6 +3463,207 @@ export default function Notepad() {
         jsonLd={jsonLd}
         favicon="/icons/ilovenotepad_logo_premium.png"
       />
+
+      {largeFilePrompt && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(10, 10, 10, 0.7)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: 20
+        }} onClick={() => setLargeFilePrompt(null)}>
+          <div style={{
+            background: effectiveDark ? "#161615" : "#FAF8F2",
+            border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)",
+            borderRadius: 12,
+            width: 480,
+            maxWidth: "100%",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            padding: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            fontFamily: "Inter, sans-serif"
+          }} onClick={(e) => e.stopPropagation()}>
+            <div>
+              <h3 style={{
+                fontSize: 16,
+                fontWeight: 600,
+                fontFamily: "'Sora', sans-serif",
+                color: effectiveDark ? "#FFF" : "#1A1A1A",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 6
+              }}>
+                <Shield size={18} style={{ color: surfAccent }} /> Performance Guard
+              </h3>
+              <p style={{
+                fontSize: 12.5,
+                color: effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
+                lineHeight: 1.5
+              }}>
+                The file <strong>{largeFilePrompt.fileName}</strong> is quite large (<strong>{formatBytes(largeFilePrompt.fileSize)}</strong>). 
+                Loading it in formatting mode might lag your browser. Choose how to proceed:
+              </p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {/* Option 1: Raw Plain Text */}
+              <button
+                onClick={() => {
+                  const text = largeFilePrompt.fileText;
+                  const title = largeFilePrompt.fileName.replace(/\.[^/.]+$/, "");
+                  const newDoc: NotepadDoc = {
+                    id: Math.random().toString(36).substring(2, 11),
+                    title: title,
+                    content: text, // Raw text
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    mode: "raw"
+                  };
+                  if (largeFilePrompt.handle) {
+                    fileHandlesRef.current[newDoc.id] = largeFilePrompt.handle;
+                  }
+                  setDocs(prev => [newDoc, ...prev]);
+                  setActiveId(newDoc.id);
+                  setSaveStatus("saved");
+                  toast.success(`Opened ${largeFilePrompt.fileName} in Plain Text Mode`);
+                  setLargeFilePrompt(null);
+                }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: 8,
+                  border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)",
+                  background: effectiveDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+                  color: "inherit",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  transition: "all 0.15s"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)"; e.currentTarget.style.borderColor = surfAccent; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)"; e.currentTarget.style.borderColor = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"; }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600, color: effectiveDark ? "#FFF" : "#1A1A1A" }}>⚡ Plain-Text Mode (Recommended)</span>
+                <span style={{ fontSize: 11, color: effectiveDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)", marginTop: 2 }}>Ultra-fast load, zero scroll-lag, disables formatting toolbars.</span>
+              </button>
+
+              {/* Option 2: Rich Text */}
+              <button
+                onClick={() => {
+                  const text = largeFilePrompt.fileText;
+                  const title = largeFilePrompt.fileName.replace(/\.[^/.]+$/, "");
+                  const newDoc: NotepadDoc = {
+                    id: Math.random().toString(36).substring(2, 11),
+                    title: title,
+                    content: text.includes("<p>") || text.includes("</div>") ? text : text.split("\n").map((l: string) => `<p>${l}</p>`).join(""),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    mode: "rich"
+                  };
+                  if (largeFilePrompt.handle) {
+                    fileHandlesRef.current[newDoc.id] = largeFilePrompt.handle;
+                  }
+                  setDocs(prev => [newDoc, ...prev]);
+                  setActiveId(newDoc.id);
+                  setSaveStatus("saved");
+                  toast.success(`Opened ${largeFilePrompt.fileName} in Rich Text Mode`);
+                  setLargeFilePrompt(null);
+                }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: 8,
+                  border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)",
+                  background: effectiveDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+                  color: "inherit",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  transition: "all 0.15s"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)"; e.currentTarget.style.borderColor = surfAccent; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)"; e.currentTarget.style.borderColor = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"; }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600, color: effectiveDark ? "#FFF" : "#1A1A1A" }}>📝 Rich Text Mode</span>
+                <span style={{ fontSize: 11, color: effectiveDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)", marginTop: 2 }}>Keep rich layouts, bullet points, headers, and code highlights.</span>
+              </button>
+
+              {/* Option 3: First 150KB */}
+              <button
+                onClick={() => {
+                  const title = largeFilePrompt.fileName.replace(/\.[^/.]+$/, "");
+                  const subsetText = largeFilePrompt.fileText.slice(0, 150 * 1024) + "\n\n... [Content truncated by Performance Guard]";
+                  const newDoc: NotepadDoc = {
+                    id: Math.random().toString(36).substring(2, 11),
+                    title: `${title} (Subset)`,
+                    content: subsetText.includes("<p>") || subsetText.includes("</div>") ? subsetText : subsetText.split("\n").map((l: string) => `<p>${l}</p>`).join(""),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    mode: "rich"
+                  };
+                  setDocs(prev => [newDoc, ...prev]);
+                  setActiveId(newDoc.id);
+                  setSaveStatus("saved");
+                  toast.success(`Imported first 150KB of ${largeFilePrompt.fileName}`);
+                  setLargeFilePrompt(null);
+                }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: 8,
+                  border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)",
+                  background: effectiveDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
+                  color: "inherit",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  transition: "all 0.15s"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)"; e.currentTarget.style.borderColor = surfAccent; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = effectiveDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)"; e.currentTarget.style.borderColor = effectiveDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"; }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600, color: effectiveDark ? "#FFF" : "#1A1A1A" }}>✂️ Load First 150KB Only</span>
+                <span style={{ fontSize: 11, color: effectiveDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)", marginTop: 2 }}>Instantly view the top section of the document in formatting mode.</span>
+              </button>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+              <button
+                onClick={() => setLargeFilePrompt(null)}
+                style={{
+                  background: "transparent",
+                  border: effectiveDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
+                  borderRadius: 6,
+                  padding: "6px 14px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: effectiveDark ? "rgba(255, 255, 255, 0.8)" : "rgba(0, 0, 0, 0.8)",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel Import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/*
         TOOLBAR — two-zone layout (Notion / Linear pattern):
@@ -4270,6 +4711,23 @@ export default function Notepad() {
 
             {/* FOCUS / FULLSCREEN */}
             <button title={getTooltip("Focus Mode", "Ctrl+Shift+\\")} style={tb(focusMode)} onClick={toggleFocus}>{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
+
+            {/* FORMAT MODE TOGGLE */}
+            <button
+              title={getTooltip(activeDoc?.mode === "raw" ? "Formatting: Plain Text" : "Formatting: Rich Text")}
+              style={{
+                ...tb(),
+                width: "auto",
+                padding: "0 10px",
+                gap: 5,
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: activeDoc?.mode === "raw" ? surfAccent : "inherit",
+              }}
+              onClick={toggleEditorMode}
+            >
+              {activeDoc?.mode === "raw" ? "⚡ Plain" : "📝 Rich"}
+            </button>
 
             {sep}
 
@@ -5430,7 +5888,33 @@ export default function Notepad() {
           }}
         >
           <div style={editorInnerStyle} className={[settings.ruledLines ? "notepad-ruled" : "", settings.imageBorder ? "notepad-img-border" : ""].filter(Boolean).join(" ")}>
-            <EditorContent editor={editor} />
+            {activeDoc?.mode === "raw" ? (
+              <textarea
+                value={activeDoc.content}
+                onChange={(e) => handleRawChange(e.target.value)}
+                style={{
+                  width: "100%",
+                  minHeight: "calc(100vh - 180px)",
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  resize: "none",
+                  color: "inherit",
+                  fontFamily: "inherit",
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  padding: 0,
+                  margin: 0,
+                }}
+                placeholder="Type raw plain text here..."
+              />
+            ) : (
+              <NotepadErrorBoundary activeDoc={activeDoc} setDocs={setDocs} setActiveId={setActiveId} setSaveStatus={setSaveStatus} effectiveDark={effectiveDark} surfAccent={surfAccent}>
+                <EditorContent editor={editor} />
+              </NotepadErrorBoundary>
+            )}
           </div>
         </div>
       </div>

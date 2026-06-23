@@ -210,10 +210,10 @@ function isFileSafe(filePath) {
     if (!stats.isFile()) {
       return { safe: false, reason: 'Path is not a file.' };
     }
-    // 1.5MB = 1,572,864 bytes
-    const MAX_SIZE = 1.5 * 1024 * 1024;
+    // 10MB limit
+    const MAX_SIZE = 10 * 1024 * 1024;
     if (stats.size > MAX_SIZE) {
-      return { safe: false, reason: 'File size exceeds the 1.5MB limit.' };
+      return { safe: false, reason: 'File size exceeds the 10MB limit.' };
     }
 
     // Binary check: read the first 1024 bytes
@@ -228,7 +228,7 @@ function isFileSafe(filePath) {
       }
     }
 
-    return { safe: true };
+    return { safe: true, isLarge: stats.size > 1.0 * 1024 * 1024 };
   } catch (err) {
     return { safe: false, reason: `Failed to inspect file: ${err.message}` };
   }
@@ -245,7 +245,9 @@ function openFileInWindow(filePath) {
     mainWindow.webContents.send('open-file-channel', {
       path: filePath,
       name: path.basename(filePath),
-      content: content
+      content: content,
+      size: fs.statSync(filePath).size,
+      isLarge: safetyCheck.isLarge
     });
   } catch (err) {
     console.error("Failed to read file:", err);
@@ -300,7 +302,9 @@ ipcMain.handle('native-open-file', async () => {
       return {
         path: filePath,
         name: path.basename(filePath),
-        content: content
+        content: content,
+        size: fs.statSync(filePath).size,
+        isLarge: safetyCheck.isLarge
       };
     } catch (err) {
       throw new Error(`Failed to read file: ${err.message}`);
