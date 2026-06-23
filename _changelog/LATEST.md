@@ -1,22 +1,16 @@
 # Session Changelog - June 23, 2026
 
 ## What was worked on this session
-- Implemented smooth, non-destructive Web Tab Drag-and-Drop and Sliding reordering mechanics in `notepad.tsx`.
-- Standardized layout spacing, note switcher labels, and browser-safe restore shortcuts.
-- Verified build and type checks compile cleanly.
+- Aligned tab close confirmations, Close Other Tabs logic, and restoration behavior across web and desktop notepad platforms.
 
 ## What was completed
-- **Web-Compatible Tab Drag-and-Drop & Sliding**:
-  - Capped order mutations to execute exclusively on tab drop (`dragend`).
-  - Added transient drag state trackers (`dragOverIdx`, `draggedWidthRef`, `draggedIsPinnedRef`) inside `notepad.tsx`.
-  - Displaced adjacent tabs visually during drag using hardware-accelerated CSS `translateX` offsets.
-  - Applied smooth transition timings to translation displacements.
-  - Patched TS type safety by coercing all `isPinned` properties to boolean values in event handlers.
-- **Visual Spacing & Naming Parity**:
-  - Rebranded Note Switcher bottom actions button from `"New document"` to `"New note"` to match desktop app terminology.
-- **Web-Safe Restoration Shortcut Interception**:
-  - Intercepted `Ctrl + Alt + T` on Web browsers to recover the last closed document, preserving native browser behaviors and avoiding blocked key interceptions.
-  - Retained `Ctrl + Shift + T` for the native Electron desktop build environment.
-  - Synced keyboard shortcuts modal list and delete warning popover tooltips to display correct key suggestions based on context.
+- **Direct Close for Unpinned Tabs**:
+  - Web version (`notepad.tsx`) now closes unpinned tabs instantly on clicking the tab close `X` button, switcher close button, File Menu "Close Tab", or tab context menu "Close Tab".
+  - Confirmation prompt modal is preserved exclusively for pinned tabs.
+- **Mass Close Pinned Tab Preservation**:
+  - Both web and desktop versions now preserve pinned tabs during "Close Other Tabs" and "Close Tabs to the Right" actions.
+- **Batch Tab Restoration**:
+  - Desktop version (`App.tsx`) now assigns a unique `closeBatchId` metadata field to tabs closed together via mass close.
+  - Restoration handler (`restoreLastClosedDoc`) checks for `closeBatchId` and restores the entire batch of closed tabs in a single operation, maintaining alignment with the web version's undo snapshot behavior.
 - **Verification**:
-  - Run build verification using `pnpm run build` which succeeded with exit code 0.
+  - Executed `pnpm run build` from the workspace root. The build succeeded with exit code 0.

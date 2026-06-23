@@ -294,6 +294,7 @@ interface NotepadDoc {
   color?: string;
   isUnsaved?: boolean;
   mode?: "rich" | "raw";
+  closeBatchId?: string;
 }
 
 
@@ -1179,9 +1180,12 @@ export default function Notepad() {
     if (!target) return;
     undoStackRef.current.push({ docs: [...docs], activeId });
     saveUndoStack(undoStackRef.current);
-    setDocs([target]);
-    saveDocs([target]);
-    setActiveId(target.id);
+    const nextDocs = docs.filter((d) => d.id === idToKeep || d.isPinned);
+    setDocs(nextDocs);
+    saveDocs(nextDocs);
+    if (!nextDocs.some((d) => d.id === activeId)) {
+      setActiveId(target.id);
+    }
     toast.success("Other tabs closed");
   }, [docs, activeId]);
 
@@ -1197,12 +1201,12 @@ export default function Notepad() {
     const idsToKeep = new Set(sortedDocs.slice(0, idx + 1).map((d) => d.id));
     undoStackRef.current.push({ docs: [...docs], activeId });
     saveUndoStack(undoStackRef.current);
-    if (!idsToKeep.has(activeId)) {
-      setActiveId(id);
-    }
-    const nextDocs = docs.filter((d) => idsToKeep.has(d.id));
+    const nextDocs = docs.filter((d) => idsToKeep.has(d.id) || d.isPinned);
     setDocs(nextDocs);
     saveDocs(nextDocs);
+    if (!nextDocs.some((d) => d.id === activeId)) {
+      setActiveId(id);
+    }
     toast.success("Tabs to the right closed");
   }, [docs, sortedDocs, activeId]);
 
@@ -3681,11 +3685,11 @@ export default function Notepad() {
       <div style={{ position: "sticky", top: 0, zIndex: 40, display: "flex", flexDirection: "column" }}>
 
         {/* ── ROW 1: Window header, file tabs, and file action buttons ── */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 40, borderBottom: `1px solid ${sepColor}`, padding: "0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 42, borderBottom: `1px solid ${sepColor}`, padding: "0 10px", width: "100%", boxSizing: "border-box", background: tabStripBg }}>
 
           {/* Left Zone: Back and Tabs */}
           <div style={{ display: "flex", alignItems: "flex-end", height: "100%", gap: 2, flex: 1, minWidth: 0, position: "relative" }}>
-            {/* Back Button — same height (34px) and bottom offset (-2) as tab items
+            {/* Back Button — same height (34px) and bottom offset (1) as tab items
                 so the arrow icon always sits on the same optical baseline as tab text. */}
             <Link
               href="/tools"
@@ -3700,7 +3704,7 @@ export default function Notepad() {
                 color: effectiveDark ? "rgba(255,255,255,0.48)" : "rgba(0,0,0,0.48)",
                 textDecoration: "none",
                 alignSelf: "flex-end",
-                marginBottom: -2,
+                marginBottom: 1,
                 flexShrink: 0,
               }}
               title="Back to Tools"
@@ -3716,7 +3720,7 @@ export default function Notepad() {
                 margin: "0 8px",
                 flexShrink: 0,
                 alignSelf: "flex-end",
-                marginBottom: 5,
+                marginBottom: 6,
               }}
             />
             {/* File Menu Trigger Button */}
@@ -3742,7 +3746,7 @@ export default function Notepad() {
                 border: "none",
                 cursor: "pointer",
                 alignSelf: "flex-end",
-                marginBottom: -2,
+                marginBottom: 1,
                 flexShrink: 0,
                 transition: "background 140ms ease, color 140ms ease",
               }}
@@ -3758,7 +3762,7 @@ export default function Notepad() {
                 margin: "0 8px",
                 flexShrink: 0,
                 alignSelf: "flex-end",
-                marginBottom: 8,
+                marginBottom: 6,
               }}
             />
 
@@ -4093,13 +4097,7 @@ export default function Notepad() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const rect = e.currentTarget.getBoundingClientRect();
-                                  setDeleteConfirm({
-                                    docId: doc.id,
-                                    source: "tab",
-                                    x: rect.left + rect.width / 2,
-                                    y: rect.bottom,
-                                  });
+                                  deleteDoc(doc.id);
                                 }}
                                 style={{
                                   border: "none",
@@ -4183,13 +4181,7 @@ export default function Notepad() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const rect = e.currentTarget.getBoundingClientRect();
-                                  setDeleteConfirm({
-                                    docId: doc.id,
-                                    source: "tab",
-                                    x: rect.left + rect.width / 2,
-                                    y: rect.bottom,
-                                  });
+                                  deleteDoc(doc.id);
                                 }}
                                 style={{
                                   border: "none",
@@ -4239,33 +4231,32 @@ export default function Notepad() {
                   </Fragment>
                 );
               })}
-
+              {/* Plus Button inside scrollable container */}
+              <button
+                onClick={createDoc}
+                style={{
+                  ...tb(),
+                  width: 24,
+                  height: 24,
+                  borderRadius: 6,
+                  alignSelf: "flex-end",
+                  marginBottom: 6,
+                  marginLeft: 8,
+                  marginRight: 8,
+                  flexShrink: 0,
+                  zIndex: 4,
+                }}
+                title="New note"
+              >
+                <Plus size={13} />
+              </button>
             </div>
-
-            {/* Plus Button outside scrollable container */}
-            <button
-              onClick={createDoc}
-              style={{
-                ...tb(),
-                width: 24,
-                height: 24,
-                borderRadius: 6,
-                alignSelf: "flex-end",
-                marginBottom: 5,
-                marginLeft: 8,
-                flexShrink: 0,
-                zIndex: 4,
-              }}
-              title="New note"
-            >
-              <Plus size={13} />
-            </button>
 
             {/* Gradient fade overlay for smooth tab overflow */}
             <div 
               style={{
                 position: "absolute",
-                right: 32,
+                right: 0,
                 bottom: 0,
                 width: 32,
                 height: 38,
@@ -4278,7 +4269,7 @@ export default function Notepad() {
 
           {/* Right Zone: Status, Cloud, Settings, Feedback */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>
-            {sep}
+            {GCID && sep}
 
             {GCID && (
               <button style={tb(driveConnected)} onClick={driveConnected ? () => syncToDrive() : connectDrive} title={driveConnected ? "Sync to Drive now" : "Connect Google Drive"}>
@@ -4304,16 +4295,6 @@ export default function Notepad() {
               className="notepad-shortcuts-btn"
             >
               <Files size={13} />
-            </button>
-
-            {/* Shortcuts */}
-            <button style={tb(showShortcuts)} onClick={() => setShowShortcuts(!showShortcuts)} title="Keyboard Shortcuts" className="notepad-shortcuts-btn">
-              <Keyboard size={13} />
-            </button>
-
-            {/* Feedback */}
-            <button style={tb()} onClick={openFeedback} title="Send feedback" className="notepad-shortcuts-btn">
-              <MessageSquarePlus size={13} />
             </button>
           </div>
 
@@ -4809,7 +4790,7 @@ export default function Notepad() {
       {showDocMenu && (
         <div style={{
           position: "fixed",
-          top: 80,
+          top: 82,
           left: docMenuLeft,
           background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
           border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
@@ -4861,13 +4842,17 @@ export default function Notepad() {
                     style={{ ...tb(), width: 20, height: 20, marginLeft: 4, opacity: 0.55, color: effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)" }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setDeleteConfirm({
-                        docId: d.id,
-                        source: "switcher",
-                        x: rect.left,
-                        y: rect.top + rect.height / 2,
-                      });
+                      if (d.isPinned) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setDeleteConfirm({
+                          docId: d.id,
+                          source: "switcher",
+                          x: rect.left,
+                          y: rect.top + rect.height / 2,
+                        });
+                      } else {
+                        deleteDoc(d.id);
+                      }
                     }}
                     onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "1"; el.style.color = "var(--err)"; el.style.background = "color-mix(in srgb, var(--err) 12%, transparent)"; }}
                     onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.55"; el.style.color = effectiveDark ? "var(--t2)" : "rgba(0,0,0,0.55)"; el.style.background = "transparent"; }}
@@ -5199,7 +5184,7 @@ export default function Notepad() {
           onClick={(e) => e.stopPropagation()}
           style={{
             position: "fixed",
-            top: 78,
+            top: 80,
             left: fileMenuLeft,
             background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
             border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
@@ -5325,7 +5310,15 @@ export default function Notepad() {
           <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
 
           <button
-            onClick={() => { setDeleteConfirm({ docId: activeId, source: "menu", x: fileMenuLeft + 20, y: 320 }); setShowFileMenu(false); }}
+            onClick={() => {
+              const activeDoc = docs.find((d) => d.id === activeId);
+              if (activeDoc?.isPinned) {
+                setDeleteConfirm({ docId: activeId, source: "menu", x: fileMenuLeft + 20, y: 320 });
+              } else {
+                deleteDoc(activeId);
+              }
+              setShowFileMenu(false);
+            }}
             style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
             className="notepad-file-menu-item"
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
@@ -5348,6 +5341,17 @@ export default function Notepad() {
             <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Keyboard Shortcuts</span>
             <span style={{ fontSize: 11, color: "var(--t3)", opacity: 0.7, fontFamily: "Inter,sans-serif" }}>Ctrl+/</span>
           </button>
+
+          <button
+            onClick={() => { openFeedback(); setShowFileMenu(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, borderRadius: 4, transition: "background 0.12s" }}
+            className="notepad-file-menu-item"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg3)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <MessageSquarePlus size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1, textAlign: "left", fontFamily: "Inter,sans-serif" }}>Send Feedback</span>
+          </button>
         </div>
       )}
 
@@ -5355,7 +5359,7 @@ export default function Notepad() {
       {showExportMenu && (
         <div style={{
           position: "fixed",
-          top: 82,
+          top: 84,
           right: 10,
           background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
           border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
@@ -7158,12 +7162,16 @@ export default function Notepad() {
                 <button
                   className="tab-context-menu-item"
                   onClick={() => {
-                    setDeleteConfirm({
-                      docId: targetDoc.id,
-                      source: "menu",
-                      x: contextMenu.x,
-                      y: contextMenu.y,
-                    });
+                    if (targetDoc.isPinned) {
+                      setDeleteConfirm({
+                        docId: targetDoc.id,
+                        source: "menu",
+                        x: contextMenu.x,
+                        y: contextMenu.y,
+                      });
+                    } else {
+                      deleteDoc(targetDoc.id);
+                    }
                     setContextMenu(null);
                   }}
                   disabled={docs.length <= 1}
