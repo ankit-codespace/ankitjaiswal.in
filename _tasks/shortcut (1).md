@@ -13,8 +13,3 @@ We have many shortcuts in the web version as well as in the app version. In the 
 
 What do you think?
 
-Did you get what we have to solve? If yes, then to proceed read and follow:
-
-C:\\Users\\LENOVO-PC\\Documents\\Agentic Coding ++\\instruction.md
-
-Do not start implementation, just create files after doing deep research and analysis. The new agent will handle the implementation, this is for creation of the plan that fully tackles thing.

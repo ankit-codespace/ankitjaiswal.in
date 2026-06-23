@@ -13,8 +13,3 @@ Also note that when we switch the thing, like in the HTML format or markdown for
 
 You do the research: what option should we give that would be helpful for everyone, each and every person? What do you think about it? Think deeply and if this feature helps the user a lot, what do you think?
 
-Did you get what we have to solve? If yes, then to proceed read and follow:
-
-C:\\Users\\LENOVO-PC\\Documents\\Agentic Coding ++\\instruction.md
-
-Do not start implementation, just create files after doing deep research and analysis. The new agent will handle the implementation, this is for creation of the plan that fully tackles thing.
