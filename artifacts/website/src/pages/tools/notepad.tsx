@@ -1153,6 +1153,8 @@ export default function Notepad() {
   // recent action's full visual duration instead of being cut short by an
   // earlier setTimeout firing.
   const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [exportCopyState, setExportCopyState] = useState<"rich" | "html" | "markdown" | "error" | null>(null);
+  const exportCopyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Image controls: floating toolbar shown when an image node is selected,
   // and a fullscreen lightbox triggered by double-clicking an image.
@@ -1922,7 +1924,7 @@ export default function Notepad() {
         return `\n\n\`\`\`\n${text.trimEnd()}\n\`\`\`\n\n`;
       },
     });
-    td.addRule("highlight", { filter: ["mark"], replacement: (content: string) => `==${content}==` });
+    td.addRule("highlight", { filter: ["mark"], replacement: (content: string) => content });
     td.addRule("table", { filter: ["table"], replacement: (_content: string, node: Element) => `\n\n${node.outerHTML}\n\n` });
     td.addRule("image", {
       filter: ["img"],
@@ -2814,7 +2816,7 @@ export default function Notepad() {
     // Inline highlight → backtick code if inside regular text
     td.addRule("highlight", {
       filter: ["mark"],
-      replacement: (content: string) => `==${content}==`,
+      replacement: (content: string) => content,
     });
 
     // Tables — Turndown doesn't handle tables by default;
@@ -3418,7 +3420,7 @@ export default function Notepad() {
       const text = activeDoc.content || "";
       if (!text) {
         toast.message("Nothing to copy", { description: "This note is empty." });
-        return;
+        return false;
       }
       try {
         await navigator.clipboard.writeText(text);
@@ -3426,20 +3428,21 @@ export default function Notepad() {
         toast.success("Copied to clipboard");
         if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
         copyResetTimer.current = setTimeout(() => setCopyState("idle"), 1600);
+        return true;
       } catch (err) {
         setCopyState("error");
         toast.error("Failed to copy");
         if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
         copyResetTimer.current = setTimeout(() => setCopyState("idle"), 2000);
+        return false;
       }
-      return;
     }
-    if (!editor) return;
+    if (!editor) return false;
     const html = editor.getHTML() ?? "";
     const text = editor.getText() ?? "";
     if (!html && !text) {
       toast.message("Nothing to copy", { description: "This note is empty." });
-      return;
+      return false;
     }
     try {
       const NavClipboard = navigator.clipboard as Clipboard | undefined;
@@ -3462,6 +3465,7 @@ export default function Notepad() {
       });
       if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
       copyResetTimer.current = setTimeout(() => setCopyState("idle"), 1600);
+      return true;
     } catch (err) {
       setCopyState("error");
       toast.error("Couldn't copy", {
@@ -3469,13 +3473,62 @@ export default function Notepad() {
       });
       if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
       copyResetTimer.current = setTimeout(() => setCopyState("idle"), 2000);
+      return false;
     }
-  }, [editor]);
+  }, [activeDoc, editor]);
+
+  const markExportCopyState = (state: "rich" | "html" | "markdown" | "error") => {
+    setExportCopyState(state);
+    if (exportCopyResetTimer.current) clearTimeout(exportCopyResetTimer.current);
+    exportCopyResetTimer.current = setTimeout(() => setExportCopyState(null), state === "error" ? 2200 : 1600);
+  };
+
+  const copyRichFromExport = async () => {
+    const ok = await handleCopy();
+    markExportCopyState(ok ? "rich" : "error");
+  };
+
+  const copyHtmlFromExport = async () => {
+    if (!activeDoc) return;
+    try {
+      const htmlBody = getHtmlBodyForSource();
+      assertSafeSourceInput(htmlBody);
+      const source = activeDoc.mode === "html" && /<!doctype|<html[\s>]/i.test(activeDoc.content || "")
+        ? activeDoc.content
+        : generateFullHtml(activeDoc.title || "Note", htmlBody);
+      await navigator.clipboard.writeText(source);
+      markExportCopyState("html");
+      toast.success("HTML copied");
+    } catch (err: any) {
+      console.error(err);
+      markExportCopyState("error");
+      toast.error("Couldn't copy HTML", { description: err?.message || "Your note was not changed." });
+    }
+  };
+
+  const copyMarkdownFromExport = async () => {
+    if (!activeDoc) return;
+    try {
+      const htmlBody = getHtmlBodyForSource();
+      assertSafeSourceInput(htmlBody);
+      const source = activeDoc.mode === "markdown" || activeDoc.mode === "raw"
+        ? activeDoc.content || ""
+        : await htmlToMarkdown(htmlBody);
+      await navigator.clipboard.writeText(source);
+      markExportCopyState("markdown");
+      toast.success("Markdown copied");
+    } catch (err: any) {
+      console.error(err);
+      markExportCopyState("error");
+      toast.error("Couldn't copy Markdown", { description: err?.message || "Your note was not changed." });
+    }
+  };
 
   // Clean up the copy reset timer on unmount to avoid setting state on an
   // unmounted component.
   useEffect(() => () => {
     if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+    if (exportCopyResetTimer.current) clearTimeout(exportCopyResetTimer.current);
   }, []);
 
   const handleSmartExport = useCallback(() => {
@@ -3639,8 +3692,35 @@ export default function Notepad() {
     </svg>
   );
 
+  const exportMenuRowStyle = (accent = false): React.CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 9,
+    padding: "7px 14px",
+    width: "100%",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    textAlign: "left",
+    transition: "background 0.12s",
+    color: accent ? surfAccent : (effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"),
+    fontSize: 13,
+    fontWeight: accent ? 650 : 450,
+    fontFamily: "Inter,sans-serif",
+  });
+
+  const exportMenuSectionStyle: React.CSSProperties = {
+    padding: "5px 14px 3px",
+    color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.42)",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    fontFamily: "Inter,sans-serif",
+  };
+
   const sepColor = effectiveDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.08)";
-  const sep = <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px", flexShrink: 0 }} />;
+  const sep = <div style={{ width: 1, height: 24, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "center" }} />;
   // Look up the accent for the current theme; fall back per light/dark.
   const surfAccent = (() => {
     const match = THEMES.find((t) => t.bg === settings.bgColor && t.text === settings.textColor);
@@ -4054,12 +4134,12 @@ export default function Notepad() {
             <div
               style={{
                 width: 1,
-                height: 20,
+                height: 26,
                 background: sepColor,
                 margin: "0 8px",
                 flexShrink: 0,
-                alignSelf: "flex-end",
-                marginBottom: 6,
+                alignSelf: "center",
+                marginBottom: 0,
               }}
             />
             {/* File Menu Trigger Button */}
@@ -4096,12 +4176,12 @@ export default function Notepad() {
             <div
               style={{
                 width: 1,
-                height: 20,
+                height: 26,
                 background: sepColor,
                 margin: "0 8px",
                 flexShrink: 0,
-                alignSelf: "flex-end",
-                marginBottom: 6,
+                alignSelf: "center",
+                marginBottom: 0,
               }}
             />
 
@@ -4633,7 +4713,7 @@ export default function Notepad() {
               title="All Notes"
               className="notepad-shortcuts-btn"
             >
-              <Files size={13} />
+              <Files size={15} />
             </button>
           </div>
 
@@ -5032,152 +5112,11 @@ export default function Notepad() {
             {/* FOCUS / FULLSCREEN */}
             <button title={getTooltip("Focus Mode", "Ctrl+Shift+\\")} style={tb(focusMode)} onClick={toggleFocus}>{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
 
-            {/* Safe source actions: Rich stays canonical; MD/HTML open previews without rewriting notes. */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              background: effectiveDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-              borderRadius: 6,
-              padding: 2,
-              border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
-              height: 28,
-            }}>
-              {/* Rich Button */}
-              <button
-                title={getTooltip("Formatting: Rich Text")}
-                onClick={() => setEditorMode("rich")}
-                style={{
-                  height: "100%",
-                  padding: "0 8px",
-                  borderRadius: 4,
-                  border: "none",
-                  background: (activeDoc?.mode !== "markdown" && activeDoc?.mode !== "raw" && activeDoc?.mode !== "html")
-                    ? (effectiveDark ? "rgba(255,255,255,0.12)" : "#ffffff")
-                    : "transparent",
-                  color: (activeDoc?.mode !== "markdown" && activeDoc?.mode !== "raw" && activeDoc?.mode !== "html")
-                    ? (effectiveDark ? "#ffffff" : surfAccent)
-                    : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  transition: "all 0.15s ease",
-                  boxShadow: (activeDoc?.mode !== "markdown" && activeDoc?.mode !== "raw" && activeDoc?.mode !== "html")
-                    ? (effectiveDark ? "0 1px 2px rgba(0,0,0,0.2)" : "0 1px 2px rgba(0,0,0,0.1)")
-                    : "none",
-                }}
-              >
-                <Type size={12} />
-                <span>Rich</span>
-              </button>
-
-              {/* Markdown Button */}
-              <button
-                title={getTooltip("View Markdown Source")}
-                onClick={() => openSourcePreview("markdown")}
-                style={{
-                  height: "100%",
-                  padding: "0 8px",
-                  borderRadius: 4,
-                  border: "none",
-                  background: sourcePreview?.format === "markdown"
-                    ? (effectiveDark ? "rgba(255,255,255,0.12)" : "#ffffff")
-                    : "transparent",
-                  color: sourcePreview?.format === "markdown"
-                    ? (effectiveDark ? "#ffffff" : surfAccent)
-                    : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  transition: "all 0.15s ease",
-                  boxShadow: sourcePreview?.format === "markdown"
-                    ? (effectiveDark ? "0 1px 2px rgba(0,0,0,0.2)" : "0 1px 2px rgba(0,0,0,0.1)")
-                    : "none",
-                }}
-              >
-                <MarkdownIcon size={12} />
-                <span>MD</span>
-              </button>
-
-              {/* HTML Button */}
-              <button
-                title={getTooltip("View HTML Source")}
-                onClick={() => openSourcePreview("html")}
-                style={{
-                  height: "100%",
-                  padding: "0 8px",
-                  borderRadius: 4,
-                  border: "none",
-                  background: sourcePreview?.format === "html"
-                    ? (effectiveDark ? "rgba(255,255,255,0.12)" : "#ffffff")
-                    : "transparent",
-                  color: sourcePreview?.format === "html"
-                    ? (effectiveDark ? "#ffffff" : surfAccent)
-                    : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  transition: "all 0.15s ease",
-                  boxShadow: sourcePreview?.format === "html"
-                    ? (effectiveDark ? "0 1px 2px rgba(0,0,0,0.2)" : "0 1px 2px rgba(0,0,0,0.1)")
-                    : "none",
-                }}
-              >
-                <Code size={12} />
-                <span>HTML</span>
-              </button>
-            </div>
-
             {sep}
 
             {/* SETTINGS */}
             <button title={getTooltip("Settings")} style={tb(showSettings)} onClick={() => { setShowSettings(!showSettings); setShowExportMenu(false); }} aria-label="Editor settings">
               <Settings size={14} />
-            </button>
-
-            {/* COPY */}
-            <button
-              className="notepad-export-btn notepad-copy-btn"
-              title={getTooltip("Copy All", "Ctrl+Shift+C")}
-              style={{
-                ...tb(),
-                width: "auto",
-                padding: "0 10px",
-                gap: 5,
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: copyState === "copied"
-                  ? (effectiveDark ? "rgba(140, 230, 170, 0.95)" : "#0E7A3E")
-                  : copyState === "error"
-                    ? (effectiveDark ? "rgba(255, 150, 150, 0.95)" : "#A8201A")
-                    : (effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)"),
-                background: effectiveDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-                border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
-                borderRadius: 6,
-                flexShrink: 0,
-              }}
-              onClick={handleCopy}
-              aria-label={
-                copyState === "copied" ? "Note copied to clipboard"
-                  : copyState === "error" ? "Copy failed"
-                    : "Copy note to clipboard"
-              }
-              aria-live="polite"
-            >
-              {copyState === "copied"
-                ? <Check size={12} />
-                : <CopyIcon size={12} />}
-              <span className="notepad-export-label" style={{ fontFamily: "'Sora',sans-serif", letterSpacing: "-0.01em" }}>
-                {copyState === "copied" ? "Copied" : copyState === "error" ? "Failed" : "Copy"}
-              </span>
             </button>
 
             {/* EXPORT SPLIT BUTTON */}
@@ -5823,7 +5762,70 @@ export default function Notepad() {
             ? "0 16px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03)"
             : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02)",
         }}>
+          <button
+            style={exportMenuRowStyle(true)}
+            onClick={handleSmartExport}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+          >
+            <Sparkles size={13} />
+            <span>Smart Export</span>
+          </button>
+
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+          <div style={exportMenuSectionStyle}>Download</div>
+
           {[
+            { label: "PDF", fn: exportPdf },
+            { label: "HTML", fn: exportHtml },
+            { label: "Markdown", fn: exportMd },
+            { label: "Plain Text", fn: exportTxt },
+          ].map((item) => (
+            <button
+              key={item.label}
+              style={exportMenuRowStyle()}
+              onClick={item.fn}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+            >
+              <span>{item.label}</span>
+            </button>
+          ))}
+
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+          <div style={exportMenuSectionStyle}>Copy As</div>
+
+          {[
+            { key: "rich", label: exportCopyState === "rich" ? "Copied" : "Rich Text", fn: copyRichFromExport },
+            { key: "html", label: exportCopyState === "html" ? "Copied" : "HTML", fn: copyHtmlFromExport },
+            { key: "markdown", label: exportCopyState === "markdown" ? "Copied" : "Markdown", fn: copyMarkdownFromExport },
+          ].map((item) => {
+            const copied = exportCopyState === item.key;
+            return (
+              <button
+                key={item.key}
+                style={{
+                  ...exportMenuRowStyle(),
+                  color: copied ? (effectiveDark ? "rgba(140, 230, 170, 0.95)" : "#0E7A3E") : exportMenuRowStyle().color,
+                  fontWeight: copied ? 650 : 450,
+                }}
+                onClick={item.fn}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+              >
+                {copied ? <Check size={13} /> : <CopyIcon size={13} />}
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+
+          {exportCopyState === "error" && (
+            <div style={{ padding: "6px 14px 4px", color: effectiveDark ? "rgba(255, 150, 150, 0.95)" : "#A8201A", fontSize: 11.5, fontFamily: "Inter,sans-serif" }}>
+              Copy failed
+            </div>
+          )}
+
+          {false && [
             { label: "Smart Export", sub: "Ctrl+D · auto-detect format", fn: handleSmartExport, accent: true },
             null,
             { label: "Plain Text (.txt)", sub: "No formatting preserved", fn: exportTxt, accent: false },
