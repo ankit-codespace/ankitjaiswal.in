@@ -423,6 +423,85 @@ function sanitizeDocContent(doc: NotepadDoc): NotepadDoc {
   return doc;
 }
 
+function getDefaultDocs(): NotepadDoc[] {
+  const now = Date.now();
+  return [
+    {
+      id: "welcome-note",
+      title: "🚀 Welcome to I Love Notepad",
+      mode: "rich",
+      content: `<h1>Welcome to I Love Notepad!</h1>
+<p>This is a fast, offline-first distraction-free notepad designed for writers, developers, and professionals.</p>
+<hr />
+<h2>Key Features</h2>
+<ul>
+  <li><strong>Formatting:</strong> Use bold, italic, underline, strikethrough, or <mark>highlight</mark> text.</li>
+  <li><strong>Structure:</strong> Try out bullets, numbered lists, task checklists, code blocks, tables, and horizontal rows.</li>
+  <li><strong>Autosave:</strong> Stored locally inside your browser. Your notes are private and never uploaded to any server.</li>
+  <li><strong>Cross-Platform Parity:</strong> Switch format views, search, restore closed tabs, and export to PDF, HTML, Markdown, or Plain Text in one click.</li>
+</ul>
+<p>To learn more about keyboard shortcuts and advanced features, check out the <em>Markdown & Editor Tips</em> note in your sidebar!</p>`,
+      createdAt: now - 2000,
+      updatedAt: now - 2000,
+      isPinned: true
+    },
+    {
+      id: "markdown-tips",
+      title: "💡 Markdown & Editor Tips",
+      mode: "rich",
+      content: `<h1>Editor Shortcuts & Features</h1>
+<p>We support Markdown shortcuts as you type, allowing you to format text quickly without using the toolbar.</p>
+<h2>Markdown Shortcuts</h2>
+<ul>
+  <li>Type <code>#</code> followed by a space to create a Heading 1.</li>
+  <li>Type <code>##</code> or <code>###</code> for Heading 2 or Heading 3.</li>
+  <li>Type <code>*</code> or <code>-</code> followed by a space for bullet lists.</li>
+  <li>Type <code>1.</code> followed by a space for numbered lists.</li>
+  <li>Type <code>- [ ]</code> followed by a space for a task checkbox.</li>
+  <li>Type <code>**text**</code> or <code>__text__</code> for bold styling.</li>
+  <li>Type <code>*text*</code> or <code>_text_</code> for italic styling.</li>
+  <li>Type <code>\`code\`</code> for inline code snippets.</li>
+</ul>
+<hr />
+<h2>Keyboard Shortcuts</h2>
+<ul data-type="taskList">
+  <li data-type="taskItem" data-checked="false"><code>Ctrl + N</code> — Create new note</li>
+  <li data-type="taskItem" data-checked="false"><code>Ctrl + S</code> — Save current note (for local text files)</li>
+  <li data-type="taskItem" data-checked="false"><code>Ctrl + D</code> — Smart Export (Auto-detect best format)</li>
+  <li data-type="taskItem" data-checked="false"><code>Ctrl + Shift + T</code> or <code>Ctrl + Alt + T</code> — Restore last closed note</li>
+</ul>`,
+      createdAt: now - 1000,
+      updatedAt: now - 1000,
+      isPinned: false
+    },
+    {
+      id: "sample-draft",
+      title: "📝 Sample Draft: Project Alpha",
+      mode: "rich",
+      content: `<h1>Meeting Notes: Project Alpha</h1>
+<p>Use this sample note to see how you can structure meeting summaries, task lists, or daily journals.</p>
+<hr />
+<h3>Agenda & Discussion</h3>
+<ol>
+  <li>Review Q3 roadmap and feature milestones.</li>
+  <li>Discuss cross-platform UI alignments.</li>
+  <li>Allocate resources for performance optimization.</li>
+</ol>
+<h3>Action Items</h3>
+<ul data-type="taskList">
+  <li data-type="taskItem" data-checked="true">Update formatting toggle SVG icons.</li>
+  <li data-type="taskItem" data-checked="false">Integrate smart export split button.</li>
+  <li data-type="taskItem" data-checked="false">Validate document restoration shortcuts.</li>
+</ul>
+<h3>Resource Links</h3>
+<p>For official project docs, visit <a href="https://github.com/ankit-codespace/ankitjaiswal.in" target="_blank" rel="noopener noreferrer">GitHub Project Space</a>.</p>`,
+      createdAt: now,
+      updatedAt: now,
+      isPinned: false
+    }
+  ];
+}
+
 function loadDocs(): NotepadDoc[] {
   try {
     const raw = localStorage.getItem(LS_DOCS);
@@ -442,9 +521,9 @@ function loadDocs(): NotepadDoc[] {
       }
     }
   } catch { }
-  const d = newDoc();
-  localStorage.setItem(LS_DOCS, JSON.stringify([d]));
-  return [d];
+  const defaults = getDefaultDocs();
+  localStorage.setItem(LS_DOCS, JSON.stringify(defaults));
+  return defaults;
 }
 
 function saveDocs(docs: NotepadDoc[]) { localStorage.setItem(LS_DOCS, JSON.stringify(docs)); }
