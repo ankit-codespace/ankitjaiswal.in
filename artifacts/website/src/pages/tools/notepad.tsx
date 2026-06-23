@@ -271,7 +271,7 @@ import {
   Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Pilcrow, Files, Loader2, Quote, Settings, Pencil, MoreHorizontal, Eraser,
   Trash2,
   Lock, Zap, Layers, Sparkles, GraduationCap, PenLine, Code2, Briefcase,
-  ArrowUpRight, FileDown, Eye, Save,
+  ArrowUpRight, FileDown, Eye, Save, Code,
   Keyboard, BookOpen, Shield, ListChecks, Table2, Lightbulb, MousePointer2,
   Wand2, Globe,
   Copy as CopyIcon, MessageSquarePlus, Pin, PanelLeft, ExternalLink, Edit, Type
@@ -293,10 +293,17 @@ interface NotepadDoc {
   isPinned?: boolean;
   color?: string;
   isUnsaved?: boolean;
-  mode?: "rich" | "raw";
+  mode?: "rich" | "raw" | "markdown" | "html";
   closeBatchId?: string;
   lastRichContent?: string;
 }
+
+type SourcePreviewState = {
+  format: "html" | "markdown";
+  title: string;
+  value: string;
+  warning?: string;
+};
 
 
 interface DeleteConfirmState {
@@ -1125,6 +1132,7 @@ export default function Notepad() {
   const [activeHeadingIndex, setActiveHeadingIndex] = useState<number | null>(null);
   const fileHandlesRef = useRef<Record<string, FileSystemFileHandle>>({});
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [sourcePreview, setSourcePreview] = useState<SourcePreviewState | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "unsaved">("saved");
   const [lastSaved, setLastSaved] = useState<Date>(() => new Date());
@@ -1514,6 +1522,10 @@ export default function Notepad() {
       saveTimerRef.current = setTimeout(() => {
         const html = editor.getHTML();
         setDocs((prev) => {
+          const currentDoc = prev.find((d) => d.id === activeId);
+          if (!currentDoc || currentDoc.mode === "raw" || currentDoc.mode === "markdown" || currentDoc.mode === "html") {
+            return prev;
+          }
           const next = prev.map((d) => d.id === activeId ? { ...d, content: html, updatedAt: Date.now() } : d);
           saveDocs(next);
           return next;
@@ -1557,7 +1569,7 @@ export default function Notepad() {
     const doc = docs.find((d) => d.id === activeId);
     if (doc) {
       isChangingDocRef.current = true;
-      if (doc.mode === "raw") {
+      if (doc.mode === "raw" || doc.mode === "markdown" || doc.mode === "html") {
         editor.commands.setContent("");
       } else {
         editor.commands.setContent(doc.content || "");
@@ -3135,7 +3147,9 @@ export default function Notepad() {
     html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
     html = html.replace(/_(.*?)_/g, "<em>$1</em>");
     html = html.replace(/`(.*?)`/g, "<code>$1</code>");
+    html = html.replace(/==(.*?)==/g, "<mark>$1</mark>");
     html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
+    html = html.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" />');
     return html;
   };
 
@@ -3239,43 +3253,159 @@ export default function Notepad() {
     return htmlResult.join("");
   };
 
-  const toggleEditorMode = async () => {
-    if (!activeDoc) return;
-    const currentMode = activeDoc.mode === "raw" ? "raw" : "rich";
-    const nextMode = currentMode === "raw" ? "rich" : "raw";
-    
-    if (nextMode === "rich") {
-      const text = activeDoc.content || "";
-      let richContent = "";
-      
-      if (activeDoc.lastRichContent) {
-        const strippedLast = (await htmlToMarkdown(activeDoc.lastRichContent)).trim();
-        if (strippedLast === text.trim()) {
-          richContent = activeDoc.lastRichContent;
-        } else {
-          richContent = parseMarkdownToHtml(text);
-        }
-      } else {
-        richContent = text.includes("<p>") || text.includes("</div>") 
-          ? text 
-          : text.split("\n").map(l => `<p>${l}</p>`).join("");
-      }
-      
-      setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: richContent, mode: "rich", isUnsaved: true } : d));
-      if (editor) {
-        editor.commands.setContent(richContent);
-      }
-      toast.success("Switched to Rich Text formatting");
-    } else {
-      const html = activeDoc.content || "";
-      const markdown = await htmlToMarkdown(html);
-      
-      setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: markdown, lastRichContent: html, mode: "raw", isUnsaved: true } : d));
-      if (editor) {
-        editor.commands.setContent("");
-      }
-      toast.success("Switched to Plain Text performance mode");
+  const restoreEmbeddedImages = (html: string, originalHtml: string): string => {
+    if (!originalHtml) return html;
+    const originalImages: string[] = [];
+    const imgRegex = /<img[^>]+src=["'](data:[^"']+)["']/g;
+    let match;
+    while ((match = imgRegex.exec(originalHtml)) !== null) {
+      originalImages.push(match[1]);
     }
+    if (originalImages.length === 0) return html;
+    
+    let imgIndex = 0;
+    return html.replace(/src=["']embedded-image["']/g, () => {
+      if (imgIndex < originalImages.length) {
+        return `src="${originalImages[imgIndex++]}"`;
+      }
+      return 'src="embedded-image"';
+    });
+  };
+
+  const isMeaningfulHtml = (html: string): boolean => {
+    const compact = (html || "").replace(/\s+/g, "").toLowerCase();
+    if (!compact || compact === "<p></p>" || compact === "<p><br></p>") return false;
+    const div = document.createElement("div");
+    div.innerHTML = html || "";
+    if (div.querySelector("img,table,pre,blockquote,ul,ol,hr,h1,h2,h3,h4,h5,h6")) return true;
+    return (div.textContent || "").trim().length > 0;
+  };
+
+  const getCanonicalRichHtml = (): string => {
+    if (!activeDoc) return "";
+
+    if (!activeDoc.mode || activeDoc.mode === "rich") {
+      const editorHtml = editor && !editor.isDestroyed ? editor.getHTML() : "";
+      if (isMeaningfulHtml(editorHtml)) return editorHtml;
+    }
+
+    if (isMeaningfulHtml(activeDoc.content || "")) return activeDoc.content || "";
+    if (isMeaningfulHtml(activeDoc.lastRichContent || "")) return activeDoc.lastRichContent || "";
+
+    return activeDoc.content || activeDoc.lastRichContent || "";
+  };
+
+  const getHtmlBodyForSource = (): string => {
+    if (!activeDoc) return "";
+    if (activeDoc.mode === "html") return activeDoc.content || "";
+    if (activeDoc.mode === "markdown" || activeDoc.mode === "raw") {
+      return restoreEmbeddedImages(parseMarkdownToHtml(activeDoc.content || ""), activeDoc.lastRichContent || "");
+    }
+    return getCanonicalRichHtml();
+  };
+
+  const assertSafeSourceInput = (html: string) => {
+    if (!activeDoc) throw new Error("No active note selected.");
+    const savedHasContent = isMeaningfulHtml(activeDoc.content || "") || isMeaningfulHtml(activeDoc.lastRichContent || "");
+    if (savedHasContent && !isMeaningfulHtml(html)) {
+      throw new Error("The editor returned empty source while the saved note has content.");
+    }
+  };
+
+  const openSourcePreview = async (format: "html" | "markdown") => {
+    if (!activeDoc) return;
+    try {
+      const htmlBody = getHtmlBodyForSource();
+      assertSafeSourceInput(htmlBody);
+
+      let value = "";
+      let warning: string | undefined;
+      if (format === "html") {
+        value = activeDoc.mode === "html" && /<!doctype|<html[\s>]/i.test(activeDoc.content || "")
+          ? activeDoc.content
+          : generateFullHtml(activeDoc.title || "Note", htmlBody);
+      } else if (activeDoc.mode === "markdown" || activeDoc.mode === "raw") {
+        value = activeDoc.content || "";
+      } else {
+        value = await htmlToMarkdown(htmlBody);
+        if (/<img[^>]+src=["']data:/i.test(htmlBody)) {
+          warning = "Embedded images are represented as placeholders in Markdown. Use HTML export to preserve images inline.";
+        }
+      }
+
+      if ((activeDoc.content || activeDoc.lastRichContent) && !value.trim()) {
+        throw new Error("Generated source was empty.");
+      }
+
+      setSourcePreview({ format, title: activeDoc.title || "Note", value, warning });
+      setShowExportMenu(false);
+      setShowSettings(false);
+      toast.success(`${format === "html" ? "HTML" : "Markdown"} source generated safely`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Source generation stopped", {
+        description: err?.message || "Your note was not changed.",
+      });
+    }
+  };
+
+  const copySourcePreview = async () => {
+    if (!sourcePreview) return;
+    try {
+      await navigator.clipboard.writeText(sourcePreview.value);
+      toast.success(`${sourcePreview.format === "html" ? "HTML" : "Markdown"} source copied`);
+    } catch {
+      toast.error("Failed to copy source");
+    }
+  };
+
+  const downloadSourcePreview = () => {
+    if (!sourcePreview) return;
+    const ext = sourcePreview.format === "html" ? "html" : "md";
+    const mime = sourcePreview.format === "html" ? "text/html" : "text/markdown";
+    dl(sourcePreview.value, `${sourcePreview.title}.${ext}`, mime);
+  };
+
+  const setEditorMode = async (nextMode: "rich" | "markdown" | "html") => {
+    if (!activeDoc) return;
+    
+    const currentMode = activeDoc.mode === "html" ? "html" : (activeDoc.mode === "markdown" || activeDoc.mode === "raw" ? "markdown" : "rich");
+    if (currentMode === nextMode) return;
+
+    let nextContent = activeDoc.content || "";
+    let lastRich = activeDoc.lastRichContent || "";
+
+    if (currentMode === "rich") {
+      const currentHtml = editor ? editor.getHTML() : (activeDoc.content || "");
+      lastRich = currentHtml;
+      if (nextMode === "markdown") {
+        nextContent = await htmlToMarkdown(currentHtml);
+      } else {
+        nextContent = currentHtml;
+      }
+    } else if (currentMode === "markdown") {
+      if (nextMode === "rich") {
+        const parsed = parseMarkdownToHtml(nextContent);
+        nextContent = restoreEmbeddedImages(parsed, lastRich);
+      } else {
+        const parsed = parseMarkdownToHtml(nextContent);
+        nextContent = restoreEmbeddedImages(parsed, lastRich);
+      }
+    } else if (currentMode === "html") {
+      if (nextMode === "markdown") {
+        nextContent = await htmlToMarkdown(nextContent);
+      }
+    }
+
+    setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: nextContent, lastRichContent: lastRich, mode: nextMode, isUnsaved: true } : d));
+    
+    if (nextMode === "rich" && editor) {
+      isChangingDocRef.current = true;
+      editor.commands.setContent(nextContent);
+      setTimeout(() => { isChangingDocRef.current = false; }, 50);
+    }
+    
+    toast.success(`Switched to ${nextMode === "rich" ? "Rich Text" : nextMode === "markdown" ? "Markdown" : "HTML Source"} format`);
   };
 
   // Copy the entire active note to the clipboard. Writes BOTH text/html
@@ -3284,7 +3414,7 @@ export default function Notepad() {
   // formatting and images, while pasting into a plain text field gets the
   // text only. Falls back to writeText for older browsers.
   const handleCopy = useCallback(async () => {
-    if (activeDoc?.mode === "raw") {
+    if (activeDoc?.mode === "raw" || activeDoc?.mode === "markdown" || activeDoc?.mode === "html") {
       const text = activeDoc.content || "";
       if (!text) {
         toast.message("Nothing to copy", { description: "This note is empty." });
@@ -3502,6 +3632,13 @@ export default function Notepad() {
     };
   };
 
+  const MarkdownIcon = ({ size = 14 }: { size?: number }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 16 16" fill="currentColor" style={{ display: "inline-block", verticalAlign: "middle" }}>
+      <path d="M14 3H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM2 2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+      <path d="M3.5 11V5H5l1.25 1.875L7.5 5h1.5v6H7.75V7.75L6.5 9.625l-1.25-1.875V11H3.5zm7.25 0L9.5 8h1.25V5h2v3h1.25L12.75 11h-2z"/>
+    </svg>
+  );
+
   const sepColor = effectiveDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.08)";
   const sep = <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px", flexShrink: 0 }} />;
   // Look up the accent for the current theme; fall back per light/dark.
@@ -3565,7 +3702,7 @@ export default function Notepad() {
   };
 
   const wordCountStatus = useMemo(() => {
-    if (activeDoc?.mode === "raw") {
+    if (activeDoc?.mode === "raw" || activeDoc?.mode === "markdown" || activeDoc?.mode === "html") {
       const total = countWords(activeDoc.content || "");
       return `${total} ${total === 1 ? "word" : "words"}`;
     }
@@ -3586,7 +3723,7 @@ export default function Notepad() {
   }, [editor, activeId, editorVersion, activeDoc?.content, activeDoc?.mode]);
 
   const cursorPosition = useMemo(() => {
-    if (activeDoc?.mode === "raw") return "Ln 1, Col 1";
+    if (activeDoc?.mode === "raw" || activeDoc?.mode === "markdown" || activeDoc?.mode === "html") return "Ln 1, Col 1";
     if (!editor || editor.isDestroyed) return "Ln 1, Col 1";
     const { selection } = editor.state;
     const { $from } = selection;
@@ -4895,32 +5032,109 @@ export default function Notepad() {
             {/* FOCUS / FULLSCREEN */}
             <button title={getTooltip("Focus Mode", "Ctrl+Shift+\\")} style={tb(focusMode)} onClick={toggleFocus}>{focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}</button>
 
-            {/* FORMAT MODE TOGGLE */}
-            <button
-              title={getTooltip(activeDoc?.mode === "raw" ? "Formatting: Plain Text" : "Formatting: Rich Text")}
-              style={{
-                ...tb(),
-                width: "auto",
-                padding: "0 10px",
-                gap: 5,
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: activeDoc?.mode === "raw" ? surfAccent : "inherit",
-              }}
-              onClick={toggleEditorMode}
-            >
-              {activeDoc?.mode === "raw" ? (
-                <>
-                  <FileText size={14} />
-                  <span>Plain</span>
-                </>
-              ) : (
-                <>
-                  <Type size={14} />
-                  <span>Rich</span>
-                </>
-              )}
-            </button>
+            {/* Safe source actions: Rich stays canonical; MD/HTML open previews without rewriting notes. */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              background: effectiveDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+              borderRadius: 6,
+              padding: 2,
+              border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
+              height: 28,
+            }}>
+              {/* Rich Button */}
+              <button
+                title={getTooltip("Formatting: Rich Text")}
+                onClick={() => setEditorMode("rich")}
+                style={{
+                  height: "100%",
+                  padding: "0 8px",
+                  borderRadius: 4,
+                  border: "none",
+                  background: (activeDoc?.mode !== "markdown" && activeDoc?.mode !== "raw" && activeDoc?.mode !== "html")
+                    ? (effectiveDark ? "rgba(255,255,255,0.12)" : "#ffffff")
+                    : "transparent",
+                  color: (activeDoc?.mode !== "markdown" && activeDoc?.mode !== "raw" && activeDoc?.mode !== "html")
+                    ? (effectiveDark ? "#ffffff" : surfAccent)
+                    : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  transition: "all 0.15s ease",
+                  boxShadow: (activeDoc?.mode !== "markdown" && activeDoc?.mode !== "raw" && activeDoc?.mode !== "html")
+                    ? (effectiveDark ? "0 1px 2px rgba(0,0,0,0.2)" : "0 1px 2px rgba(0,0,0,0.1)")
+                    : "none",
+                }}
+              >
+                <Type size={12} />
+                <span>Rich</span>
+              </button>
+
+              {/* Markdown Button */}
+              <button
+                title={getTooltip("View Markdown Source")}
+                onClick={() => openSourcePreview("markdown")}
+                style={{
+                  height: "100%",
+                  padding: "0 8px",
+                  borderRadius: 4,
+                  border: "none",
+                  background: sourcePreview?.format === "markdown"
+                    ? (effectiveDark ? "rgba(255,255,255,0.12)" : "#ffffff")
+                    : "transparent",
+                  color: sourcePreview?.format === "markdown"
+                    ? (effectiveDark ? "#ffffff" : surfAccent)
+                    : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  transition: "all 0.15s ease",
+                  boxShadow: sourcePreview?.format === "markdown"
+                    ? (effectiveDark ? "0 1px 2px rgba(0,0,0,0.2)" : "0 1px 2px rgba(0,0,0,0.1)")
+                    : "none",
+                }}
+              >
+                <MarkdownIcon size={12} />
+                <span>MD</span>
+              </button>
+
+              {/* HTML Button */}
+              <button
+                title={getTooltip("View HTML Source")}
+                onClick={() => openSourcePreview("html")}
+                style={{
+                  height: "100%",
+                  padding: "0 8px",
+                  borderRadius: 4,
+                  border: "none",
+                  background: sourcePreview?.format === "html"
+                    ? (effectiveDark ? "rgba(255,255,255,0.12)" : "#ffffff")
+                    : "transparent",
+                  color: sourcePreview?.format === "html"
+                    ? (effectiveDark ? "#ffffff" : surfAccent)
+                    : (effectiveDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"),
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  transition: "all 0.15s ease",
+                  boxShadow: sourcePreview?.format === "html"
+                    ? (effectiveDark ? "0 1px 2px rgba(0,0,0,0.2)" : "0 1px 2px rgba(0,0,0,0.1)")
+                    : "none",
+                }}
+              >
+                <Code size={12} />
+                <span>HTML</span>
+              </button>
+            </div>
 
             {sep}
 
@@ -5635,6 +5849,130 @@ export default function Notepad() {
         </div>
       )}
 
+      <AnimatePresence>
+        {sourcePreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: effectiveDark ? "rgba(0, 0, 0, 0.54)" : "rgba(0, 0, 0, 0.2)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              zIndex: 1100,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 18,
+            }}
+            onClick={() => setSourcePreview(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 6 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+              data-lenis-prevent
+              style={{
+                width: "min(880px, 100%)",
+                maxHeight: "84vh",
+                background: effectiveDark ? "var(--bg1)" : "#FFFFFF",
+                border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)",
+                borderRadius: 12,
+                boxShadow: effectiveDark ? "0 24px 70px rgba(0,0,0,0.7)" : "0 24px 70px rgba(0,0,0,0.16)",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{
+                minHeight: 48,
+                padding: "0 14px 0 16px",
+                borderBottom: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+                  {sourcePreview.format === "html" ? <Code size={15} /> : <MarkdownIcon size={15} />}
+                  <span style={{
+                    color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.86)",
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: 13,
+                    fontWeight: 650,
+                    whiteSpace: "nowrap",
+                  }}>
+                    {sourcePreview.format === "html" ? "HTML Source" : "Markdown Source"}
+                  </span>
+                  <span style={{
+                    color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.48)",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 12,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {sourcePreview.title}
+                  </span>
+                </div>
+                <button title="Copy source" onClick={copySourcePreview} style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5 }}>
+                  <CopyIcon size={13} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Copy</span>
+                </button>
+                <button title="Download source" onClick={downloadSourcePreview} style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5 }}>
+                  <Download size={13} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Download</span>
+                </button>
+                <button title="Close" onClick={() => setSourcePreview(null)} style={tb()}>
+                  <X size={14} />
+                </button>
+              </div>
+
+              {sourcePreview.warning && (
+                <div style={{
+                  padding: "9px 16px",
+                  borderBottom: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)",
+                  background: effectiveDark ? "rgba(245, 158, 11, 0.08)" : "rgba(245, 158, 11, 0.12)",
+                  color: effectiveDark ? "rgba(255, 226, 170, 0.94)" : "#7A4D08",
+                  fontSize: 12,
+                  fontFamily: "Inter, sans-serif",
+                  lineHeight: 1.45,
+                }}>
+                  {sourcePreview.warning}
+                </div>
+              )}
+
+              <textarea
+                readOnly
+                value={sourcePreview.value}
+                spellCheck={false}
+                style={{
+                  width: "100%",
+                  minHeight: 360,
+                  maxHeight: "calc(84vh - 54px)",
+                  flex: 1,
+                  resize: "none",
+                  border: "none",
+                  outline: "none",
+                  padding: "16px 18px",
+                  background: effectiveDark ? "rgba(0,0,0,0.22)" : "#F8F8F6",
+                  color: effectiveDark ? "rgba(255,255,255,0.86)" : "rgba(0,0,0,0.82)",
+                  fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+                  fontSize: 12.5,
+                  lineHeight: 1.65,
+                  whiteSpace: "pre",
+                  overflow: "auto",
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {showFind && (
         <div
           className="notepad-find-panel"
@@ -6130,7 +6468,7 @@ export default function Notepad() {
           }}
         >
           <div style={editorInnerStyle} className={[settings.ruledLines ? "notepad-ruled" : "", settings.imageBorder ? "notepad-img-border" : ""].filter(Boolean).join(" ")}>
-            {activeDoc?.mode === "raw" ? (
+            {activeDoc?.mode === "raw" || activeDoc?.mode === "markdown" || activeDoc?.mode === "html" ? (
               <textarea
                 value={activeDoc.content}
                 onChange={(e) => handleRawChange(e.target.value)}
@@ -6150,7 +6488,7 @@ export default function Notepad() {
                   padding: 0,
                   margin: 0,
                 }}
-                placeholder="Type raw plain text here..."
+                placeholder={activeDoc?.mode === "html" ? "Type raw HTML here..." : "Type Markdown text here..."}
               />
             ) : (
               <NotepadErrorBoundary activeDoc={activeDoc} setDocs={setDocs} setActiveId={setActiveId} setSaveStatus={setSaveStatus} effectiveDark={effectiveDark} surfAccent={surfAccent}>
