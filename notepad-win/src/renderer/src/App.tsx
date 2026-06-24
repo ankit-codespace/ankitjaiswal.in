@@ -3823,7 +3823,7 @@ export default function App() {
                           width: 58,
                           height: 26,
                           borderRadius: 6,
-                          background: effectiveDark ? "#202020" : "#e6e2d8",
+                          background: isActive ? "transparent" : (effectiveDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)"),
                           border: "none",
                           boxSizing: "border-box",
                           paddingLeft: 6,
@@ -3974,7 +3974,7 @@ export default function App() {
                             width: "100%",
                             height: 26,
                             borderRadius: 6,
-                            background: effectiveDark ? "#202020" : "#e6e2d8",
+                            background: effectiveDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
                             border: "none",
                             boxSizing: "border-box",
                             paddingLeft: 8,
@@ -4025,7 +4025,7 @@ export default function App() {
                               }}
                               style={{
                                 border: "none",
-                                background: effectiveDark ? "#202020" : "#e6e2d8",
+                                background: effectiveDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
                                 color: effectiveDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)",
                                 display: "flex",
                                 alignItems: "center",
