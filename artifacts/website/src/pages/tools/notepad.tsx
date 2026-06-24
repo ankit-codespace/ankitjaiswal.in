@@ -1958,6 +1958,126 @@ export default function Notepad() {
     return td.turndown(html);
   };
 
+  const beautifyHtmlNode = (node: Node, depth: number = 0): string => {
+    const indent = "  ".repeat(depth);
+    
+    if (node.nodeType === 3) { // Node.TEXT_NODE
+      const text = node.textContent?.replace(/\s+/g, ' ').trim() || "";
+      return text ? text : "";
+    }
+    
+    if (node.nodeType === 1) { // Node.ELEMENT_NODE
+      const el = node as Element;
+      const tagName = el.tagName.toLowerCase();
+      
+      const isSelfClosing = ["img", "br", "hr", "input", "meta", "link"].includes(tagName);
+      
+      let attrs = "";
+      for (let i = 0; i < el.attributes.length; i++) {
+        const attr = el.attributes[i];
+        attrs += ` ${attr.name}="${attr.value}"`;
+      }
+      
+      if (isSelfClosing) {
+        return `${indent}<${tagName}${attrs} />\n`;
+      }
+
+      const blockTags = ["html", "head", "body", "div", "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "table", "thead", "tbody", "tr", "th", "td", "blockquote", "pre", "section", "article", "header", "footer", "style"];
+      const isBlock = blockTags.includes(tagName);
+      
+      const hasBlockChild = Array.from(el.childNodes).some(child => 
+        child.nodeType === 1 && blockTags.includes((child as Element).tagName.toLowerCase())
+      );
+      
+      if (hasBlockChild || (isBlock && el.childNodes.length > 1)) {
+        let childrenStr = "";
+        for (let i = 0; i < el.childNodes.length; i++) {
+          const child = el.childNodes[i];
+          const childStr = beautifyHtmlNode(child, depth + 1);
+          if (childStr) {
+            childrenStr += childStr.endsWith("\n") ? childStr : `${"  ".repeat(depth + 1)}${childStr}\n`;
+          }
+        }
+        return `${indent}<${tagName}${attrs}>\n${childrenStr}${indent}</${tagName}>\n`;
+      } else {
+        let inlineContent = "";
+        for (let i = 0; i < el.childNodes.length; i++) {
+          const child = el.childNodes[i];
+          if (child.nodeType === 3) {
+            inlineContent += child.textContent || "";
+          } else if (child.nodeType === 1) {
+            const childEl = child as Element;
+            const childTag = childEl.tagName.toLowerCase();
+            let childAttrs = "";
+            for (let j = 0; j < childEl.attributes.length; j++) {
+              const attr = childEl.attributes[j];
+              childAttrs += ` ${attr.name}="${attr.value}"`;
+            }
+            const childIsSelfClosing = ["img", "br", "hr"].includes(childTag);
+            if (childIsSelfClosing) {
+              inlineContent += `<${childTag}${childAttrs} />`;
+            } else {
+              inlineContent += `<${childTag}${childAttrs}>${childEl.textContent || ""}</${childTag}>`;
+            }
+          }
+        }
+        inlineContent = inlineContent.replace(/\s+/g, ' ').trim();
+        return `${indent}<${tagName}${attrs}>${inlineContent}</${tagName}>\n`;
+      }
+    }
+    
+    return "";
+  };
+
+  const beautifyHtml = (html: string): string => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const hasDoctype = html.toLowerCase().includes("<!doctype");
+      if (hasDoctype) {
+        return "<!DOCTYPE html>\n" + beautifyHtmlNode(doc.documentElement).trim();
+      } else {
+        let result = "";
+        for (let i = 0; i < doc.body.childNodes.length; i++) {
+          result += beautifyHtmlNode(doc.body.childNodes[i]);
+        }
+        return result.trim();
+      }
+    } catch (e) {
+      console.error("HTML beautification failed, returning raw html", e);
+      return html;
+    }
+  };
+
+  const beautifyMarkdown = (markdown: string): string => {
+    let lines = markdown.replace(/\r\n/g, "\n").split("\n");
+    const result: string[] = [];
+    let consecutiveBlanks = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trimEnd();
+      
+      if (line === "") {
+        consecutiveBlanks++;
+        if (consecutiveBlanks <= 1 && result.length > 0) {
+          result.push("");
+        }
+      } else {
+        consecutiveBlanks = 0;
+        const isHeading = /^#+\s/.test(line);
+        const isList = /^([\*\-\+]\s|\d+\.\s)/.test(line);
+        
+        if (result.length > 0 && result[result.length - 1] !== "") {
+          if (isHeading || (isList && !/^([\*\-\+]\s|\d+\.\s)/.test(result[result.length - 1]))) {
+            result.push("");
+          }
+        }
+        result.push(line);
+      }
+    }
+    return result.join("\n").trim();
+  };
+
   const generateFullHtml = (title: string, bodyContent: string): string => {
     return `<!DOCTYPE html>
 <html lang="en">
@@ -3342,13 +3462,16 @@ export default function Notepad() {
       let value = "";
       let warning: string | undefined;
       if (format === "rich") {
-        value = generateFullHtml(activeDoc.title || "Note", htmlBody);
+        const raw = generateFullHtml(activeDoc.title || "Note", htmlBody);
+        value = beautifyHtml(raw);
       } else if (format === "html") {
-        value = generateFullHtml(activeDoc.title || "Note", htmlBody);
+        const raw = generateFullHtml(activeDoc.title || "Note", htmlBody);
+        value = beautifyHtml(raw);
       } else if (activeDoc.mode === "raw") {
         value = activeDoc.content || "";
       } else {
-        value = await htmlToMarkdown(htmlBody);
+        const rawMarkdown = await htmlToMarkdown(htmlBody);
+        value = beautifyMarkdown(rawMarkdown);
         if (/<img[^>]+src=["']data:/i.test(htmlBody)) {
           warning = "Embedded images are represented as placeholders in Markdown. Use HTML export to preserve images inline.";
         }
