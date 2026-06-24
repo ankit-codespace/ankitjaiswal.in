@@ -1186,62 +1186,6 @@ const NotepadEditor = ({
         return false;
       },
       handleDOMEvents: {
-        mousedown: (view, event) => {
-          const target = event.target as HTMLElement;
-          const isNotScrollbar = event.clientX < window.innerWidth - 18;
-          
-          if (target.classList.contains("ProseMirror") && isNotScrollbar) {
-            const editorDom = view.dom;
-            const lastChild = editorDom.lastElementChild;
-            const lastChildRect = lastChild ? lastChild.getBoundingClientRect() : editorDom.getBoundingClientRect();
-            const lastBottomY = lastChildRect.bottom;
-            const clickY = event.clientY;
-            
-            if (clickY > lastBottomY) {
-              const deltaY = clickY - lastBottomY;
-              const currentSettings = settings;
-              const zoomedLineHeight = currentSettings.fontSize * currentSettings.lineHeight * (currentSettings.zoom || 1.0);
-              const newLinesCount = Math.max(1, Math.round(deltaY / zoomedLineHeight));
-              
-              const { state } = view;
-              const nodes: any[] = [];
-              for (let i = 0; i < newLinesCount; i++) {
-                nodes.push(state.schema.nodes.paragraph.createAndFill());
-              }
-              const tr = state.tr.insert(state.doc.content.size, nodes);
-              const newSelection = (state.selection.constructor as any).create(tr.doc, tr.doc.content.size);
-              tr.setSelection(newSelection);
-              view.dispatch(tr);
-              
-              // Force editor focus immediately and prevent default cursor jump
-              setTimeout(() => {
-                view.focus();
-              }, 0);
-              
-              event.preventDefault();
-              return true;
-            }
-          }
-          return false;
-        },
-        click: (view, event) => {
-          const target = event.target as HTMLElement;
-          const isNotScrollbar = event.clientX < window.innerWidth - 18;
-          
-          if (target.classList.contains("ProseMirror") && isNotScrollbar) {
-            const editorDom = view.dom;
-            const lastChild = editorDom.lastElementChild;
-            const lastChildRect = lastChild ? lastChild.getBoundingClientRect() : editorDom.getBoundingClientRect();
-            const lastBottomY = lastChildRect.bottom;
-            const clickY = event.clientY;
-            
-            if (clickY > lastBottomY) {
-              event.preventDefault();
-              return true;
-            }
-          }
-          return false;
-        },
         contextmenu: (_view, event) => {
           const target = event.target as HTMLElement;
           if (target.nodeName === "IMG") {
