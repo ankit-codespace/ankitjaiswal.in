@@ -1,6 +1,6 @@
 {
   "name": "notepad-win",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Native offline-first Windows Notepad app",
   "main": "src/main/main.js",
   "scripts": {
