@@ -2195,17 +2195,12 @@ export default function App() {
     const hasImages = html.includes("<img");
     const hasTables = html.includes("<table") || html.includes("<tr") || html.includes("<td");
     const hasHighlight = html.includes("<mark");
-    
-    if (hasImages || hasTables || hasHighlight) {
-      return "html";
-    }
-    
+    const hasCodeBlocks = html.includes("<pre") || html.includes("<code");
     const hasRichFormatting = html.includes("<a ") || html.includes("<strong") || html.includes("<em") || html.includes("<u") || html.includes("<s") || html.includes("<h1") || html.includes("<h2") || html.includes("<h3") || html.includes("<ul") || html.includes("<ol");
     
-    if (hasRichFormatting) {
-      return "md";
+    if (hasImages || hasTables || hasHighlight || hasCodeBlocks || hasRichFormatting) {
+      return "html";
     }
-    
     return "txt";
   };
 
@@ -3391,10 +3386,7 @@ export default function App() {
     const ext = getSmartSaveExtension(html);
     if (ext === "html") {
       exportHtml();
-      toast.success("Automatically exported as HTML to preserve all formatting, highlights, and tables.");
-    } else if (ext === "md") {
-      exportMd();
-      toast.success("Automatically exported as Markdown.");
+      toast.success("Automatically exported as HTML to preserve formatting, highlights, and images.");
     } else {
       exportTxt();
       toast.success("Automatically exported as Plain Text.");
