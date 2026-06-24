@@ -66,7 +66,7 @@ import {
   ImageIcon, Link as LinkIcon, Minus, Undo2, Redo2, Search, X, Maximize2,
   Minimize2, Download, ChevronDown, ChevronRight, Plus, FileText, PanelLeft,
   Check, Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify, Files, Quote, Settings, Eraser,
-  Trash2, Save, Pin, Table2, Code2, Copy, Keyboard, ExternalLink, Edit, Monitor, Shield, Type
+  Trash2, Save, Pin, Table2, Code2, Copy, Keyboard, ExternalLink, Edit, Monitor, Shield, Type, Eye
 } from "lucide-react";
 
 // ── ElectronAPI Types ─────────────────────────────────────────────────────────
@@ -423,7 +423,7 @@ function htmlToMarkdown(html: string): string {
 
   td.addRule("highlight", {
     filter: ["mark"],
-    replacement: (content: string) => `==${content}==`,
+    replacement: (content: string) => content,
   });
 
   td.addRule("table", {
@@ -443,6 +443,26 @@ function htmlToMarkdown(html: string): string {
 
   return td.turndown(html);
 }
+
+function restoreEmbeddedImages(html: string, originalHtml: string): string {
+  if (!originalHtml) return html;
+  const originalImages: string[] = [];
+  const imgRegex = /<img[^>]+src=["'](data:[^"']+)["']/g;
+  let match;
+  while ((match = imgRegex.exec(originalHtml)) !== null) {
+    originalImages.push(match[1]);
+  }
+  if (originalImages.length === 0) return html;
+  
+  let imgIndex = 0;
+  return html.replace(/src=["']embedded-image["']/g, () => {
+    if (imgIndex < originalImages.length) {
+      return `src="${originalImages[imgIndex++]}"`;
+    }
+    return 'src="embedded-image"';
+  });
+}
+
 
 // ── TipTap Extensions ──────────────────────────────────────────────────────────
 const ResizableImage = TipTapImage.extend({
@@ -686,6 +706,15 @@ interface NotepadDoc {
   closeBatchId?: string;
   lastRichContent?: string;
 }
+
+type SourcePreviewState = {
+  format: "rich" | "html" | "markdown";
+  title: string;
+  value: string;
+  htmlBody?: string;
+  warning?: string;
+  copied?: boolean;
+};
 
 interface NotepadSettings {
   fontSize: number;
@@ -1654,6 +1683,28 @@ export default function App() {
     }
   }, [activeId, visitedDocIds]);
 
+  // Migrate old markdown/html docs on mount
+  useEffect(() => {
+    let changed = false;
+    const migrated = docs.map(doc => {
+      if ((doc.mode as any) === "markdown") {
+        const html = parseMarkdownToHtml(doc.content || "");
+        const content = restoreEmbeddedImages(html, doc.lastRichContent || "");
+        changed = true;
+        return { ...doc, content, mode: "rich" as const };
+      } else if ((doc.mode as any) === "html") {
+        changed = true;
+        return { ...doc, mode: "rich" as const };
+      }
+      return doc;
+    });
+    if (changed) {
+      setDocs(migrated);
+      saveDocs(migrated);
+    }
+  }, []);
+
+
   const scrollPositionsRef = useRef<{ [id: string]: number }>({});
   const isRestoringScrollRef = useRef<boolean>(false);
 
@@ -1710,10 +1761,16 @@ export default function App() {
       console.error(e);
     }
   }, [closedDocsHistory]);
+
+  useEffect(() => () => {
+    if (exportCopyResetTimer.current) clearTimeout(exportCopyResetTimer.current);
+  }, []);
+
   const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; docId: string } | null>(null);
   const [imageContextMenu, setImageContextMenu] = useState<{ x: number; y: number; src: string } | null>(null);
 
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [sourcePreview, setSourcePreview] = useState<SourcePreviewState | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [fileMenuLeft, setFileMenuLeft] = useState(0);
@@ -1726,7 +1783,7 @@ export default function App() {
   const [headings, setHeadings] = useState<{ text: string; level: number; index: number }[]>([]);
   const [activeHeadingIndex, setActiveHeadingIndex] = useState<number | null>(null);
 
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const [, setCopyState] = useState<"idle" | "copied" | "error">("idle");
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
   // Increments on every editor update or selection change — forces toolbar to re-render
   // so editor.isActive() always reflects the current cursor/mark state
@@ -1742,6 +1799,9 @@ export default function App() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const findInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
+  const copyResetTimer = useRef<any>(null);
+  const exportCopyResetTimer = useRef<any>(null);
+  const [exportCopyState, setExportCopyState] = useState<"rich" | "html" | "markdown" | "error" | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -1761,7 +1821,6 @@ export default function App() {
   const [showTableMenu, setShowTableMenu] = useState(false);
 
   // Keyboard Shortcuts Modal reference state
-  const copyResetTimer = useRef<any>(null);
 
   // Lightbox for inline images
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -1855,6 +1914,7 @@ export default function App() {
     html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
     html = html.replace(/_(.*?)_/g, "<em>$1</em>");
     html = html.replace(/`(.*?)`/g, "<code>$1</code>");
+    html = html.replace(/==(.*?)==/g, "<mark>$1</mark>");
     html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
     return html;
   };
@@ -1959,49 +2019,7 @@ export default function App() {
     return htmlResult.join("");
   };
 
-  const toggleEditorMode = () => {
-    if (!activeDoc) return;
-    const currentMode = activeDoc.mode === "raw" ? "raw" : "rich";
-    const nextMode = currentMode === "raw" ? "rich" : "raw";
-    
-    if (nextMode === "rich") {
-      const text = activeDoc.content || "";
-      let richContent = "";
-      
-      if (activeDoc.lastRichContent) {
-        // If the plain text hasn't changed (modulo trimming/newlines), restore the exact rich HTML
-        const strippedLast = htmlToMarkdown(activeDoc.lastRichContent).trim();
-        if (strippedLast === text.trim()) {
-          richContent = activeDoc.lastRichContent;
-        } else {
-          // If the plain text was edited, parse markdown to HTML
-          richContent = parseMarkdownToHtml(text);
-        }
-      } else {
-        // Fallback for new documents without prior HTML
-        richContent = text.includes("<p>") || text.includes("</div>") 
-          ? text 
-          : text.split("\n").map(l => `<p>${l}</p>`).join("");
-      }
-      
-      setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: richContent, mode: "rich", isUnsaved: d.filePath ? true : undefined } : d));
-      const activeInst = editorsRef.current[activeId];
-      if (activeInst) {
-        activeInst.commands.setContent(richContent);
-      }
-      toast.success("Switched to Rich Text formatting");
-    } else {
-      const html = activeDoc.content || "";
-      const markdown = htmlToMarkdown(html);
-      
-      setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: markdown, lastRichContent: html, mode: "raw", isUnsaved: d.filePath ? true : undefined } : d));
-      const activeInst = editorsRef.current[activeId];
-      if (activeInst) {
-        activeInst.commands.setContent("");
-      }
-      toast.success("Switched to Plain Text performance mode");
-    }
-  };
+
 
   const handleEditorDestroyed = useCallback((id: string) => {
     delete editorsRef.current[id];
@@ -3156,6 +3174,7 @@ export default function App() {
       copyResetTimer.current = setTimeout(() => setCopyState("idle"), 2000);
     }
   }, [editor]);
+  void handleCopy;
 
   // ── Export Menu (Client-side Fallbacks & Native Triggers) ──────────────────────
   const exportTxt = () => {
@@ -3188,6 +3207,155 @@ export default function App() {
     });
     a.click(); URL.revokeObjectURL(a.href);
     setShowExportMenu(false);
+  };
+
+  const markExportCopyState = (state: "rich" | "html" | "markdown" | "error") => {
+    setExportCopyState(state);
+    if (exportCopyResetTimer.current) clearTimeout(exportCopyResetTimer.current);
+    exportCopyResetTimer.current = setTimeout(() => setExportCopyState(null), 1600);
+  };
+
+  const copyRichFromExport = async () => {
+    if (!activeDoc) return;
+    try {
+      const htmlBody = getPreviewHtmlBody();
+      const html = generateFullHtml(activeDoc.title || "Note", htmlBody, { bg: surfBg, text: surfTxt, isDark: effectiveDark });
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      const text = div.textContent || "";
+      const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+      if (navigator.clipboard?.write && CI) {
+        await navigator.clipboard.write([
+          new CI({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([text], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+      markExportCopyState("rich");
+      toast.success("Rich Text copied");
+      setTimeout(() => setShowExportMenu(false), 1200);
+    } catch (err: any) {
+      console.error(err);
+      markExportCopyState("error");
+      toast.error("Couldn't copy Rich Text");
+    }
+  };
+
+  const copyHtmlFromExport = async () => {
+    if (!activeDoc) return;
+    try {
+      const htmlBody = getPreviewHtmlBody();
+      const source = generateFullHtml(activeDoc.title || "Note", htmlBody, { bg: surfBg, text: surfTxt, isDark: effectiveDark });
+      await navigator.clipboard.writeText(source);
+      markExportCopyState("html");
+      toast.success("HTML copied");
+      setTimeout(() => setShowExportMenu(false), 1200);
+    } catch (err: any) {
+      console.error(err);
+      markExportCopyState("error");
+      toast.error("Couldn't copy HTML");
+    }
+  };
+
+  const copyMarkdownFromExport = async () => {
+    if (!activeDoc) return;
+    try {
+      const htmlBody = getPreviewHtmlBody();
+      const source = activeDoc.mode === "raw" ? activeDoc.content || "" : htmlToMarkdown(htmlBody);
+      await navigator.clipboard.writeText(source);
+      markExportCopyState("markdown");
+      toast.success("Markdown copied");
+      setTimeout(() => setShowExportMenu(false), 1200);
+    } catch (err: any) {
+      console.error(err);
+      markExportCopyState("error");
+      toast.error("Couldn't copy Markdown");
+    }
+  };
+
+  const downloadBlob = (content: string, name: string, mime: string) => {
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(new Blob([content], { type: mime })),
+      download: name,
+    });
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const getPreviewHtmlBody = (): string => {
+    if (activeDoc?.mode === "raw") {
+      return parseMarkdownToHtml(activeDoc.content || "");
+    }
+    const html = editor?.getHTML() || activeDoc?.content || activeDoc?.lastRichContent || "";
+    return html;
+  };
+
+  const openSourcePreview = (format: "rich" | "html" | "markdown") => {
+    if (!activeDoc) return;
+    try {
+      const htmlBody = getPreviewHtmlBody();
+      let value = "";
+      let warning: string | undefined;
+
+      if (format === "rich") {
+        value = generateFullHtml(activeDoc.title || "Note", htmlBody, { bg: surfBg, text: surfTxt, isDark: effectiveDark });
+      } else if (format === "html") {
+        value = generateFullHtml(activeDoc.title || "Note", htmlBody, { bg: surfBg, text: surfTxt, isDark: effectiveDark });
+      } else {
+        value = activeDoc.mode === "raw" ? activeDoc.content || "" : htmlToMarkdown(htmlBody);
+        if (/<img[^>]+src=["']data:/i.test(htmlBody)) {
+          warning = "Embedded images are represented as placeholders in Markdown. Use HTML to preserve images inline.";
+        }
+      }
+
+      setSourcePreview({ format, title: activeDoc.title || "Note", value, htmlBody, warning });
+      setShowExportMenu(false);
+      setShowSettings(false);
+      toast.success(`${format === "rich" ? "Rich Text" : format === "html" ? "HTML" : "Markdown"} preview ready`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Preview failed", { description: err?.message || "Your note was not changed." });
+    }
+  };
+
+  const copySourcePreview = async () => {
+    if (!sourcePreview) return;
+    try {
+      if (sourcePreview.format === "rich") {
+        const html = sourcePreview.htmlBody || sourcePreview.value;
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        const text = div.textContent || "";
+        const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+        if (navigator.clipboard?.write && CI) {
+          await navigator.clipboard.write([
+            new CI({
+              "text/html": new Blob([html], { type: "text/html" }),
+              "text/plain": new Blob([text], { type: "text/plain" }),
+            }),
+          ]);
+        } else {
+          await navigator.clipboard.writeText(text);
+        }
+      } else {
+        await navigator.clipboard.writeText(sourcePreview.value);
+      }
+      setSourcePreview((prev) => prev ? { ...prev, copied: true } : prev);
+      setTimeout(() => setSourcePreview((prev) => prev ? { ...prev, copied: false } : prev), 1600);
+      toast.success(`${sourcePreview.format === "rich" ? "Rich Text" : sourcePreview.format === "html" ? "HTML" : "Markdown"} copied`);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  const downloadSourcePreview = () => {
+    if (!sourcePreview) return;
+    const ext = sourcePreview.format === "markdown" ? "md" : "html";
+    const mime = sourcePreview.format === "markdown" ? "text/markdown" : "text/html";
+    downloadBlob(sourcePreview.value, `${sourcePreview.title}.${ext}`, mime);
   };
 
   const exportPdf = async () => {
@@ -3551,7 +3719,7 @@ export default function App() {
               <FileText size={16} />
             </button>
 
-            <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "flex-end", marginBottom: 8 }} />
+            <div style={{ width: 1, height: 23, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "flex-end", marginBottom: 7 }} />
 
             <div className="notepad-tabs-container" role="tablist" style={{ display: "flex", alignItems: "flex-end", gap: 0, overflowX: "auto", height: "calc(100% + 4px)", marginBottom: -4, paddingBottom: 4, boxSizing: "border-box", flex: 1, paddingLeft: 18, paddingRight: 24, scrollbarWidth: "none" }}>
               {sortedDocs.map((doc, idx) => {
@@ -3935,7 +4103,7 @@ export default function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0, height: "100%", WebkitAppRegion: "no-drag" } as any}>
             <div style={{ display: "flex", alignItems: "center", height: "100%", transform: "translateY(2.5px)" }}>
               {/* Divider between Left Zone (Plus button) and Right Zone (Files switcher) */}
-              <div style={{ width: 1, height: 20, background: sepColor, margin: "0 8px 0 4px", flexShrink: 0, alignSelf: "center" }} />
+              <div style={{ width: 1, height: 23, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "center" }} />
               {/* Note switcher menu trigger */}
               <button
                 style={{ ...tb(showDocMenu), alignSelf: "center", marginRight: 8 }}
@@ -3950,10 +4118,10 @@ export default function App() {
                 }}
                 title="All Notes"
               >
-                <Files size={13} />
+                <Files size={16} />
               </button>
 
-              <div style={{ width: 1, height: 20, background: sepColor, margin: "0 6px", flexShrink: 0, alignSelf: "center" }} />
+              <div style={{ width: 1, height: 23, background: sepColor, margin: "0 8px", flexShrink: 0, alignSelf: "center" }} />
             </div>
 
             {/* ── Window Controls (merged into tab strip like Windows Notepad) ── */}
@@ -4209,51 +4377,11 @@ export default function App() {
 
 
 
-            {/* Format Mode Toggle */}
-            <button
-              title={getTooltip(activeDoc?.mode === "raw" ? "Formatting: Plain Text" : "Formatting: Rich Text")}
-              style={{
-                ...tb(),
-                width: "auto",
-                padding: "0 10px",
-                gap: 5,
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: activeDoc?.mode === "raw" ? surfAccent : "inherit",
-              }}
-              onClick={toggleEditorMode}
-            >
-              {activeDoc?.mode === "raw" ? (
-                <>
-                  <FileText size={14} />
-                  <span>Plain</span>
-                </>
-              ) : (
-                <>
-                  <Type size={14} />
-                  <span>Rich</span>
-                </>
-              )}
-            </button>
 
 
 
 
 
-            {/* Copy button */}
-            <button
-              style={{
-                ...tb(), width: "auto", padding: "0 10px", gap: 5, fontSize: 12.5, fontWeight: 600,
-                color: copyState === "copied" ? (effectiveDark ? "rgba(140, 230, 170, 0.95)" : "#0E7A3E") : (effectiveDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.72)"),
-                background: effectiveDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-                border: effectiveDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
-                borderRadius: 6,
-              }}
-              onClick={handleCopy}
-            >
-              {copyState === "copied" ? <Check size={12} /> : <Copy size={12} />}
-              <span className="toolbar-btn-text">{copyState === "copied" ? "Copied" : "Copy"}</span>
-            </button>
 
             {/* Export trigger (Split Button) */}
             <div style={{ display: "flex", alignItems: "stretch", height: 28 }}>
@@ -4719,7 +4847,73 @@ export default function App() {
       {/* ── Export popup ── */}
       {showExportMenu && (
         <div style={{ position: "fixed", top: 82, right: 10, background: effectiveDark ? "var(--bg1)" : "#FFFFFF", border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)", borderRadius: "var(--r)", minWidth: 216, padding: "6px 0", zIndex: 200, boxShadow: effectiveDark ? "0 16px 48px rgba(0,0,0,0.65)" : "0 16px 48px rgba(0,0,0,0.1)" }}>
+          <button
+            style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: surfAccent, fontSize: 13, fontWeight: 650, fontFamily: "Inter,sans-serif" }}
+            onClick={exportSmart}
+            onMouseEnter={(e) => (e.currentTarget.style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+          >
+            <Download size={13} />
+            <span>Smart Export</span>
+          </button>
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+          <div style={{ padding: "5px 14px 3px", color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.42)", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Download</div>
           {[
+            { label: "PDF", fn: exportPdf },
+            { label: "HTML", fn: exportHtml },
+            { label: "Markdown", fn: exportMd },
+            { label: "Plain Text", fn: exportTxt },
+          ].map((item) => (
+            <button
+              key={item.label}
+              style={{ display: "flex", alignItems: "center", padding: "7px 14px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, fontFamily: "Inter,sans-serif" }}
+              onClick={item.fn}
+              onMouseEnter={(e) => (e.currentTarget.style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+            >
+              <span>{item.label}</span>
+            </button>
+          ))}
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+          <div style={{ padding: "5px 14px 3px", color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.42)", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Copy As</div>
+          {[
+            { key: "rich", label: "Rich Text", fn: copyRichFromExport },
+            { key: "html", label: "HTML", fn: copyHtmlFromExport },
+            { key: "markdown", label: "Markdown", fn: copyMarkdownFromExport },
+          ].map((item) => {
+            const isCopied = exportCopyState === item.key;
+            return (
+              <button
+                key={item.label}
+                style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 14px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: isCopied ? "#10B981" : (effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"), fontSize: 13, fontFamily: "Inter,sans-serif", transition: "color 0.15s" }}
+                onClick={item.fn}
+                onMouseEnter={(e) => (e.currentTarget.style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+              >
+                {isCopied ? <Check size={13} style={{ color: "#10B981" }} /> : <Copy size={13} />}
+                <span style={{ fontWeight: isCopied ? 600 : "inherit" }}>{isCopied ? "Copied" : item.label}</span>
+              </button>
+            );
+          })}
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+          <div style={{ padding: "5px 14px 3px", color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.42)", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Preview Source</div>
+          {[
+            { label: "Rich Text", fn: () => openSourcePreview("rich") },
+            { label: "HTML", fn: () => openSourcePreview("html") },
+            { label: "Markdown", fn: () => openSourcePreview("markdown") },
+          ].map((item) => (
+            <button
+              key={item.label}
+              style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 14px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)", fontSize: 13, fontFamily: "Inter,sans-serif" }}
+              onClick={item.fn}
+              onMouseEnter={(e) => (e.currentTarget.style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+            >
+              <Eye size={13} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+          {false && [
             { label: "Plain Text (.txt)", sub: "No formatting preserved", fn: exportTxt },
             { label: "Markdown (.md)", sub: "Headings, lists, bold, links", fn: exportMd },
             { label: "PDF (.pdf)", sub: "Prints current document layout", fn: exportPdf },
@@ -4740,6 +4934,53 @@ export default function App() {
       )}
 
       {/* ── Find / Replace Panel ── */}
+      {sourcePreview && (
+        <div
+          style={{ position: "fixed", inset: 0, background: effectiveDark ? "rgba(0,0,0,0.54)" : "rgba(0,0,0,0.2)", backdropFilter: "blur(8px)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}
+          onClick={() => setSourcePreview(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: "min(880px, 100%)", maxHeight: "84vh", background: effectiveDark ? "var(--bg1)" : "#FFFFFF", border: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.12)", borderRadius: 12, boxShadow: effectiveDark ? "0 24px 70px rgba(0,0,0,0.7)" : "0 24px 70px rgba(0,0,0,0.16)", display: "flex", flexDirection: "column", overflow: "hidden" }}
+          >
+            <div style={{ minHeight: 48, padding: "0 14px 0 16px", borderBottom: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+                {sourcePreview.format === "rich" ? <Type size={15} /> : sourcePreview.format === "html" ? <Code2 size={15} /> : <FileText size={15} />}
+                <span style={{ color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.86)", fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 650, whiteSpace: "nowrap" }}>
+                  {sourcePreview.format === "rich" ? "Rich Text Preview" : sourcePreview.format === "html" ? "HTML Preview" : "Markdown Preview"}
+                </span>
+                <span style={{ color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.48)", fontFamily: "Inter, sans-serif", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {sourcePreview.title}
+                </span>
+              </div>
+              <button title="Copy" onClick={copySourcePreview} style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5 }}>
+                {sourcePreview.copied ? <Check size={13} /> : <Copy size={13} />}
+                <span style={{ fontSize: 12, fontWeight: 600 }}>{sourcePreview.copied ? "Copied" : "Copy"}</span>
+              </button>
+              <button title="Download" onClick={downloadSourcePreview} style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5 }}>
+                <Download size={13} />
+                <span style={{ fontSize: 12, fontWeight: 600 }}>Download</span>
+              </button>
+              <button title="Close" onClick={() => setSourcePreview(null)} style={tb()}>
+                <X size={14} />
+              </button>
+            </div>
+
+            {sourcePreview.warning && (
+              <div style={{ padding: "9px 16px", borderBottom: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", background: effectiveDark ? "rgba(245,158,11,0.08)" : "rgba(245,158,11,0.12)", color: effectiveDark ? "rgba(255,226,170,0.94)" : "#7A4D08", fontSize: 12, fontFamily: "Inter, sans-serif", lineHeight: 1.45 }}>
+                {sourcePreview.warning}
+              </div>
+            )}
+
+            {sourcePreview.format === "rich" ? (
+              <div className="notepad-editor" style={{ width: "100%", minHeight: 360, maxHeight: "calc(84vh - 54px)", flex: 1, overflow: "auto", padding: "22px 26px", background: effectiveDark ? "rgba(0,0,0,0.22)" : "#F8F8F6", color: effectiveDark ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.84)", fontFamily: "Inter, sans-serif", fontSize: 15, lineHeight: 1.75 }} dangerouslySetInnerHTML={{ __html: sourcePreview.htmlBody || "" }} />
+            ) : (
+              <textarea readOnly value={sourcePreview.value} spellCheck={false} style={{ width: "100%", minHeight: 360, maxHeight: "calc(84vh - 54px)", flex: 1, resize: "none", border: "none", outline: "none", padding: "16px 18px", background: effectiveDark ? "rgba(0,0,0,0.22)" : "#F8F8F6", color: effectiveDark ? "rgba(255,255,255,0.86)" : "rgba(0,0,0,0.82)", fontFamily: "'JetBrains Mono', Consolas, monospace", fontSize: 12.5, lineHeight: 1.65, whiteSpace: "pre", overflow: "auto" }} />
+            )}
+          </div>
+        </div>
+      )}
+
       {showFind && (
         <div className="notepad-find-panel" style={{ position: "fixed", top: 88, right: 20, width: 340, background: effectiveDark ? "rgba(30, 30, 30, 0.88)" : "rgba(255, 255, 255, 0.94)", border: effectiveDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.1)", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,0.25)", backdropFilter: "blur(12px)", zIndex: 250, padding: "10px", display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

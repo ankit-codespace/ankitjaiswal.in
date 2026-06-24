@@ -299,10 +299,12 @@ interface NotepadDoc {
 }
 
 type SourcePreviewState = {
-  format: "html" | "markdown";
+  format: "rich" | "html" | "markdown";
   title: string;
   value: string;
+  htmlBody?: string;
   warning?: string;
+  copied?: boolean;
 };
 
 
@@ -1097,6 +1099,27 @@ export default function Notepad() {
   const [docs, setDocs] = useState<NotepadDoc[]>(() => loadDocs());
   const [activeId, setActiveId] = useState<string>(() => loadActiveId(loadDocs()));
   const [settings, setSettings] = useState<NotepadSettings>(() => loadSettings());
+
+  // Migrate old markdown/html docs on mount
+  useEffect(() => {
+    let changed = false;
+    const migrated = docs.map(doc => {
+      if ((doc.mode as any) === "markdown") {
+        const html = parseMarkdownToHtml(doc.content || "");
+        const content = restoreEmbeddedImages(html, doc.lastRichContent || "");
+        changed = true;
+        return { ...doc, content, mode: "rich" as const };
+      } else if ((doc.mode as any) === "html") {
+        changed = true;
+        return { ...doc, mode: "rich" as const };
+      }
+      return doc;
+    });
+    if (changed) {
+      setDocs(migrated);
+      saveDocs(migrated);
+    }
+  }, []);
   const [focusMode, setFocusMode] = useState(false);
   const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
   const [linkInputUrl, setLinkInputUrl] = useState("");
@@ -1525,7 +1548,7 @@ export default function Notepad() {
         const html = editor.getHTML();
         setDocs((prev) => {
           const currentDoc = prev.find((d) => d.id === activeId);
-          if (!currentDoc || currentDoc.mode === "raw" || currentDoc.mode === "markdown" || currentDoc.mode === "html") {
+          if (!currentDoc || currentDoc.mode === "raw") {
             return prev;
           }
           const next = prev.map((d) => d.id === activeId ? { ...d, content: html, updatedAt: Date.now() } : d);
@@ -1571,7 +1594,7 @@ export default function Notepad() {
     const doc = docs.find((d) => d.id === activeId);
     if (doc) {
       isChangingDocRef.current = true;
-      if (doc.mode === "raw" || doc.mode === "markdown" || doc.mode === "html") {
+      if (doc.mode === "raw") {
         editor.commands.setContent("");
       } else {
         editor.commands.setContent(doc.content || "");
@@ -3299,8 +3322,7 @@ export default function Notepad() {
 
   const getHtmlBodyForSource = (): string => {
     if (!activeDoc) return "";
-    if (activeDoc.mode === "html") return activeDoc.content || "";
-    if (activeDoc.mode === "markdown" || activeDoc.mode === "raw") {
+    if (activeDoc.mode === "raw") {
       return restoreEmbeddedImages(parseMarkdownToHtml(activeDoc.content || ""), activeDoc.lastRichContent || "");
     }
     return getCanonicalRichHtml();
@@ -3314,7 +3336,7 @@ export default function Notepad() {
     }
   };
 
-  const openSourcePreview = async (format: "html" | "markdown") => {
+  const openSourcePreview = async (format: "rich" | "html" | "markdown") => {
     if (!activeDoc) return;
     try {
       const htmlBody = getHtmlBodyForSource();
@@ -3322,11 +3344,11 @@ export default function Notepad() {
 
       let value = "";
       let warning: string | undefined;
-      if (format === "html") {
-        value = activeDoc.mode === "html" && /<!doctype|<html[\s>]/i.test(activeDoc.content || "")
-          ? activeDoc.content
-          : generateFullHtml(activeDoc.title || "Note", htmlBody);
-      } else if (activeDoc.mode === "markdown" || activeDoc.mode === "raw") {
+      if (format === "rich") {
+        value = generateFullHtml(activeDoc.title || "Note", htmlBody);
+      } else if (format === "html") {
+        value = generateFullHtml(activeDoc.title || "Note", htmlBody);
+      } else if (activeDoc.mode === "raw") {
         value = activeDoc.content || "";
       } else {
         value = await htmlToMarkdown(htmlBody);
@@ -3339,10 +3361,10 @@ export default function Notepad() {
         throw new Error("Generated source was empty.");
       }
 
-      setSourcePreview({ format, title: activeDoc.title || "Note", value, warning });
+      setSourcePreview({ format, title: activeDoc.title || "Note", value, htmlBody, warning });
       setShowExportMenu(false);
       setShowSettings(false);
-      toast.success(`${format === "html" ? "HTML" : "Markdown"} source generated safely`);
+      toast.success(`${format === "rich" ? "Rich Text" : format === "html" ? "HTML" : "Markdown"} preview ready`);
     } catch (err: any) {
       console.error(err);
       toast.error("Source generation stopped", {
@@ -3354,8 +3376,29 @@ export default function Notepad() {
   const copySourcePreview = async () => {
     if (!sourcePreview) return;
     try {
-      await navigator.clipboard.writeText(sourcePreview.value);
-      toast.success(`${sourcePreview.format === "html" ? "HTML" : "Markdown"} source copied`);
+      if (sourcePreview.format === "rich") {
+        const html = sourcePreview.htmlBody || sourcePreview.value;
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        const text = div.textContent || "";
+        const NavClipboard = navigator.clipboard as Clipboard | undefined;
+        const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+        if (NavClipboard && typeof NavClipboard.write === "function" && CI) {
+          await NavClipboard.write([
+            new CI({
+              "text/html": new Blob([html], { type: "text/html" }),
+              "text/plain": new Blob([text], { type: "text/plain" }),
+            }),
+          ]);
+        } else {
+          await navigator.clipboard.writeText(text);
+        }
+      } else {
+        await navigator.clipboard.writeText(sourcePreview.value);
+      }
+      setSourcePreview((prev) => prev ? { ...prev, copied: true } : prev);
+      setTimeout(() => setSourcePreview((prev) => prev ? { ...prev, copied: false } : prev), 1600);
+      toast.success(`${sourcePreview.format === "rich" ? "Rich Text" : sourcePreview.format === "html" ? "HTML" : "Markdown"} copied`);
     } catch {
       toast.error("Failed to copy source");
     }
@@ -3363,52 +3406,12 @@ export default function Notepad() {
 
   const downloadSourcePreview = () => {
     if (!sourcePreview) return;
-    const ext = sourcePreview.format === "html" ? "html" : "md";
-    const mime = sourcePreview.format === "html" ? "text/html" : "text/markdown";
+    const ext = sourcePreview.format === "markdown" ? "md" : "html";
+    const mime = sourcePreview.format === "markdown" ? "text/markdown" : "text/html";
     dl(sourcePreview.value, `${sourcePreview.title}.${ext}`, mime);
   };
 
-  const setEditorMode = async (nextMode: "rich" | "markdown" | "html") => {
-    if (!activeDoc) return;
-    
-    const currentMode = activeDoc.mode === "html" ? "html" : (activeDoc.mode === "markdown" || activeDoc.mode === "raw" ? "markdown" : "rich");
-    if (currentMode === nextMode) return;
 
-    let nextContent = activeDoc.content || "";
-    let lastRich = activeDoc.lastRichContent || "";
-
-    if (currentMode === "rich") {
-      const currentHtml = editor ? editor.getHTML() : (activeDoc.content || "");
-      lastRich = currentHtml;
-      if (nextMode === "markdown") {
-        nextContent = await htmlToMarkdown(currentHtml);
-      } else {
-        nextContent = currentHtml;
-      }
-    } else if (currentMode === "markdown") {
-      if (nextMode === "rich") {
-        const parsed = parseMarkdownToHtml(nextContent);
-        nextContent = restoreEmbeddedImages(parsed, lastRich);
-      } else {
-        const parsed = parseMarkdownToHtml(nextContent);
-        nextContent = restoreEmbeddedImages(parsed, lastRich);
-      }
-    } else if (currentMode === "html") {
-      if (nextMode === "markdown") {
-        nextContent = await htmlToMarkdown(nextContent);
-      }
-    }
-
-    setDocs(prev => prev.map(d => d.id === activeId ? { ...d, content: nextContent, lastRichContent: lastRich, mode: nextMode, isUnsaved: true } : d));
-    
-    if (nextMode === "rich" && editor) {
-      isChangingDocRef.current = true;
-      editor.commands.setContent(nextContent);
-      setTimeout(() => { isChangingDocRef.current = false; }, 50);
-    }
-    
-    toast.success(`Switched to ${nextMode === "rich" ? "Rich Text" : nextMode === "markdown" ? "Markdown" : "HTML Source"} format`);
-  };
 
   // Copy the entire active note to the clipboard. Writes BOTH text/html
   // (with embedded base64 images preserved) AND text/plain at once via the
@@ -3416,7 +3419,7 @@ export default function Notepad() {
   // formatting and images, while pasting into a plain text field gets the
   // text only. Falls back to writeText for older browsers.
   const handleCopy = useCallback(async () => {
-    if (activeDoc?.mode === "raw" || activeDoc?.mode === "markdown" || activeDoc?.mode === "html") {
+    if (activeDoc?.mode === "raw") {
       const text = activeDoc.content || "";
       if (!text) {
         toast.message("Nothing to copy", { description: "This note is empty." });
@@ -3483,46 +3486,9 @@ export default function Notepad() {
     exportCopyResetTimer.current = setTimeout(() => setExportCopyState(null), state === "error" ? 2200 : 1600);
   };
 
-  const copyRichFromExport = async () => {
-    const ok = await handleCopy();
-    markExportCopyState(ok ? "rich" : "error");
-  };
-
-  const copyHtmlFromExport = async () => {
-    if (!activeDoc) return;
-    try {
-      const htmlBody = getHtmlBodyForSource();
-      assertSafeSourceInput(htmlBody);
-      const source = activeDoc.mode === "html" && /<!doctype|<html[\s>]/i.test(activeDoc.content || "")
-        ? activeDoc.content
-        : generateFullHtml(activeDoc.title || "Note", htmlBody);
-      await navigator.clipboard.writeText(source);
-      markExportCopyState("html");
-      toast.success("HTML copied");
-    } catch (err: any) {
-      console.error(err);
-      markExportCopyState("error");
-      toast.error("Couldn't copy HTML", { description: err?.message || "Your note was not changed." });
-    }
-  };
-
-  const copyMarkdownFromExport = async () => {
-    if (!activeDoc) return;
-    try {
-      const htmlBody = getHtmlBodyForSource();
-      assertSafeSourceInput(htmlBody);
-      const source = activeDoc.mode === "markdown" || activeDoc.mode === "raw"
-        ? activeDoc.content || ""
-        : await htmlToMarkdown(htmlBody);
-      await navigator.clipboard.writeText(source);
-      markExportCopyState("markdown");
-      toast.success("Markdown copied");
-    } catch (err: any) {
-      console.error(err);
-      markExportCopyState("error");
-      toast.error("Couldn't copy Markdown", { description: err?.message || "Your note was not changed." });
-    }
-  };
+  const copyRichFromExport = () => openSourcePreview("rich");
+  const copyHtmlFromExport = () => openSourcePreview("html");
+  const copyMarkdownFromExport = () => openSourcePreview("markdown");
 
   // Clean up the copy reset timer on unmount to avoid setting state on an
   // unmounted component.
@@ -3782,7 +3748,7 @@ export default function Notepad() {
   };
 
   const wordCountStatus = useMemo(() => {
-    if (activeDoc?.mode === "raw" || activeDoc?.mode === "markdown" || activeDoc?.mode === "html") {
+    if (activeDoc?.mode === "raw") {
       const total = countWords(activeDoc.content || "");
       return `${total} ${total === 1 ? "word" : "words"}`;
     }
@@ -3803,7 +3769,7 @@ export default function Notepad() {
   }, [editor, activeId, editorVersion, activeDoc?.content, activeDoc?.mode]);
 
   const cursorPosition = useMemo(() => {
-    if (activeDoc?.mode === "raw" || activeDoc?.mode === "markdown" || activeDoc?.mode === "html") return "Ln 1, Col 1";
+    if (activeDoc?.mode === "raw") return "Ln 1, Col 1";
     if (!editor || editor.isDestroyed) return "Ln 1, Col 1";
     const { selection } = editor.state;
     const { $from } = selection;
@@ -5796,24 +5762,45 @@ export default function Notepad() {
           <div style={exportMenuSectionStyle}>Copy As</div>
 
           {[
-            { key: "rich", label: exportCopyState === "rich" ? "Copied" : "Rich Text", fn: copyRichFromExport },
-            { key: "html", label: exportCopyState === "html" ? "Copied" : "HTML", fn: copyHtmlFromExport },
-            { key: "markdown", label: exportCopyState === "markdown" ? "Copied" : "Markdown", fn: copyMarkdownFromExport },
+            { key: "rich", label: "Rich Text", fn: copyRichFromExport },
+            { key: "html", label: "HTML", fn: copyHtmlFromExport },
+            { key: "markdown", label: "Markdown", fn: copyMarkdownFromExport },
           ].map((item) => {
-            const copied = exportCopyState === item.key;
+            const isCopied = exportCopyState === item.key;
             return (
               <button
                 key={item.key}
                 style={{
                   ...exportMenuRowStyle(),
-                  color: copied ? (effectiveDark ? "rgba(140, 230, 170, 0.95)" : "#0E7A3E") : exportMenuRowStyle().color,
-                  fontWeight: copied ? 650 : 450,
+                  color: isCopied ? "#10B981" : "inherit",
                 }}
                 onClick={item.fn}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
               >
-                {copied ? <Check size={13} /> : <CopyIcon size={13} />}
+                {isCopied ? <Check size={13} style={{ color: "#10B981" }} /> : <CopyIcon size={13} />}
+                <span style={{ fontWeight: isCopied ? 600 : "inherit" }}>{isCopied ? "Copied" : item.label}</span>
+              </button>
+            );
+          })}
+
+          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
+          <div style={exportMenuSectionStyle}>Preview Source</div>
+
+          {[
+            { key: "rich", label: "Rich Text", fn: () => openSourcePreview("rich") },
+            { key: "html", label: "HTML", fn: () => openSourcePreview("html") },
+            { key: "markdown", label: "Markdown", fn: () => openSourcePreview("markdown") },
+          ].map((item) => {
+            return (
+              <button
+                key={item.key}
+                style={exportMenuRowStyle()}
+                onClick={item.fn}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
+              >
+                <Eye size={13} />
                 <span>{item.label}</span>
               </button>
             );
@@ -5900,7 +5887,7 @@ export default function Notepad() {
                 gap: 10,
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
-                  {sourcePreview.format === "html" ? <Code size={15} /> : <MarkdownIcon size={15} />}
+                  {sourcePreview.format === "rich" ? <Type size={15} /> : sourcePreview.format === "html" ? <Code size={15} /> : <MarkdownIcon size={15} />}
                   <span style={{
                     color: effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.86)",
                     fontFamily: "'Sora', sans-serif",
@@ -5908,7 +5895,7 @@ export default function Notepad() {
                     fontWeight: 650,
                     whiteSpace: "nowrap",
                   }}>
-                    {sourcePreview.format === "html" ? "HTML Source" : "Markdown Source"}
+                    {sourcePreview.format === "rich" ? "Rich Text Preview" : sourcePreview.format === "html" ? "HTML Preview" : "Markdown Preview"}
                   </span>
                   <span style={{
                     color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.48)",
@@ -5922,8 +5909,8 @@ export default function Notepad() {
                   </span>
                 </div>
                 <button title="Copy source" onClick={copySourcePreview} style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5 }}>
-                  <CopyIcon size={13} />
-                  <span style={{ fontSize: 12, fontWeight: 600 }}>Copy</span>
+                  {sourcePreview.copied ? <Check size={13} /> : <CopyIcon size={13} />}
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>{sourcePreview.copied ? "Copied" : "Copy"}</span>
                 </button>
                 <button title="Download source" onClick={downloadSourcePreview} style={{ ...tb(), width: "auto", padding: "0 10px", gap: 5 }}>
                   <Download size={13} />
@@ -5948,28 +5935,48 @@ export default function Notepad() {
                 </div>
               )}
 
-              <textarea
-                readOnly
-                value={sourcePreview.value}
-                spellCheck={false}
-                style={{
-                  width: "100%",
-                  minHeight: 360,
-                  maxHeight: "calc(84vh - 54px)",
-                  flex: 1,
-                  resize: "none",
-                  border: "none",
-                  outline: "none",
-                  padding: "16px 18px",
-                  background: effectiveDark ? "rgba(0,0,0,0.22)" : "#F8F8F6",
-                  color: effectiveDark ? "rgba(255,255,255,0.86)" : "rgba(0,0,0,0.82)",
-                  fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
-                  fontSize: 12.5,
-                  lineHeight: 1.65,
-                  whiteSpace: "pre",
-                  overflow: "auto",
-                }}
-              />
+              {sourcePreview.format === "rich" ? (
+                <div
+                  className="notepad-editor"
+                  style={{
+                    width: "100%",
+                    minHeight: 360,
+                    maxHeight: "calc(84vh - 54px)",
+                    flex: 1,
+                    overflow: "auto",
+                    padding: "22px 26px",
+                    background: effectiveDark ? "rgba(0,0,0,0.22)" : "#F8F8F6",
+                    color: effectiveDark ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.84)",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 15,
+                    lineHeight: 1.75,
+                  }}
+                  dangerouslySetInnerHTML={{ __html: sourcePreview.htmlBody || "" }}
+                />
+              ) : (
+                <textarea
+                  readOnly
+                  value={sourcePreview.value}
+                  spellCheck={false}
+                  style={{
+                    width: "100%",
+                    minHeight: 360,
+                    maxHeight: "calc(84vh - 54px)",
+                    flex: 1,
+                    resize: "none",
+                    border: "none",
+                    outline: "none",
+                    padding: "16px 18px",
+                    background: effectiveDark ? "rgba(0,0,0,0.22)" : "#F8F8F6",
+                    color: effectiveDark ? "rgba(255,255,255,0.86)" : "rgba(0,0,0,0.82)",
+                    fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+                    fontSize: 12.5,
+                    lineHeight: 1.65,
+                    whiteSpace: "pre",
+                    overflow: "auto",
+                  }}
+                />
+              )}
             </motion.div>
           </motion.div>
         )}
@@ -6470,7 +6477,7 @@ export default function Notepad() {
           }}
         >
           <div style={editorInnerStyle} className={[settings.ruledLines ? "notepad-ruled" : "", settings.imageBorder ? "notepad-img-border" : ""].filter(Boolean).join(" ")}>
-            {activeDoc?.mode === "raw" || activeDoc?.mode === "markdown" || activeDoc?.mode === "html" ? (
+            {activeDoc?.mode === "raw" ? (
               <textarea
                 value={activeDoc.content}
                 onChange={(e) => handleRawChange(e.target.value)}
@@ -6490,7 +6497,7 @@ export default function Notepad() {
                   padding: 0,
                   margin: 0,
                 }}
-                placeholder={activeDoc?.mode === "html" ? "Type raw HTML here..." : "Type Markdown text here..."}
+                placeholder="Type plain text here..."
               />
             ) : (
               <NotepadErrorBoundary activeDoc={activeDoc} setDocs={setDocs} setActiveId={setActiveId} setSaveStatus={setSaveStatus} effectiveDark={effectiveDark} surfAccent={surfAccent}>
