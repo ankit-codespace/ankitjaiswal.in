@@ -3904,6 +3904,8 @@ export default function Notepad() {
 
   // ── Editor container layout based on width setting ─────────────────────────
   const editorInnerStyle: React.CSSProperties = (() => {
+    const ruledSize = settings.fontSize * settings.lineHeight;
+    const pt = settings.ruledLines ? `${ruledSize}px` : "44px";
     const rulerOpacityVal = settings.rulerOpacity === "less" ? 0.03 : (settings.rulerOpacity === "more" ? 0.15 : 0.07);
     const rulerOpacityLightVal = settings.rulerOpacity === "less" ? 0.04 : (settings.rulerOpacity === "more" ? 0.18 : 0.08);
     const base: React.CSSProperties = {
@@ -3922,9 +3924,9 @@ export default function Notepad() {
       ["--np-ruler-opacity" as string]: String(rulerOpacityVal),
       ["--np-ruler-opacity-light" as string]: String(rulerOpacityLightVal),
     };
-    if (settings.writingWidth === "wide") return { ...base, padding: "44px 7% 96px" };
-    if (settings.writingWidth === "focused") return { ...base, maxWidth: 760, margin: "0 auto", padding: "44px 40px 96px" };
-    return { ...base, maxWidth: 580, margin: "0 auto", padding: "44px 40px 96px" };
+    if (settings.writingWidth === "wide") return { ...base, padding: `${pt} 7% 96px` };
+    if (settings.writingWidth === "focused") return { ...base, maxWidth: 760, margin: "0 auto", padding: `${pt} 40px 96px` };
+    return { ...base, maxWidth: 580, margin: "0 auto", padding: `${pt} 40px 96px` };
   })();
 
   // ── Pill button for settings popup ────────────────────────────────────────
@@ -6558,7 +6560,7 @@ export default function Notepad() {
             }
           }}
         >
-          <div style={editorInnerStyle} className={[settings.ruledLines ? "notepad-ruled" : "", settings.imageBorder ? "notepad-img-border" : ""].filter(Boolean).join(" ")}>
+          <div style={editorInnerStyle} className={[settings.ruledLines ? "notepad-ruled" : "", settings.imageBorder ? "notepad-img-border" : "", "notepad-editor-inner"].filter(Boolean).join(" ")}>
             {activeDoc?.mode === "raw" ? (
               <textarea
                 value={activeDoc.content}
