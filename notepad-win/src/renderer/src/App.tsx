@@ -1707,7 +1707,7 @@ export default function App() {
   }, [closedDocsHistory]);
 
   useEffect(() => () => {
-    if (exportCopyResetTimer.current) clearTimeout(exportCopyResetTimer.current);
+    if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
   }, []);
 
   const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; docId: string } | null>(null);
@@ -1744,8 +1744,7 @@ export default function App() {
   const findInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const copyResetTimer = useRef<any>(null);
-  const exportCopyResetTimer = useRef<any>(null);
-  const [exportCopyState, setExportCopyState] = useState<"rich" | "html" | "markdown" | "error" | null>(null);
+
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -3153,72 +3152,6 @@ export default function App() {
     setShowExportMenu(false);
   };
 
-  const markExportCopyState = (state: "rich" | "html" | "markdown" | "error") => {
-    setExportCopyState(state);
-    if (exportCopyResetTimer.current) clearTimeout(exportCopyResetTimer.current);
-    exportCopyResetTimer.current = setTimeout(() => setExportCopyState(null), 1600);
-  };
-
-  const copyRichFromExport = async () => {
-    if (!activeDoc) return;
-    try {
-      const htmlBody = getPreviewHtmlBody();
-      const html = generateFullHtml(activeDoc.title || "Note", htmlBody, { bg: surfBg, text: surfTxt, isDark: effectiveDark });
-      const div = document.createElement("div");
-      div.innerHTML = html;
-      const text = div.textContent || "";
-      const CI = (window as unknown as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
-      if (navigator.clipboard?.write && CI) {
-        await navigator.clipboard.write([
-          new CI({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([text], { type: "text/plain" }),
-          }),
-        ]);
-      } else {
-        await navigator.clipboard.writeText(text);
-      }
-      markExportCopyState("rich");
-      toast.success("Rich Text copied");
-      setTimeout(() => setShowExportMenu(false), 1200);
-    } catch (err: any) {
-      console.error(err);
-      markExportCopyState("error");
-      toast.error("Couldn't copy Rich Text");
-    }
-  };
-
-  const copyHtmlFromExport = async () => {
-    if (!activeDoc) return;
-    try {
-      const htmlBody = getPreviewHtmlBody();
-      const source = generateFullHtml(activeDoc.title || "Note", htmlBody, { bg: surfBg, text: surfTxt, isDark: effectiveDark });
-      await navigator.clipboard.writeText(source);
-      markExportCopyState("html");
-      toast.success("HTML copied");
-      setTimeout(() => setShowExportMenu(false), 1200);
-    } catch (err: any) {
-      console.error(err);
-      markExportCopyState("error");
-      toast.error("Couldn't copy HTML");
-    }
-  };
-
-  const copyMarkdownFromExport = async () => {
-    if (!activeDoc) return;
-    try {
-      const htmlBody = getPreviewHtmlBody();
-      const source = activeDoc.mode === "raw" ? activeDoc.content || "" : htmlToMarkdown(htmlBody);
-      await navigator.clipboard.writeText(source);
-      markExportCopyState("markdown");
-      toast.success("Markdown copied");
-      setTimeout(() => setShowExportMenu(false), 1200);
-    } catch (err: any) {
-      console.error(err);
-      markExportCopyState("error");
-      toast.error("Couldn't copy Markdown");
-    }
-  };
 
   const downloadBlob = (content: string, name: string, mime: string) => {
     const a = Object.assign(document.createElement("a"), {
@@ -4818,27 +4751,7 @@ export default function App() {
               <span>{item.label}</span>
             </button>
           ))}
-          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
-          <div style={{ padding: "5px 14px 3px", color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.42)", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Copy As</div>
-          {[
-            { key: "rich", label: "Rich Text", fn: copyRichFromExport },
-            { key: "html", label: "HTML", fn: copyHtmlFromExport },
-            { key: "markdown", label: "Markdown", fn: copyMarkdownFromExport },
-          ].map((item) => {
-            const isCopied = exportCopyState === item.key;
-            return (
-              <button
-                key={item.label}
-                style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 14px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: isCopied ? "#10B981" : (effectiveDark ? "var(--t1)" : "rgba(0,0,0,0.85)"), fontSize: 13, fontFamily: "Inter,sans-serif", transition: "color 0.15s" }}
-                onClick={item.fn}
-                onMouseEnter={(e) => (e.currentTarget.style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-              >
-                {isCopied ? <Check size={13} style={{ color: "#10B981" }} /> : <Copy size={13} />}
-                <span style={{ fontWeight: isCopied ? 600 : "inherit" }}>{isCopied ? "Copied" : item.label}</span>
-              </button>
-            );
-          })}
+
           <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
           <div style={{ padding: "5px 14px 3px", color: effectiveDark ? "var(--t3)" : "rgba(0,0,0,0.42)", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Inter,sans-serif" }}>Preview Source</div>
           {[

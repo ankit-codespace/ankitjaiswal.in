@@ -1176,9 +1176,6 @@ export default function Notepad() {
   // recent action's full visual duration instead of being cut short by an
   // earlier setTimeout firing.
   const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [exportCopyState, setExportCopyState] = useState<"rich" | "html" | "markdown" | "error" | null>(null);
-  const exportCopyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Image controls: floating toolbar shown when an image node is selected,
   // and a fullscreen lightbox triggered by double-clicking an image.
   const [imgToolbar, setImgToolbar] = useState<{ pos: number; size: ImgSize; top: number; left: number } | null>(null);
@@ -3480,21 +3477,10 @@ export default function Notepad() {
     }
   }, [activeDoc, editor]);
 
-  const markExportCopyState = (state: "rich" | "html" | "markdown" | "error") => {
-    setExportCopyState(state);
-    if (exportCopyResetTimer.current) clearTimeout(exportCopyResetTimer.current);
-    exportCopyResetTimer.current = setTimeout(() => setExportCopyState(null), state === "error" ? 2200 : 1600);
-  };
-
-  const copyRichFromExport = () => openSourcePreview("rich");
-  const copyHtmlFromExport = () => openSourcePreview("html");
-  const copyMarkdownFromExport = () => openSourcePreview("markdown");
-
   // Clean up the copy reset timer on unmount to avoid setting state on an
   // unmounted component.
   useEffect(() => () => {
     if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
-    if (exportCopyResetTimer.current) clearTimeout(exportCopyResetTimer.current);
   }, []);
 
   const handleSmartExport = useCallback(() => {
@@ -5758,31 +5744,6 @@ export default function Notepad() {
             </button>
           ))}
 
-          <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
-          <div style={exportMenuSectionStyle}>Copy As</div>
-
-          {[
-            { key: "rich", label: "Rich Text", fn: copyRichFromExport },
-            { key: "html", label: "HTML", fn: copyHtmlFromExport },
-            { key: "markdown", label: "Markdown", fn: copyMarkdownFromExport },
-          ].map((item) => {
-            const isCopied = exportCopyState === item.key;
-            return (
-              <button
-                key={item.key}
-                style={{
-                  ...exportMenuRowStyle(),
-                  color: isCopied ? "#10B981" : "inherit",
-                }}
-                onClick={item.fn}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = effectiveDark ? "var(--bg2)" : "rgba(0,0,0,0.05)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "none"; }}
-              >
-                {isCopied ? <Check size={13} style={{ color: "#10B981" }} /> : <CopyIcon size={13} />}
-                <span style={{ fontWeight: isCopied ? 600 : "inherit" }}>{isCopied ? "Copied" : item.label}</span>
-              </button>
-            );
-          })}
 
           <div style={{ borderTop: effectiveDark ? "1px solid var(--b0)" : "1px solid rgba(0,0,0,0.08)", margin: "4px 0" }} />
           <div style={exportMenuSectionStyle}>Preview Source</div>
@@ -5806,11 +5767,7 @@ export default function Notepad() {
             );
           })}
 
-          {exportCopyState === "error" && (
-            <div style={{ padding: "6px 14px 4px", color: effectiveDark ? "rgba(255, 150, 150, 0.95)" : "#A8201A", fontSize: 11.5, fontFamily: "Inter,sans-serif" }}>
-              Copy failed
-            </div>
-          )}
+
 
           {false && [
             { label: "Smart Export", sub: "Ctrl+D · auto-detect format", fn: handleSmartExport, accent: true },
