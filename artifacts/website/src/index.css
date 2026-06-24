@@ -871,86 +871,7 @@ html, body { overflow-x: clip; max-width: 100%; }
 /* Loader spin for status bar */
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Ruled lines overlay ─────────────────────────────────────────────────────── */
-/*
-  APPROACH: Instead of a CSS gradient (which fires at a mathematically fixed
-  position that can never match the browser's actual text layout), we use
-  border-bottom on every block element inside the editor. The border fires at
-  the browser's exact computed line boundary — zero offset math, always aligned.
-
-  Margins are zeroed so paragraphs stack flush; the ::after of each block
-  is the rule line. Line-height is whatever the user picks — no forced minimum.
-*/
-
-/* ── Ruled lines — full-width, one per block / list item ─────────────────────
-   Strategy: instead of border-bottom (which stops at the element width), each
-   block element gets a ::after pseudo-element positioned with width:100vw and
-   left:50%/translateX(-50%). Because the text column is horizontally centered,
-   50% of the element == 50% of the viewport, so the 100vw stripe always runs
-   edge-to-edge. The outer wrapper has overflow-x:clip (set in JS) so no
-   horizontal scrollbar appears.
-──────────────────────────────────────────────────────────────────────────── */
-
-.notepad-ruled {
-  --np-rule-color: rgba(255, 255, 255, var(--np-ruler-opacity, 0.07));
-}
-.surface-light .notepad-ruled {
-  --np-rule-color: rgba(0, 0, 0, var(--np-ruler-opacity-light, 0.08));
-}
-
-/* Base: position context + zero margins for every direct block child */
-.notepad-ruled .notepad-editor > *:not(img) {
-  position: relative;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-/* Images in ruled mode: top breathing room only. The rule line that should
-   appear UNDER the image cannot be drawn on the image itself (img is a
-   replaced element — pseudo-elements don't render on it), so we instead
-   draw it on the ::before of whatever block follows the image (rule below). */
-.notepad-ruled .notepad-editor > img,
-.notepad-ruled .notepad-editor img {
-  margin-top: 0.7em !important;
-  margin-bottom: 0.7em !important;
-}
-
-/* Rule line above the first block following an image — gives the image its
-   own bottom ruler border, then breathing room, then the text. We render this
-   as a real 100vw box (not a 1px positioned line) so the browser snaps it to
-   a crisp device pixel — matching the visual weight of regular ::after rules
-   below text rather than getting subpixel-blurred (which made the line under
-   the image look lighter/thicker than the rest). */
-.notepad-ruled .notepad-editor > img + * {
-  padding-top: 0.6em !important;
-}
-.notepad-ruled .notepad-editor > img + *::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  height: 0;
-  border-top: 1px solid var(--np-rule-color);
-  pointer-events: none;
-}
-
-/* List containers: no rule of their own */
-.notepad-ruled .notepad-editor > ul,
-.notepad-ruled .notepad-editor > ol {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-/* Each list item = one visual line */
-.notepad-ruled .notepad-editor li {
-  position: relative;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
+/* Legacy block border overlay deleted to align with high-fidelity desktop background-blocking strategy */
 
 /* ── TipTap Table Styling ────────────────────────────────────────────────── */
 .notepad-editor .tableWrapper {
@@ -1262,6 +1183,58 @@ div:hover > .notepad-guide-trigger-icon {
 .notepad-ruled .notepad-editor h1:first-child,
 .notepad-ruled .notepad-editor h2:first-child,
 .notepad-ruled .notepad-editor h3:first-child {
+  margin-top: 0 !important;
+}
+
+/* Block elements in ruled mode lock margins to exact grid multiples */
+.notepad-ruled .notepad-editor table,
+.notepad-ruled .notepad-editor blockquote,
+.notepad-ruled .notepad-editor .notepad-code-block-wrapper,
+.notepad-ruled .notepad-editor hr,
+.notepad-ruled .notepad-editor img,
+.notepad-ruled .notepad-editor .image-node {
+  margin-top: var(--ruled-size) !important;
+  margin-bottom: 0;
+}
+
+/* Snapped elements must have solid backgrounds in ruled mode to prevent double-lining */
+.notepad-ruled .notepad-editor blockquote {
+  background: var(--bg1) !important;
+  color: var(--t1) !important;
+}
+.surface-light.notepad-ruled .notepad-editor blockquote,
+.surface-light .notepad-ruled .notepad-editor blockquote {
+  background: #F3EFE3 !important;
+}
+
+.notepad-ruled .notepad-editor .notepad-code-block-pre {
+  background-color: #1A1A19 !important;
+}
+.surface-light.notepad-ruled .notepad-editor .notepad-code-block-pre,
+.surface-light .notepad-ruled .notepad-editor .notepad-code-block-pre {
+  background-color: #F6F4EB !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.notepad-ruled .notepad-editor {
+  --table-border: #252523;
+  --table-header-bg: #1C1C1B;
+  --table-zebra-bg: #121211;
+}
+.surface-light.notepad-ruled .notepad-editor,
+.surface-light .notepad-ruled .notepad-editor {
+  --table-border: #DDD9CE;
+  --table-header-bg: #EAE5D8;
+  --table-zebra-bg: #FAF6ED;
+}
+
+/* Trim top margin if the block is the first element in the document */
+.notepad-ruled .notepad-editor table:first-child,
+.notepad-ruled .notepad-editor blockquote:first-child,
+.notepad-ruled .notepad-editor .notepad-code-block-wrapper:first-child,
+.notepad-ruled .notepad-editor hr:first-child,
+.notepad-ruled .notepad-editor img:first-child,
+.notepad-ruled .notepad-editor .image-node:first-child {
   margin-top: 0 !important;
 }
 
