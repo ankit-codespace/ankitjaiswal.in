@@ -4069,26 +4069,26 @@ export default function App() {
               );
             })}
               
-            </div>
-
-            {/* Plus Button outside scrollable container */}
+            {/* Plus Button inside scrollable container */}
             <button
               onClick={createDoc}
               style={{
                 ...tb(), width: 30, height: 30, borderRadius: 6,
-                alignSelf: "flex-end", marginBottom: 3, marginLeft: 8, flexShrink: 0, zIndex: 4,
+                alignSelf: "flex-end", marginBottom: 3, marginLeft: 8, marginRight: 8, flexShrink: 0, zIndex: 4,
                 WebkitAppRegion: "no-drag"
               } as any}
               title="New note"
             >
               <Plus size={16} />
             </button>
+              
+            </div>
 
             {/* Gradient fade overlay for smooth tab overflow */}
             <div 
               style={{
                 position: "absolute",
-                right: 38,
+                right: 0,
                 bottom: 0,
                 width: 32,
                 height: 38,
